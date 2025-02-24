@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}
+ONU info
+{% endblock %}
+
+{% block body %}
+
+
+
+<div class="container col-md-5 col-lg-4 order-md-last">
+
+	 <h4 class="d-flex justify-content-between align-items-center mb-3">
+          <span class="fw-bold">ONU information</span>
+        </h4>
+
+        <ul class="list-group mb-3">
+
+<table class="table">
+
+
+        {% for item in out %}
+	{% set list1 = item.split(';') %}
+        
+
+<tbody class="table-group-divider">
+    <tr>
+	{% if 'Состояние' in list1[0] %}
+	<td class="fw-bold" width="400">{{ list1[0] }}</td>
+	{% else %}
+      <td width="400">{{ list1[0] }}</td>
+      {% endif %}
+
+
+      {% if 'В сети' in list1[1] %}
+	      <td><span class="badge text-bg-success rounded-pill fw-bold">{{ list1[1] }}</span></td>
+      {% elif 'Не в сети' in list1[1] %}
+	      <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ list1[1] }}</span></td>
+
+      {% elif 'Не удалось' in list1[1] %}
+              <td><span class="badge text-bg-secondary rounded-pill fw-bold">{{ list1[1] }}</span></td>
+
+        {% elif 'ON' in list1[1] %}
+	    <td><span class="badge text-bg-success rounded-pill fw-bold">
+	        {{ list1[1] }}</span>
+		    <a href="/onuinfo/{{ onu }}/catvoff" class="btn btn-outline-dark">Выключить</a>
+		</td>
+	{% elif 'OFF' in list1[1] %}
+	    <td><span class="badge text-bg-danger rounded-pill fw-bold">
+	        {{ list1[1] }}</span>
+		    <a href="/onuinfo/{{ onu }}/catvon" class="btn btn-outline-dark">Включить</a>
+		</td>
+      {% else %}
+	      <td>{{ list1[1] }}</td>
+      {% endif %}
+
+
+    </tr>
+      </tbody>
+	
+      <div class="text-center">
+	{% if 'UP' in list1[1] %}
+		<img src="{{ url_for('static', filename='images/onu_on.png') }}" width="300">
+
+	{% elif 'DOWN' in list1[1] %}
+		<img src="{{ url_for('static', filename='images/onu_lan_off.png') }}" width="300">
+	{% elif 'Не удалось определить' in list1[1] %}
+                <img src="{{ url_for('static', filename='images/onu_lan_unknown.png') }}" width="300">
+
+	{% elif 'Не в сети' in list1[1] %}
+
+		{% for item2 in out %}
+	        {% set list2 = item2.split(';') %}
+
+			{% if 'Power-Off' in list2[1] %}
+				<img src="{{ url_for('static', filename='images/onu_power_off.png') }}" width="300">
+			{% elif 'LOS' in list2[1] %}
+				<img src="{{ url_for('static', filename='images/onu_los.png') }}" width="300">
+			{% endif %}
+		{% endfor %}
+
+	{% endif %}
+
+	</div>
+
+	{% endfor %}
+        </ul>
+
+</table>
+
+</div>
+
+<div class="container container col-md-5 col-lg-4 order-md-last">
+        <a href="/leveltree/{{ onu }}" class="btn btn-warning">Уровень дерева</a>
+</div>
+
+
+
+
+{% endblock %}
+                    

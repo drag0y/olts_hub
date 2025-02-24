@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block body %}
+
+<div class="container col-md-5 col-lg-4 order-md-last">
+	<header>
+	    <h4 class="text-center fw-bold">Авторизация</h4>
+	</header>
+
+<form action="/login" method="post" class="form-contact">
+	<p><label>Имя:</label> <input type="text" name="username" value="" requied />
+	<p><label>Пароль:</label> <input type="password" name="psw" value="" requied />
+	<p><input type="submit" value="Войти" />
+</form>
+
+{% endblock %}

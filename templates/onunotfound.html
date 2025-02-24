@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}
+ONU info
+{% endblock %}
+
+{% block body %}
+
+<div class="container col-md-5 col-lg-4 order-md-last">
+        
+<header>
+    <h4 class="text-center text-danger fw-bold">OLTs list</h4>
+</header>
+
+        <ul class="list-group mb-3">
+        
+          <li class="list-group-item d-flex justify-content-between">
+            <div>
+                        <h6 class="my-0 fw-bold">{{ onu }}</h6>
+            </div>
+          </li>
+        
+        </ul>
+
+</div>
+
+
+{% endblock %}
+~                    

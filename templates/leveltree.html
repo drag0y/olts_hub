@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}
+ONU info
+{% endblock %}
+
+{% block body %}
+
+
+
+<div class="container col-md-5 col-lg-4 order-md-last">
+
+	 <h4 class="d-flex justify-content-between align-items-center mb-3">
+ 	        <span class="fw-bold">Уровень сигнала с дерева</span>
+        </h4>
+        <ul class="list-group mb-3">
+
+
+<table class="table">
+	{% set ns = namespace(counter=false) %}
+	{% set ln = namespace(counter=false) %}
+	{% for item in outstate %}
+        {% set list1 = item.split(';') %}
+
+	{% if list1[0]|length == 13 %}
+		{% set ln.totalonu = 64 %}
+	{% elif list1[0]|length == 17 %}
+		{% set ln.totalonu = 128 %}
+	{% endif %}
+
+	{% set ns.counter = ns.counter+1 %}
+<tbody class="table-group-divider">
+    <tr>
+
+	    {% if "ОНУ" in list1[0] %}
+	    	<td>{{ list1[0] }}</td>
+	    {% else %}
+                <td><a href="/onuinfo/{{ list1[0] }}" class="btn btn-outline-dark btn-sm" type="submit">{{ list1[0] }}</a></td>
+
+	    {% endif %}
+
+	    {% if 'ONLINE' in list1[1]%}
+
+	    <td><span class="badge text-bg-success rounded-pill fw-bold">{{ list1[1] }}</span></td>
+
+	    {% elif 'Статус' in list1[1]%}
+	    	<td>{{ list1[1] }}</td>
+
+	    {% else %}
+	    <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ list1[1] }}</span></td>
+	    {% endif %}
+
+        {% for item2 in out %}
+	{% set list2 = item2.split(';') %}
+       	
+		{% if list1[0] == list2[0] %}
+   
+
+      			<td>{{ list2[1] }}</td>
+	              <td>{{ list2[2] }}</td>
+
+		{% endif %}
+
+	{% endfor %}
+
+
+    </tr>
+      </tbody>
+
+
+        {% endfor %}
+
+<h6 class="d-flex justify-content-between align-items-center mb-3">
+	<span class="fw-bold">Количество ОНУ на порту {{ ns.counter-1 }} из {{ ln.totalonu }} возможных</span>
+        </h6>
+
+
+        </ul>
+
+</table>
+
+</div>
+
+
+
+
+{% endblock %}
+                    

@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Дубликаты ОНУ
+{% endblock %}
+
+{% block body %}
+
+
+
+<div class="container col-md-5 col-lg-4 order-md-last">
+
+	 <h4 class="d-flex justify-content-between align-items-center mb-3">
+ 	        <span class="fw-bold">Повторяющиеся ОНУ</span>
+		<span class="badge bg-black rounded-pill text-warning">EPON</span>
+        </h4>
+        <ul class="list-group mb-3">
+
+
+<table class="table">
+	{% for item in maconu %}
+        {% set list1 = item.split(';') %}
+
+
+<tbody class="table-group-divider">
+    <tr>
+
+ 	<td>{{ list1[0] }}</td>
+   	<td>{{ list1[1] }}</td>
+
+	    
+	{% endfor %}
+</tr>
+      </tbody>
+ </table>
+	</ul>
+   </div>
+<div class="container col-md-5 col-lg-4 order-md-last">
+<h4 class="d-flex justify-content-between align-items-center mb-3">
+                <span class="fw-bold">Повторяющиеся ОНУ</span>
+                <span class="badge bg-black rounded-pill text-warning">GPON</span>
+        </h4>
+<ul class="list-group mb-3">
+ <table class="table">
+        {% for item2 in snonu %}
+	{% set list2 = item2.split(';') %}
+    <tbody class="table-group-divider">
+    <tr>
+ 		<td>{{ list2[0] }}</td>
+	        <td>{{ list2[1] }}</td>
+
+    </tr>
+      </tbody>
+
+        {% endfor %}
+
+
+
+        </ul>
+
+</table>
+
+</div>
+
+
+
+
+{% endblock %}
+                    

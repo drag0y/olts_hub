@@ -1,0 +1,25 @@
+#
+*.un~
+
+#
+/*.pyc
+/*.swp
+
+# Environments
+.env
+
+#
+__pycache__/
+
+#
+.idea/
+
+#
+config.py
+config.py.*
+
+#
+onulist.db
+
+#
+pyvenv.cfg
