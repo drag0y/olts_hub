@@ -17,7 +17,7 @@
 
 </div>
 
-<div class="container col-md-5 col-lg-4 order-md-last">
+<div class="container col-md-5 col-lg-5 order-md-last">
 	<ul class="list-group mb-3">
         	<li class="list-group-item d-flex justify-content-between lh-sm">
             		<div>
@@ -46,11 +46,26 @@
 		</li>
 
         </ul>
+
+
+    <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
+        <div class="btn-group me-2" role="group" aria-label="First group">
+        </div>
+
+	<div class="input-group">
+        </div>
+    </div>
+
+    <div class="btn-toolbar justify-content-between" role="toolbar" aria-label="Toolbar with button groups">
+        <div class="btn-group" role="group" aria-label="First group">
+            <a href="/oltinfo/{{ olts_list.number }}/update" class="btn btn-warning">Опросить ОЛТ</a>
+        </div>
+	{% if nb == '2' %}
+	        <div class="input-group">
+        	    <a href="/oltinfo/{{ olts_list.number }}/delete" class="btn btn-danger">Удалить ОЛТ</a>
+	        </div>
+	{% endif %}
+    </div>
+
 </div>
-
-<div class="container container col-md-5 col-lg-4 order-md-last">
-	<a href="/oltinfo/{{ olts_list.number }}/update" class="btn btn-warning">Опросить ОЛТ</a>
-</div>
-
-
 {% endblock %}

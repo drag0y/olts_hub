@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Добавление нового ОЛТа
+{% endblock %}
+
+{% block body %}
+<div class="container col-md-5 col-lg-4 order-md-last">
+    <header>
+        <h1 class="text-center fw-bold">Добавление нового ОЛТа</h1>
+    </header>
+
+</div>
+
+	{% for msg in get_flashed_messages() %}
+
+                <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
+
+        {% endfor %}
+
+<div class="container col-md-5 col-lg-4 order-md-last">
+    <form method="post">
+	<input type="text" name="hostname" id="hostname" class="form-control" placeholder="Введите имя ОЛТа"><br>
+       	<input type="text" name="ip_address" id="ip_address" class="form-control" placeholder="Введите IP адрес ОЛТа"><br>
+
+<select class="form-select mb-4" aria-label="Пример выбора по умолчанию" name="platform" id="platform">
+  <option selected>Выберите платформу</option>
+  <option value="{{ pf_huawei }}">{{ pf_huawei }}</option>
+  <option value="{{ pf_bdcom }}">{{ pf_bdcom }}</option>
+</select>
+
+<select class="form-select mb-4" aria-label="Пример выбора по умолчанию" name="pontype" id="pontype">
+  <option selected>Выберите тип портов</option>
+  <option value="epon">EPON</option>
+  <option value="gpon">GPON</option>
+</select>
+
+	<input type="submit" class="btn btn-success" value="Добавить">
+    </form>
+</div>
+{% endblock %}

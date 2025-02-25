@@ -128,12 +128,25 @@ class WorkingDB:
 
 
     def drop_olt(self):
+        # Удалить порты и ОНУ конкретного ОЛТА перед опросом
+        conn = sqlite3.connect(self.pathdb)
+        cursor = conn.cursor()
+        cursor.execute(f"DELETE FROM ponports WHERE ip_address='{self.ip_address}'")
+        cursor.execute(f"DELETE FROM epon WHERE oltip='{self.ip_address}'")
+        cursor.execute(f"DELETE FROM gpon WHERE oltip='{self.ip_address}'")
+
+        conn.commit()
+        conn.close()
+
+
+    def drop_olt_fromdb(self):
         # Удалить ОЛТ из базы
         conn = sqlite3.connect(self.pathdb)
         cursor = conn.cursor()
         cursor.execute(f"DELETE FROM ponports WHERE ip_address='{self.ip_address}'")
         cursor.execute(f"DELETE FROM epon WHERE oltip='{self.ip_address}'")
         cursor.execute(f"DELETE FROM gpon WHERE oltip='{self.ip_address}'")
+        cursor.execute(f"DELETE FROM olts WHERE ip_address='{self.ip_address}'")
 
         conn.commit()
         conn.close()

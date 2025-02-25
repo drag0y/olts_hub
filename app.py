@@ -1,11 +1,12 @@
 from flask import Flask, render_template, url_for, request, redirect, flash, session, abort
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3
+import ipaddress
 
 from onumonitoring.findonu import FindOnu
-from onumonitoring.get_olts import get_netbox_olt_list, olts_update, update_olt
+from onumonitoring.get_olts import get_netbox_olt_list, olts_update, update_olt, delete_olt
 from onumonitoring.work_db import WorkDB
-from config import SNMP_READ_H, PATHDB, SNMP_READ_B, NETBOX, SNMP_CONF_H, NAMEDB, IP_SRV, PORT_SRV
+from config import SNMP_READ_H, PATHDB, SNMP_READ_B, NETBOX, SNMP_CONF_H, NAMEDB, IP_SRV, PORT_SRV, PF_HUAWEI, PF_BDCOM
 
 
 
@@ -117,7 +118,7 @@ def olt_info(number):
     olts_list = OLTs.query.get(number)
 #    port_list = AboutOlt.query.all()
 
-    return render_template("oltinfo.html", olts_list=olts_list)
+    return render_template("oltinfo.html", olts_list=olts_list, nb=NETBOX)
 
 
 @app.route("/leveltree/<string:onu>")
@@ -168,9 +169,9 @@ def oltslistupdate():
         return redirect('/')
 
     elif NETBOX == "2":
-        flash("NetBox отключён, ОЛТы добавляются в ручном режиме")
-
-        return redirect('/')
+#        flash("NetBox отключён, ОЛТы добавляются в ручном режиме")
+        
+        return redirect('/oltadd')
 
     else:
         flash("ERROR")
@@ -248,5 +249,56 @@ def profile(username):
     return f"Профиль пользователя: {username}"
 
 
+@app.route("/oltadd", methods=['POST', 'GET'])
+def olt_add():
+    ''' Добавление нового ОЛТа (Если нет НетБокса) '''
+#    olt_add = OLTs.query.get(number)
+    if request.method == "POST":
+        hostname = request.form['hostname']
+        oltip = request.form['ip_address']
+        platform = request.form['platform']
+        pontype = request.form['pontype']
+   
+        try:
+            ipv4 = ipaddress.ip_address(oltip)
+
+            if "Выберите" in platform or "Выберите" in pontype:
+                flash("Не выбрана платформа или тип портов")
+
+                return render_template("oltadd.html", pf_huawei=PF_HUAWEI, pf_bdcom=PF_BDCOM)
+
+            else:
+                oltadd = OLTs(hostname=hostname, ip_address=oltip, platform=platform, pon=pontype)
+
+                try:
+                    db.session.add(oltadd)
+                    db.session.commit()
+                    flash("OLT добавлен в базу")
+
+                    return redirect('/')
+        
+                except:
+                    return "При добавлении ОЛТа произошла ошибка"
+
+        except:
+            flash("Некорректный IP адресс")
+
+            return render_template("oltadd.html", pf_huawei=PF_HUAWEI, pf_bdcom=PF_BDCOM)
+
+    else:
+
+        return render_template("oltadd.html", pf_huawei=PF_HUAWEI, pf_bdcom=PF_BDCOM)
+
+
+@app.route("/oltinfo/<int:number>/delete")
+def olt_delete(number):
+    ''' Удаление ОЛТа (Если нет НетБокса) '''
+#    olt_del = OLTs.query.get(number)
+    delete_olt(PATHDB, number)
+    flash("ОЛТ удалён из базы")
+
+    return redirect("/")
+
+
 if __name__ == "__main__":
-    app.run(debug=False, host=IP_SRV, port=PORT_SRV)
+    app.run(debug=True, host=IP_SRV, port=PORT_SRV)

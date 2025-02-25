@@ -123,3 +123,18 @@ def update_olt(pathdb, number):
     
     conn.close()
 
+
+def delete_olt(pathdb, number):
+    # Функция удаления ОЛТа из базы
+    conn = sqlite3.connect(pathdb)
+    cursor = conn.cursor()
+    findolt = cursor.execute(f'SELECT ip_address FROM olts WHERE number GLOB "{number}"')
+    
+    for oltinfo in findolt:
+        ip_address = oltinfo[0]
+        
+    db = WorkingDB(pathdb, ip_address)
+    db.drop_olt_fromdb()
+    
+    conn.close()
+
