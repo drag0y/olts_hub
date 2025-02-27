@@ -364,7 +364,6 @@ class HuaweiGetOnuInfo:
             if statuslist[i] == "OFFLINE":
                 statuslist[i] = statuslist[i].replace("OFFLINE", onudown)
             out_tree2.append(str(onureplace[onu]) + " ; " + str(statuslist[i]))
-            print(out_tree2)
 
         conn.close()
         return out_tree2 
@@ -487,7 +486,6 @@ class HuaweiGetOnuInfo:
             catvstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.63.1.2"
             cmd = f"snmpset -c {self.snmp_conf} -v2c {self.olt_ip} {catvstatusoid}.{self.portoid}.{self.onuid}.1 i 1"
             cmd_to_subprocess = cmd.split()
-            print(cmd)
             process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
             data = process.communicate(timeout=3)
             data2 = data[-2].decode('utf-8')

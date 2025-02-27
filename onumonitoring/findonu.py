@@ -163,8 +163,11 @@ class FindOnu:
             return outinformation
 
         elif "bdcom" in self.platform:
-            outinformation = []
-            
+#            outinformation = []
+            onu_info = BdcomGetOnuInfo(**self.onu_params)
+            outinformation = onu_info.getleveltree()
+            print(outinformation)
+           
             return outinformation
 
 
@@ -178,6 +181,8 @@ class FindOnu:
 
         elif "bdcom" in self.platform:
             outinformation = []
+            onu_info = BdcomGetOnuInfo(**self.onu_params)
+            outinformation = onu_info.getstatustree()
             
             return outinformation
 

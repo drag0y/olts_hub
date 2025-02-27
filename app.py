@@ -125,7 +125,8 @@ def olt_info(number):
 def level_tree(onu):
     ''' Страница информации о дереве '''
     if len(onu) == 12:
-
+        out = ['Ошибка']
+        outstate = ['Ошибка']
         onurequest = FindOnu(onu, "epon", PATHDB)
         out = onurequest.surveytreelevel()
         outstate = onurequest.surveytree()
@@ -162,11 +163,17 @@ def olt_update(number):
 def oltslistupdate():
     ''' Получить список ОЛТов из НетБокса '''
     if NETBOX == "1":
-        get_netbox_olt_list()
-        flash('Получен список ОЛТов из NetBox')
-#        flash("Функция отключена Администратором")
+        try:
+            get_netbox_olt_list()
+            flash('Получен список ОЛТов из NetBox')
+#            flash("Функция отключена Администратором")
 
-        return redirect('/')
+            return redirect('/')
+
+        except:
+            flash('ERROR. Убедитесь, что на всех ОЛТах проставлены теги и платформы')
+
+            return redirect('/')
 
     elif NETBOX == "2":
 #        flash("NetBox отключён, ОЛТы добавляются в ручном режиме")
@@ -301,4 +308,4 @@ def olt_delete(number):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host=IP_SRV, port=PORT_SRV)
+    app.run(debug=False, host=IP_SRV, port=PORT_SRV)

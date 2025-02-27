@@ -194,16 +194,101 @@ class BdcomGetOnuInfo:
                 match = re.search(parse_data, outlist)
                 if match:
                     rx_onu = match.group('level')
-                    print(rx_onu)
                     level_onu = int(rx_onu)/10
 
 
         return level_onu #, format(level_olt, '.2f')
    
 
+    def getleveltree(self):
+        # Получение уровня сигнала с дерева (pon порта)
+        
+        out_tree = ""
+        out_tree2 = []
+        tree_in = []
+        tree_out = []
+        onulist = []
+        level_rx = ""
+        level_tx = ""
+
+        if "epon" in self.pon_type:
+            snmp_rx_onu = "1.3.6.1.4.1.3320.101.10.5.1.5"
+#            snmp_rx_olt = ""
+        if "gpon" in self.pon_type:
+            snmp_rx_onu = ""
+#            snmp_rx_olt = ""
+
+        parse_tree = r'INTEGER: (?P<level>.+)'
+
+        # ---- Ищем порт олта
+
+        conn = sqlite3.connect(self.pathdb)
+        cursor = conn.cursor()
+        sqlgetport = f'SELECT * FROM ponports WHERE ip_address="{self.olt_ip}" AND portoid like "{self.portoltid}";'
+        ponportonu = cursor.execute(sqlgetport)
+
+        portonu_out = "Не удалось определить порт"
+        for portonu in ponportonu:
+            portonu_out = portonu[3]
+
+        sqlgetallonu = f'SELECT * FROM ponports WHERE ip_address="{self.olt_ip}" AND ponport like "{portonu_out}:%";'
+        getallonu = cursor.execute(sqlgetallonu)
+
+        onuinfo = {}
+        for onu in getallonu:
+            indexonu_out = onu[3]
+        
+            onuinfo.setdefault(indexonu_out)
+            onuinfo.update({indexonu_out: {"portid": onu[4], "oltip": onu[2]}})
+
+        for getonuport in onuinfo:
+            sqlgetonu = f'''SELECT * FROM {self.pon_type} WHERE oltip="{self.olt_ip}" AND portonu="{onuinfo[getonuport]['portid']}";'''
+            getonu = cursor.execute(sqlgetonu)
+
+            for onulist in getonu:
+                onuinfo.update({getonuport: {"onu": onulist[1], "portid": onulist[2], "oltip": onulist[4]}})
+       
+    # ---- Получение уровня сигнала с ОНУ
+        out_treeinfo = ["ОНУ ; Сигнал в сторону ОНУ; Сигнал в сторону ОЛТа"]
+        for createcmd in onuinfo:
+            portonu = createcmd
+            portid = onuinfo[createcmd]['portid']
+            oltip = onuinfo[createcmd]['oltip']
+            onu = onuinfo[createcmd]['onu']
+            
+
+            cmd_rx_onu = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {snmp_rx_onu}.{portid}"
+            cmd = cmd_rx_onu.split()
+
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+
+            while True:
+                output = process.stdout.readline()
+
+                if output == b'' and process.poll() is not None:
+                    break
+
+                if output:
+                    outlist = output.decode('utf-8')
+                    match = re.search(parse_tree, outlist)
+
+                    if match:
+                        rx_onu = match.group('level')
+                        level_onu = int(rx_onu)/10
+
+                        out_treeinfo.append(str(onu) + " ; " + " 0 " + " ; " + str(level_onu))
+
+
+        conn.close()
+        out_tree = "test"
+
+        return out_treeinfo
+
+
     def getstatustree(self):
         # Определение статуса всего дерева (pon порта)
-        # В РАЗРАБОТКЕ
+
+        out_treeinfo = ["ОНУ ; Статус"]
         onulist = []
         statuslist = []
         downlist = []
@@ -214,60 +299,55 @@ class BdcomGetOnuInfo:
         downcose = ""
 
         if "epon" in self.pon_type:
-            oid_state = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.15"
-            oid_cose = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.25"
+            oid_state = "1.3.6.1.2.1.2.2.1.8"
+            oid_cose = "1.3.6.1.4.1.3320.101.11.1.1.11"
             pon_total = "64"
         if "gpon" in self.pon_type:
-            oid_state = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.15"
-            oid_cose = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.24"
+            oid_state = "-"
+            oid_cose = "-"
             pon_total = "128"
 
 
-        parse_state = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<onustate>\d+|-\d+)'
+        parse_state = r'INTEGER: (?P<onustate>\d+|-\d+)'
         parse_down = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<downcose>\d+|-\d+)'
     
 
         # ---- Ищем порт олта
         conn = sqlite3.connect(self.pathdb)
         cursor = conn.cursor()
-
-        ponportonu = cursor.execute(f'SELECT ponport FROM ponports WHERE ip_address="{self.olt_ip}" AND portoid="{self.portoid}";')
+        sqlgetport = f'SELECT * FROM ponports WHERE ip_address="{self.olt_ip}" AND portoid like "{self.portoltid}";'
+        ponportonu = cursor.execute(sqlgetport)
 
         portonu_out = "Не удалось определить порт"
         for portonu in ponportonu:
-            portonu_out = portonu[0]
+            portonu_out = portonu[3]
 
-        getoltname = cursor.execute(f'SELECT oltname FROM ponports WHERE ip_address="{self.olt_ip}" AND portoid="{self.portoid}";')
+        sqlgetallonu = f'SELECT * FROM ponports WHERE ip_address="{self.olt_ip}" AND ponport like "{portonu_out}:%";'
+        getallonu = cursor.execute(sqlgetallonu)
 
-        oltname_out = "Не удалось определить имя OLTа"
-        for oltname in getoltname:
-            oltname_out = oltname[0]
-
-
-        # ---- Ищем в базе мак ОНУ для сопоставления с индексами
-        onureplace = {}
-
-        conn = sqlite3.connect(self.pathdb)
-        cursor = conn.cursor()
-
-        onureplace_in = cursor.execute(f'SELECT * FROM {self.pon_type} WHERE oltip="{self.olt_ip}" AND portonu="{self.portoid}";')
-        onu_count = 0
-        for onu in onureplace_in:
-            onu_count += 1
+        onuinfo = {}
+        for onu in getallonu:
             indexonu_out = onu[3]
-            onu_out = onu[1]
 
-            onureplace.setdefault(indexonu_out)
-            onureplace.update({indexonu_out: onu_out})
+            onuinfo.setdefault(indexonu_out)
+            onuinfo.update({indexonu_out: {"portid": onu[4], "oltip": onu[2]}})
 
-        
-        # ---- Получение статуса с дерева
-        cmd_onu_state = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {oid_state}.{self.portoid}"
+        for getonuport in onuinfo:
+            sqlgetonu = f'''SELECT * FROM {self.pon_type} WHERE oltip="{self.olt_ip}" AND portonu="{onuinfo[getonuport]['portid']}";'''
+            getonu = cursor.execute(sqlgetonu)
+
+            for onulist in getonu:
+                onuinfo.update({getonuport: {"onu": onulist[1], "portid": onulist[2], "oltip": onulist[4]}})
+
+         # ---- Получение причины отключения ONU
+        parse_down_reason = r'(?P<onudec>\d+.\d+.\d+.\d+.\d+.\d+) = INTEGER: (?P<downreason>\d+)'
+
+        cmd_onu_state = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {oid_cose}.{self.portoltid}"
         cmd = cmd_onu_state.split()
 
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
-
+        down_reason = {}
         while True:
             output = process.stdout.readline()
 
@@ -276,170 +356,60 @@ class BdcomGetOnuInfo:
 
             if output:
                 outlist = output.decode('utf-8')
-                match = re.search(parse_state, outlist)
+                match = re.search(parse_down_reason, outlist)
+
                 if match:
-                    onuid = match.group('onuid')
-                    onustatus = match.group('onustate')
-                    onustatus = onustatus.replace("1", "ONLINE").replace("2", "OFFLINE").replace("-1", "OFFLINE")
+                    onu = match.group('onudec')
+                    onudownreason = match.group('downreason')
+                    onudownreason = onudownreason.replace("8", "LOS").replace("9", "POWER-OFF").replace("0", "Неизвестно")
+                    down_reason.update({onu: onudownreason})
+       
+        # ---- Получение статуса с дерева
+        
+        for createcmd in onuinfo:
+            portonu = createcmd
+            portid = onuinfo[createcmd]['portid']
+            oltip = onuinfo[createcmd]['oltip']
+            onu = onuinfo[createcmd]['onu']
 
-                    onulist.append(onuid)
-                    statuslist.append(onustatus)
+            cmd_onu_state = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {oid_state}.{portid}"
+            cmd = cmd_onu_state.split()
 
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+
+
+            while True:
+                output = process.stdout.readline()
+
+                if output == b'' and process.poll() is not None:
+                    break
+
+                if output:
+                    outlist = output.decode('utf-8')
+                    match = re.search(parse_state, outlist)
+
+                    if match:
+                        onustatus = match.group('onustate')
+                        onustatus = onustatus.replace("1", "ONLINE").replace("2", "OFFLINE").replace("-1", "OFFLINE")
+                        if onustatus == "OFFLINE":
+                            try:
+                                outmacdec = ""
+                                n = 2
+                                out = [onu[i:i+n] for i in range(0, len(onu), n)]
+
+                                for i in out:
+                                    dece = int(i, 16)
+                                    outmacdec = outmacdec + "." + str(dece)
+
+                                onustatus = down_reason[outmacdec[1:]]
+                            except KeyError:
+                                onustatus = "Неизвестно"
+
+                        out_treeinfo.append(str(onu) + " ; " + str(onustatus))
+                        
     
-        # ---- Получение причины отключения ONU
-        cmd_down_cose = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {oid_cose}.{self.portoid}"
-        cmd = cmd_down_cose.split()
-
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
-
-        while True:
-            output = process.stdout.readline()
-
-            if output == b'' and process.poll() is not None:
-                break
-
-            if output:
-                outlist = output.decode('utf-8')
-                match = re.search(parse_down, outlist)
-                if match:
-                    downcose = match.group('downcose')
-                    downcose = downcose.replace("-1", "Неизвестно").replace("18", "RING").replace("13", "POWER-OFF").replace("2", "LOS").replace("1", "LOS").replace("3", "LOS")
-                    downlist.append(downcose)
-
-        # ----
-        nl = "\n"
-        for i in range(len(onulist)):
-            onu = str(onulist[i])
-            onudown = str(downlist[i])
-            if statuslist[i] == "OFFLINE":
-                statuslist[i] = statuslist[i].replace("OFFLINE", onudown)
-            out_tree2.append(str(onureplace[onu]) + " | " + str(statuslist[i]))
-        out_tree = f"""Имя OLTа: {oltname_out}
-Порт: {portonu_out}
-Всего ONU на порту: {onu_count} из {pon_total} возможных
-
-ONU          #           Status: {nl}{nl.join(out_tree2)}
-"""
-
-        conn.close()
-        return out_tree            
-
-
-    def getleveltree(self):
-        # Получение уровня сигнала с дерева (pon порта)
-        # В РАЗРАБОТКЕ
-        out_tree = ""
-        out_tree2 = []
-        tree_in = []
-        tree_out = []
-        onulist = []
-        level_rx = ""
-        level_tx = ""
-
-        if "epon" in self.pon_type:
-            snmp_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.5"
-            snmp_rx_olt = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.1"
-        if "gpon" in self.pon_type:
-            snmp_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.4"
-            snmp_rx_olt = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.6"
-
-        parse_tree = r'(\d+){10}.(?P<onuid>\S+) .+(?P<treelevel>-\S+)'
-
-        # ---- Ищем порт олта
-
-        conn = sqlite3.connect('onulist.db')
-        cursor = conn.cursor()
-
-        ponportonu = cursor.execute(f'SELECT ponport FROM ponports WHERE oltip="{self.olt_ip}" AND portoid="{self.portoid}";')
-
-        portonu_out = "Не удалось определить порт"
-        for portonu in ponportonu:
-            portonu_out = portonu[0]
-
-        getoltname = cursor.execute(f'SELECT oltname FROM ponports WHERE oltip="{self.olt_ip}" AND portoid="{self.portoid}";')
-
-        oltname_out = "Не удалось определить имя OLTа"
-        for oltname in getoltname:
-            oltname_out = oltname[0]
-
-
-        # ---- Ищем в базе маке ОНУ для сопоставления с индексами
-        onureplace = {}
-
-        onureplace_in = cursor.execute(f'SELECT * FROM {self.pon_type} WHERE oltip="{self.olt_ip}" AND portonu="{self.portoid}";')
-        for onu in onureplace_in:
-            indexonu_out = onu[3]
-            onu_out = onu[1]
-
-            onureplace.setdefault(indexonu_out)
-            onureplace.update({indexonu_out: onu_out})
-
-        # ---- Получение уровня сигнала с ОНУ
-        cmd_rx_onu = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {snmp_rx_onu}.{self.portoid}"
-        cmd = cmd_rx_onu.split()
-
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
-
-        while True:
-            output = process.stdout.readline()
-
-            if output == b'' and process.poll() is not None:
-                break
-
-            if output:
-                outlist = output.decode('utf-8')
-                match = re.search(parse_tree, outlist)
-                if match:
-                    onuid = match.group('onuid')
-                    level = match.group('treelevel')
-                    level_rx = int(level)/100
-
-                    onulist.append(onuid)
-                    tree_in.append(level_rx)
-
-        # ---- Получение результата уровня в сторону ОЛТа
-        parse_tree_sn = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<treelevel>\d+)'
-
-        cmd_rx_olt = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {snmp_rx_olt}.{self.portoid}"
-        cmd = cmd_rx_olt.split()
-
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
-        while True:
-            output = process.stdout.readline()
-
-            if output == b'' and process.poll() is not None:
-                break
-
-            if output:
-                outlist = output.decode('utf-8')
-                match = re.search(parse_tree_sn, outlist)
-                if match:
-                    onuid = match.group('onuid')
-                    level = match.group('treelevel')
-
-                    if len(level) == 4:
-                        level_tx2 = int(level)/100-100
-                        level_tx = format(level_tx2, '.2f')
-
-                        tree_out.append(level_tx)
-
-        # ----
-        nl = "\n"
-        for i in range(len(onulist)):
-            onu = str(onulist[i])
-            out_tree2.append(str(onureplace[onu]) + " | " + str(tree_in[i]) + " | " + str(tree_out[i]))
-
-        out_tree = f"""Имя OLTа: {oltname_out}
-Порт: {portonu_out}
-
-ONU            #    IN    #    OUT: {nl}{nl.join(out_tree2)}
-    """
-
 
         conn.close()
 
-        return out_tree
+        return out_treeinfo
 
