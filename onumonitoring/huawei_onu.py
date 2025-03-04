@@ -163,26 +163,51 @@ class HuaweiGetOnuInfo:
         if "epon" in self.pon_type:
             datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.103.1.6"
 
+            i = 9
+            while i > 0:
+                cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {datatimeoid}.{self.portoid}.{self.onuid}.{i}"
+                cmd_to_subprocess = cmd.split()
+                process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
+
+                while True:
+                    output = process.stdout.readline()
+
+                    if output == b'' and process.poll() is not None:
+                        break
+
+                    if output:
+                        outlist = output.decode('utf-8')
+                        match = re.search(parse_data, outlist)
+                        if match:
+                            timelist = match.group('regtime')
+
+                i = i - 1
+                if timelist != "Нет времени отключения":
+                    break
+
+            datatime = timelist.replace("Z", "+03:00")
+
+
         if "gpon" in self.pon_type:
             datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.101.1.6"
 
-        cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {datatimeoid}.{self.portoid}.{self.onuid}"
-        cmd_to_subprocess = cmd.split()
-        process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
+            cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {datatimeoid}.{self.portoid}.{self.onuid}"
+            cmd_to_subprocess = cmd.split()
+            process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
 
-        while True:
-            output = process.stdout.readline()
+            while True:
+                output = process.stdout.readline()
 
-            if output == b'' and process.poll() is not None:
-                break
+                if output == b'' and process.poll() is not None:
+                    break
 
-            if output:
-                outlist = output.decode('utf-8')
-                match = re.search(parse_data, outlist)
-                if match:
-                    timelist = match.group('regtime')
+                if output:
+                    outlist = output.decode('utf-8')
+                    match = re.search(parse_data, outlist)
+                    if match:
+                        timelist = match.group('regtime')
 
-        datatime = timelist.replace("Z", "+03:00")
+            datatime = timelist.replace("Z", "+03:00")
 
         return datatime
 
@@ -196,26 +221,51 @@ class HuaweiGetOnuInfo:
         if "epon" in self.pon_type:
             datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.103.1.7"
 
+            i = 9
+            while i > 0:
+                cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {datatimeoid}.{self.portoid}.{self.onuid}.{i}"
+                cmd_to_subprocess = cmd.split()
+                process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
+
+                while True:
+                    output = process.stdout.readline()
+
+                    if output == b'' and process.poll() is not None:
+                        break
+
+                    if output:
+                        outlist = output.decode('utf-8')
+                        match = re.search(parse_data, outlist)
+                        if match:
+                            timelist = match.group('regtime')
+
+                i = i - 1
+                if timelist != "Нет времени отключения":
+                    break
+
+
+            datatime = timelist.replace("Z", "+03:00")
+
         if "gpon" in self.pon_type:
             datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.101.1.7"
 
-        cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {datatimeoid}.{self.portoid}.{self.onuid}"
-        cmd_to_subprocess = cmd.split()
-        process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
+            cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {datatimeoid}.{self.portoid}.{self.onuid}"
+            cmd_to_subprocess = cmd.split()
+            process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
 
-        while True:
-            output = process.stdout.readline()
+            while True:
+                output = process.stdout.readline()
 
-            if output == b'' and process.poll() is not None:
-                break
+                if output == b'' and process.poll() is not None:
+                    break
 
-            if output:
-                outlist = output.decode('utf-8')
-                match = re.search(parse_data, outlist)
-                if match:
-                    timelist = match.group('regtime')
+                if output:
+                    outlist = output.decode('utf-8')
+                    match = re.search(parse_data, outlist)
+                    if match:
+                        timelist = match.group('regtime')
 
-        datatime = timelist.replace("Z", "+03:00")
+            datatime = timelist.replace("Z", "+03:00")
 
         return datatime
 

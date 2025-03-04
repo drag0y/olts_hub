@@ -7,7 +7,9 @@ BDCOM 33xx, 36xx только EPON.\
 Весь остальной функционал будет работать как надо.
 
 <p style="text-align: center;">
-<img src="https://github.com/drag0y/olts_hub/raw/main/static/images/onu-info.png" width="400">\
+<img src="https://github.com/drag0y/olts_hub/raw/main/static/images/onu-info.png" width="400">
+</p>
+<p style="text-align: center;">
 <img src="https://github.com/drag0y/olts_hub/raw/main/static/images/tree.png" width="400">
 </p>
 
