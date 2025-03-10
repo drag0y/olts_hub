@@ -6,44 +6,48 @@
 
 {% block body %}
 <div class="container container col-md-5 col-lg-4 order-md-last">
-	<header>
-	<h1 class="text-center fw-bold">Информация об ОЛТе</h1>
+    <header>
+        <h1 class="text-center fw-bold">Информация об ОЛТе</h1>
 	{% for msg in get_flashed_messages() %}
-                <h3 class="text-center"><span class="flash badge text-bg-success">{{msg}}</span></h3>
-                {% endfor %}
-	</header>
-
+            <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
+        {% endfor %}
+    </header>
 
 
 </div>
+    <div class="container col-md-5 col-lg-5 order-md-last">
+        <ul class="list-group mb-3">
 
-<div class="container col-md-5 col-lg-5 order-md-last">
-	<ul class="list-group mb-3">
-        	<li class="list-group-item d-flex justify-content-between lh-sm">
-            		<div>
-		              <h6 class="my-0 text-black">Имя ОЛТа:</h6>
-	                </div>
-            		<span class="text-body-secondary">{{ olts_list.hostname }}</span>
-	        </li>
+            <li class="list-group-item d-flex justify-content-between lh-sm">
+                <div>
+		    <h6 class="my-0 text-black">Имя ОЛТа:</h6>
+	        </div>
+            	<span class="text-body-secondary">{{ olts_list.hostname }}</span>
+            </li>
 
-                <li class="list-group-item d-flex justify-content-between lh-sm">
-      	  	      <div>
-		              <h6 class="my-0 text-black">IP адрес:</h6>
- 	              </div>
-          	      <span class="text-body-secondary">{{ olts_list.ip_address }}</span>
-                </li>
+            <li class="list-group-item d-flex justify-content-between lh-sm">
+                <div>
+		    <h6 class="my-0 text-black">IP адрес:</h6>
+ 	        </div>
+          	    <span class="text-body-secondary">{{ olts_list.ip_address }}</span>
+            </li>
 		
-                <li class="list-group-item d-flex justify-content-between lh-sm">
-          	      <div>
-        	              <h6 class="my-0 text-black">Платформа:</h6>
-                      </div>
-                    	  <span class="text-body-secondary">{{ olts_list.platform }}</span>
-                </li>
-		<li class="list-group-item d-flex justify-content-between lh-sm">
-			<div>
-        	                <h6 class="my-0 text-black">Порты:</h6>
-                	</div>
-		</li>
+            <li class="list-group-item d-flex justify-content-between lh-sm">
+                <div>
+                    <h6 class="my-0 text-black">Платформа:</h6>
+                </div>
+                <span class="text-body-secondary">{{ olts_list.platform }}</span>
+            </li>
+
+	    <li class="list-group-item d-flex justify-content-between lh-sm">
+	        <div>
+        	    <h6 class="my-0 text-black">Порты:</h6>
+		    {% for port in ports %}
+        <a href="/oltinfo/{{ olts_list.number }}/{{ port|replace("/", ".") }}" class="btn btn-outline-dark btn-sm" type="submit">{{ port }}</a>
+        {% endfor %}
+
+                </div>
+	    </li>
 
         </ul>
 
@@ -58,14 +62,19 @@
 
     <div class="btn-toolbar justify-content-between" role="toolbar" aria-label="Toolbar with button groups">
         <div class="btn-group" role="group" aria-label="First group">
-            <a href="/oltinfo/{{ olts_list.number }}/update" class="btn btn-warning">Опросить ОЛТ</a>
+            <a href="/oltinfo/{{ olts_list.number }}/update" class="btn btn-warning">Опросить ОЛТ
+	    </a>
         </div>
+
 	{% if nb == '2' %}
-	        <div class="input-group">
-        	    <a href="/oltinfo/{{ olts_list.number }}/delete" class="btn btn-danger">Удалить ОЛТ</a>
-	        </div>
+            <div class="input-group">
+                <a href="/oltinfo/{{ olts_list.number }}/delete" class="btn btn-danger">Удалить ОЛТ
+		</a>
+	    </div>
 	{% endif %}
+
     </div>
 
 </div>
+
 {% endblock %}

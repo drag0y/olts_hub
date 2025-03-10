@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 import sqlite3
 import ipaddress
 
+from onumonitoring.oltinfo import OltInfo
 from onumonitoring.findonu import FindOnu
 from onumonitoring.get_olts import get_netbox_olt_list, olts_update, update_olt, delete_olt
 from onumonitoring.work_db import WorkDB
@@ -116,9 +117,42 @@ def onu_info(onu):
 def olt_info(number):
     ''' Страница просмотра информации об ОЛТе '''
     olts_list = OLTs.query.get(number)
-#    port_list = AboutOlt.query.all()
+    port_list = AboutOlt.query.all()
+   
+    ports = []
+    if PF_HUAWEI in olts_list.platform:
+        for i in port_list:
+            if i.ip_address == olts_list.ip_address:
+                if ":" in i.ponport:
+                    pass
+                else:
+                    ports.append(i.ponport)
 
-    return render_template("oltinfo.html", olts_list=olts_list, nb=NETBOX)
+    ports.sort()
+
+    return render_template("oltinfo.html", olts_list=olts_list, ports=ports, nb=NETBOX)
+
+
+@app.route("/oltinfo/<int:number>/<string:port>")
+def olt_port_info(number, port):
+    ''' Страница просмотра дерева '''
+    
+    olts_list = OLTs.query.get(number)
+    olt_port = port.replace(".", "/")
+    try:
+        if PF_HUAWEI in olts_list.platform:
+            olt_info = OltInfo(PATHDB, olts_list.ip_address, olt_port, olts_list.platform, olts_list.pon) 
+            out_tree = olt_info.hwponstatustree()
+
+        elif PF_BDCOM in olts_list.platform:
+            pass
+
+        return render_template("oltportinfo.html", out_tree=out_tree, olt_port=olt_port, oltip=olts_list.ip_address, hostname=olts_list.hostname)
+
+    
+    except KeyError:
+        flash("База устарела, опросите ОЛТ")
+        return redirect(f"/oltinfo/{number}")
 
 
 @app.route("/leveltree/<string:onu>")
@@ -308,4 +342,4 @@ def olt_delete(number):
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host=IP_SRV, port=PORT_SRV)
+    app.run(debug=True, host=IP_SRV, port=PORT_SRV)

@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}
+ONU info
+{% endblock %}
+
+{% block body %}
+
+    <div class="container col-md-5 col-lg-5 order-md-last">
+        <h4 class="d-flex justify-content-between align-items-center mb-3">
+ 	    <span class="fw-bold">Уровень сигнала с дерева</span>
+        </h4>
+
+        <ul class="list-group mb-3">
+
+            <table class="table">
+                <thead class="table-dark">
+                    <tr>
+                    <th scope="row">ОНУ</th>
+                    <th scope="col">Статус</th>
+                    <th scope="col">Сигнал в сторону ОНУ</th>
+                    <th scope="col">Сигнал в сторону ОЛТа</th>
+                    </tr>
+                </thead>
+
+	{% set ns = out_tree|length %}
+	{% set ln = namespace(counter=false) %}
+	{% for item in out_tree %}
+        
+	{% if item|length == 12 %} 
+		{% set ln.totalonu = 64 %}
+	{% elif item|length == 16 %}
+		{% set ln.totalonu = 128 %}
+	{% endif %}
+
+                <tbody class="table-group-divider">
+                    <tr>
+                        <td><a href="/onuinfo/{{ item }}" class="btn btn-outline-dark btn-sm" type="submit">{{ item }}</a></td>
+
+	    {% if 'ONLINE' in out_tree[item]['onustatus'] %}
+
+                        <td><span class="badge text-bg-success rounded-pill fw-bold">{{ out_tree[item]['onustatus'] }}</span></td>
+
+	    {% else %}
+
+                        <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ out_tree[item]['onustatus'] }}</span></td>
+	    {% endif %}
+
+                        <td>{{ out_tree[item]['levelin'] }}</td>
+                        <td>{{ out_tree[item]['levelout'] }}</td>
+
+                    </tr>
+                </tbody>
+
+        {% endfor %}
+
+
+	<span class="fw-bold">ОЛТ: {{ hostname }}</span>
+        <span class="fw-bold">ip: {{ oltip }}</span>
+        <span class="fw-bold">порт: {{ olt_port }}</span>
+
+<h6 class="d-flex justify-content-between align-items-center mb-3">
+	<p class="fw-bold">Количество ОНУ на порту {{ ns }} из {{ ln.totalonu }} возможных</p>
+        </h6>
+
+        </ul>
+
+</table>
+</div>
+</div>
+
+{% endblock %}
+                    
