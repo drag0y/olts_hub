@@ -1,3 +1,4 @@
+## OLTs HUB v1.2
 WEB приложение для просмотра состояния абонентских оптических терминалов, фирмы Huawei и BDCOM\
 Приложение работает с ОЛТами:\
 Huawei MA5600, MA5800 (EPON, GPON).\
@@ -6,10 +7,10 @@ BDCOM 33xx, 36xx только EPON.\
 Если портов больше 1, то приложение работать будет, но статус LAN порта будет выводиться некоректно.\
 Весь остальной функционал будет работать как надо.
 
-<p style="text-align: center;">
+<p align="center">
 <img src="https://github.com/drag0y/olts_hub/raw/main/static/images/onu-info.png" width="400">
 </p>
-<p style="text-align: center;">
+<p align="center">
 <img src="https://github.com/drag0y/olts_hub/raw/main/static/images/tree.png" width="400">
 </p>
 

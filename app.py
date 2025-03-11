@@ -123,6 +123,11 @@ def olt_info(number):
     if PF_HUAWEI in olts_list.platform:
         for i in port_list:
             if i.ip_address == olts_list.ip_address:
+                ports.append(i.ponport)
+
+    if PF_BDCOM in olts_list.platform:
+        for i in port_list:
+            if i.ip_address == olts_list.ip_address:
                 if ":" in i.ponport:
                     pass
                 else:
@@ -145,13 +150,14 @@ def olt_port_info(number, port):
             out_tree = olt_info.hwponstatustree()
 
         elif PF_BDCOM in olts_list.platform:
-            pass
+            olt_info = OltInfo(PATHDB, olts_list.ip_address, olt_port, olts_list.platform, olts_list.pon)
+            out_tree = olt_info.bdcomponstatustree()
 
         return render_template("oltportinfo.html", out_tree=out_tree, olt_port=olt_port, oltip=olts_list.ip_address, hostname=olts_list.hostname)
 
-    
     except KeyError:
         flash("База устарела, опросите ОЛТ")
+
         return redirect(f"/oltinfo/{number}")
 
 
