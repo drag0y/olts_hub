@@ -8,16 +8,15 @@
 <div class="container container col-md-5 col-lg-4 order-md-last">
     <header>
         <h1 class="text-center fw-bold">Информация об ОЛТе</h1>
+
 	{% for msg in get_flashed_messages() %}
             <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
         {% endfor %}
     </header>
 
-
 </div>
     <div class="container col-md-5 col-lg-5 order-md-last">
         <ul class="list-group mb-3">
-
             <li class="list-group-item d-flex justify-content-between lh-sm">
                 <div>
 		    <h6 class="my-0 text-black">Имя ОЛТа:</h6>
@@ -41,16 +40,31 @@
 
 	    <li class="list-group-item d-flex justify-content-between lh-sm">
 	        <div>
-        	    <h6 class="my-0 text-black">Порты:</h6>
-		    {% for port in ports %}
-        <a href="/oltinfo/{{ olts_list.number }}/{{ port|replace("/", ".") }}" class="btn btn-outline-dark btn-sm" type="submit">{{ port }}</a>
-        {% endfor %}
+		    <h6 class="my-0 text-black">Порты:</h6><br>
 
+		    {% set ns = namespace(counter=false) %}
+		    {% set ns.counter = 1 %}
+		   
+		    {% for port in ports %}
+                        {% if ns.counter <= 16 %}
+		    
+                            <a href="/oltinfo/{{ olts_list.number }}/{{ port|replace("/", ".") }}" class="p-1 btn btn-outline-dark btn-sm" type="submit">{{ port }}</a>
+		    
+			    {% set ns.counter = ns.counter+1 %}
+                        {% else %}
+                            {% set ns.counter = 1 %}
+                            <br>
+			    <hr>
+                            <a href="/oltinfo/{{ olts_list.number }}/{{ port|replace("/", ".") }}" class="btn btn-outline-dark btn-sm" type="submit">{{ port }}</a>
+
+                            {% set ns.counter = ns.counter+1 %}
+		        {% endif %}
+                    {% endfor %}
+	
                 </div>
 	    </li>
 
         </ul>
-
 
     <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
         <div class="btn-group me-2" role="group" aria-label="First group">

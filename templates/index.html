@@ -16,36 +16,40 @@
         {% for msg in get_flashed_messages() %}
 
 	    {% if "отключён" in msg or "ERROR" in msg or "отключена" in msg %}
-		<h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
+                <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
             {% else %}
 		<h3 class="text-center"><span class="flash badge text-bg-success">{{msg}}</span></h3>
 	    {% endif %}
 
 	{% endfor %}
 
-
 <table class="table">
-  <thead class="table-dark">
-    <tr>
-      <th scope="row">№</th>
-      <th scope="col">Имя ОЛТа</th>
-      <th scope="col">IP адрес</th>
-      <th scope="col">Действие</th>
-    </tr>
-  </thead>
-  {% for item in olts_list %}
-  <tbody class="table-group-divider">
-    <tr>
-      <th scope="row"><h6 class="badge bg-dark text-warning rounded-pill my-0">{{ item.number }}</h6></th>
-      <td>{{ item.hostname }}</td>
-      <td>{{ item.ip_address }}</td>
-      <td><a href="/oltinfo/{{ item.number }}" class="btn btn-dark text-warning btn-sm" type="submit">Подробнее</a></td>
-    </tr>
-      </tbody>
-	{% endfor %}
+    <thead class="table-dark">
+        <tr>
+        <th scope="row">№</th>
+        <th scope="col">Имя ОЛТа</th>
+        <th scope="col">IP адрес</th>
+        <th scope="col">Действие</th>
+        </tr>
+    </thead>
+
+    {% for item in olts_list %}
+        <tbody class="table-group-divider">
+            <tr>
+            <th scope="row"><h6 class="badge bg-dark text-warning rounded-pill my-0">{{ item.number }}</h6></th>
+            <td>{{ item.hostname }}</td>
+            <td>{{ item.ip_address }}</td>
+            <td>
+            <a href="/oltinfo/{{ item.number }}/update" class="btn btn-dark text-warning btn-sm" type="submit"><img src="static/images/update_olt.png" title="Опросить ОЛТ" width="20"></a>
+	    <a href="/oltinfo/{{ item.number }}" class="btn btn-dark text-warning btn-sm" type="submit"><img src="static/images/detail_olt.png" title="Подробнее об ОЛТе" width="20"></a>
+            </td>
+            </tr>
+        </tbody>
+    {% endfor %}
+
 </table>
 
-        </ul>
+</ul>
 
 </div>
 {% endblock %}

@@ -348,4 +348,4 @@ def olt_delete(number):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host=IP_SRV, port=PORT_SRV)
+    app.run(debug=False, host=IP_SRV, port=PORT_SRV)
