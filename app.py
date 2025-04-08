@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for, request, redirect, flash, session, abort
+from flask import Flask, render_template, url_for, request, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3
 import ipaddress
@@ -10,10 +10,8 @@ from onumonitoring.work_db import WorkDB
 from config import SNMP_READ_H, PATHDB, SNMP_READ_B, NETBOX, SNMP_CONF_H, NAMEDB, IP_SRV, PORT_SRV, PF_HUAWEI, PF_BDCOM
 
 
-
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{NAMEDB}'
-app.config['SECRET_KEY'] = 'asf09u23rpqdm0123r'
 
 db = SQLAlchemy(app)
 
@@ -257,18 +255,6 @@ def pagenotfound(error):
     return render_template('page404.html', title="Страница не найдена")
 
 
-@app.route("/login", methods=["POST", "GET"])
-def login():
-    ''' Страница авторизации, в разработке '''
-    if 'userLogged' in session:
-        return redirect(url_for('profile', username=session['userLogged']))
-    elif request.method == 'POST' and request.form['username'] == "drag" and request.form['psw'] == "1234":
-        session['userLogged'] = request.form['username']
-        return redirect(url_for('profile', username=session['userLogged']))
-
-    return render_template('login.html', title="Авторизация")
-
-
 @app.route("/onuinfo/<string:onu>/catvon")
 def onu_catvon(onu):
     ''' Включить CATV порт '''
@@ -285,15 +271,6 @@ def onu_catvoff(onu):
     out = onurequest.onucatvoff()
             
     return redirect(f'/onuinfo/{onu}')
-
-
-@app.route("/profile/<username>")
-def profile(username):
-    ''' Профиль пользователя, в разработке '''
-    if 'userLogged' not in session or session['userLogged'] != username:
-        abort(401)
-
-    return f"Профиль пользователя: {username}"
 
 
 @app.route("/oltadd", methods=['POST', 'GET'])
