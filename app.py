@@ -12,6 +12,7 @@ from config import SNMP_READ_H, PATHDB, SNMP_READ_B, NETBOX, SNMP_CONF_H, NAMEDB
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{NAMEDB}'
+app.config['SECRET_KEY'] = 'asf09u23rpqdm0123r'
 
 db = SQLAlchemy(app)
 
@@ -325,4 +326,4 @@ def olt_delete(number):
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host=IP_SRV, port=PORT_SRV)
+    app.run(debug=True, host=IP_SRV, port=PORT_SRV)

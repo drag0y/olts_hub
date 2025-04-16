@@ -39,14 +39,10 @@ class OltInfo:
         statuslist = []
         out_tree2 = []
         downlist = []
-#        out_tree = ["ОНУ ; Сигнал в сторону ОНУ; Сигнал в сторону ОЛТа"]
         tree_in = []
         tree_out = []
         onulist2 = []
-#        level_rx = ""
-#        level_tx = ""
         status_tree = {}
-#        level_tree = {}
 
         parse_state = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<onustate>\d+|-\d+)'
         parse_down = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<downcose>\d+|-\d+)'
@@ -57,15 +53,12 @@ class OltInfo:
             oid_rx_olt = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.1"
             oid_state = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.15"
             oid_cose = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.25"
-#            pon_total = "64"
 
         if "gpon" in self.pontype:
             oid_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.4"
             oid_rx_olt = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.6"
             oid_state = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.15"
             oid_cose = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.24"
-#            pon_total = "128"
-
 
 
     # ---- Ищем в базе мак ОНУ для сопоставления с индексами
@@ -86,7 +79,8 @@ class OltInfo:
             onureplace.update({indexonu_out: onu_out})
     # ---- Получение статуса с дерева
 
-        if PF_HUAWEI in self.platform and "gpon" in self.pontype:
+        if PF_HUAWEI: #in self.platform and "gpon" in self.pontype:
+            print("STARTED GET PORT STATUS")
 
             cmd_onu_state = f"snmpwalk -c {SNMP_READ_H} -v2c {self.olt_ip} {oid_state}.{self.port_oid}"
             cmd = cmd_onu_state.split()
@@ -192,10 +186,7 @@ class OltInfo:
         
         for i in range(len(onulist2)):
             onu = str(onulist2[i])
-#            out_tree.append(str(onureplace[onu]) + " ; " + str(tree_in[i]) + " ; " + str(tree_out[i]))
             status_tree.update({onureplace[onu]: {'onustatus': 'ONLINE', 'levelin': tree_in[i], 'levelout': tree_out[i]}})
-
-#        result_tree = []
 
         return status_tree
 
@@ -208,8 +199,6 @@ class OltInfo:
         statuslist = []
         downlist = []
 
-#        out_tree = ""
-#        out_tree2 = []
         onustatus = ""
         downcose = ""
 
@@ -222,11 +211,9 @@ class OltInfo:
             oid_state = "1.3.6.1.2.1.2.2.1.8"
             oid_cose = "1.3.6.1.4.1.3320.101.11.1.1.11"
             snmp_rx_onu = "1.3.6.1.4.1.3320.101.10.5.1.5"
-#            pon_total = "64"
         if "gpon" in self.pontype:
             oid_state = "-"
             oid_cose = "-"
-#            pon_total = "128"
 
         parse_state = r'INTEGER: (?P<onustate>\d+|-\d+)'
         parse_down = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<downcose>\d+|-\d+)'
@@ -351,7 +338,6 @@ class OltInfo:
                         rx_onu = match.group('level')
                         level_onu = int(rx_onu)/10
 
-#                        out_treeinfo.append(str(onu) + " ; " + " 0 " + " ; " + str(level_onu))
                         status_tree.update({onu: {'onustatus': 'ONLINE', 'levelin': '0', 'levelout': level_onu}})
 
         conn.close()
