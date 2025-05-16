@@ -1,8 +1,22 @@
 import sqlite3
+import os
 
 from onumonitoring.bdcom_olts import BdcomGetOltInfo
 from onumonitoring.huawei_olts import HuaweiGetOltInfo
-from config import SNMP_READ_H, SNMP_READ_B, PF_HUAWEI, PF_BDCOM
+#from config import SNMP_READ_H, SNMP_READ_B, PF_HUAWEI, PF_BDCOM
+
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+SNMP_READ_H = os.getenv('SNMP_READ_H')
+SNMP_READ_B = os.getenv('SNMP_READ_B')
+SNMP_CONF_H = os.getenv('SNMP_CONF_H')
+SNMP_CONF_B = os.getenv('SNMP_CONF_B')
+PF_HUAWEI = os.getenv('PF_HUAWEI')
+PF_BDCOM = os.getenv('PF_BDCOM')
+
 
 
 class WorkDB:

@@ -2,13 +2,53 @@ from flask import Flask, render_template, url_for, request, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3
 import ipaddress
+import os
 
 from onumonitoring.oltinfo import OltInfo
 from onumonitoring.findonu import FindOnu
 from onumonitoring.get_olts import get_netbox_olt_list, olts_update, update_olt, delete_olt
 from onumonitoring.work_db import WorkDB
-from config import SNMP_READ_H, PATHDB, SNMP_READ_B, NETBOX, SNMP_CONF_H, NAMEDB, IP_SRV, PORT_SRV, PF_HUAWEI, PF_BDCOM
 
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+# Имя базы и путь до неё, папка должна быть instance, иначе не будет работать
+NAMEDB = "onulist.db"
+PATHDB = f"instance/{NAMEDB}"
+
+IP_SRV = os.getenv('IP_SRV')
+PORT_SRV = os.getenv('PORT_SRV')
+NETBOX = os.getenv('NETBOX')
+
+SNMP_READ_H = os.getenv('SNMP_READ_H')
+SNMP_READ_B = os.getenv('SNMP_READ_B')
+SNMP_CONF_H = os.getenv('SNMP_CONF_H')
+SNMP_CONF_B = os.getenv('SNMP_CONF_B')
+PF_HUAWEI = os.getenv('PF_HUAWEI')
+PF_BDCOM = os.getenv('PF_BDCOM')
+DEBUG = os.getenv('DEBUG')
+
+load_dotenv()
+# NetBox
+TOKEN_API = os.getenv('API_KEY')
+HEADERS = {"Authorization": TOKEN_API}
+
+# Имя базы и путь до неё, папка должна быть instance, иначе не будет работать
+NAMEDB = "onulist.db"
+PATHDB = f"instance/{NAMEDB}"
+
+IP_SRV = os.getenv('IP_SRV')
+PORT_SRV = os.getenv('PORT_SRV')
+NETBOX = os.getenv('NETBOX')
+
+SNMP_READ_H = os.getenv('SNMP_READ_H')
+SNMP_READ_B = os.getenv('SNMP_READ_B')
+SNMP_CONF_H = os.getenv('SNMP_CONF_H')
+SNMP_CONF_B = os.getenv('SNMP_CONF_B')
+PF_HUAWEI = os.getenv('PF_HUAWEI')
+PF_BDCOM = os.getenv('PF_BDCOM')
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{NAMEDB}'
@@ -134,7 +174,7 @@ def olt_info(number):
 
     ports.sort()
 
-    return render_template("oltinfo.html", olts_list=olts_list, ports=ports, nb=NETBOX)
+    return render_template("oltinfo.html", olts_list=olts_list, ports=ports)
 
 
 @app.route("/oltinfo/<int:number>/<string:port>")
@@ -326,4 +366,5 @@ def olt_delete(number):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host=IP_SRV, port=PORT_SRV)
+    print(IP_SRV, PORT_SRV)
+    app.run(debug=DEBUG, host=IP_SRV, port=PORT_SRV)

@@ -1,10 +1,11 @@
 # Конфигурация сервера
 IP_SRV = "0.0.0.0"
 PORT_SRV = "5000"
+DEBUG = "False"
 #
 # Конфигурация для работы с NetBox
 NETBOX = "1" # 1 - работаем через НетБокс, 2 - добавляем ОЛТы в ручную, без НетБокса
-HEADERS = {"Authorization": "Token "} 
+API_KEY = "Token "
 EPON_TAG = "epon" 
 GPON_TAG = "gpon"
 URLNB = "https://" 

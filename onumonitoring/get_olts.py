@@ -2,17 +2,45 @@ import requests
 import json
 import ipaddress
 import sqlite3
+import os
 
 from onumonitoring.bdcom_olts import BdcomGetOltInfo
 from onumonitoring.huawei_olts import HuaweiGetOltInfo
 from onumonitoring.work_db import WorkDB, WorkingDB
-from config import URLGETEPON, URLGETGPON, GPON_TAG, EPON_TAG, HEADERS, PATHDB, SNMP_READ_H, SNMP_READ_B, PF_HUAWEI, PF_BDCOM
+
+from dotenv import load_dotenv
+
+
+load_dotenv()
+# NetBox
+TOKEN_API = os.getenv('API_KEY')
+HEADERS = {"Authorization": TOKEN_API}
+
+# Имя базы и путь до неё, папка должна быть instance, иначе не будет работать
+NAMEDB = "onulist.db"
+PATHDB = f"instance/{NAMEDB}"
+
+IP_SRV = os.getenv('IP_SRV')
+PORT_SRV = os.getenv('PORT_SRV')
+NETBOX = os.getenv('NETBOX')
+#
+EPON_TAG = os.getenv('EPON_TAG')
+GPON_TAG = os.getenv('GPON_TAG')
+URLNB = "https://nb.agronet.com.ru"
+URLGETEPON = f"{URLNB}/api/dcim/devices/?q=&tag={EPON_TAG}"
+URLGETGPON = f"{URLNB}/api/dcim/devices/?q=&tag={GPON_TAG}"
+#
+SNMP_READ_H = os.getenv('SNMP_READ_H')
+SNMP_READ_B = os.getenv('SNMP_READ_B')
+SNMP_CONF_H = os.getenv('SNMP_CONF_H')
+SNMP_CONF_B = os.getenv('SNMP_CONF_B')
+PF_HUAWEI = os.getenv('PF_HUAWEI')
+PF_BDCOM = os.getenv('PF_BDCOM')
 
 
 def get_netbox_olt_list():
 # --- Функция опрашивает NetBox по тегам, создаёт БД, обнуляя старую если есть.
 # --- И дальше передаёт данные об ОЛТе в другие функции для опроса
-
     out_epon_olts = []
     out_gpon_olts = []
 
@@ -31,7 +59,6 @@ def get_netbox_olt_list():
         conn = sqlite3.connect(PATHDB)
         cursor = conn.cursor()
         query_ports = "INSERT into olts(hostname, ip_address, platform, pon) values (?, ?, ?, ?)"
-
         for parse_olts_list in olts_list["results"]:
             olt_name = []
             olt_addr = []
