@@ -26,7 +26,7 @@ NETBOX = os.getenv('NETBOX')
 #
 EPON_TAG = os.getenv('EPON_TAG')
 GPON_TAG = os.getenv('GPON_TAG')
-URLNB = "https://nb.agronet.com.ru"
+URLNB = os.getenv('URLNB')
 URLGETEPON = f"{URLNB}/api/dcim/devices/?q=&tag={EPON_TAG}"
 URLGETGPON = f"{URLNB}/api/dcim/devices/?q=&tag={GPON_TAG}"
 #
