@@ -63,6 +63,18 @@
 	
                 </div>
 	    </li>
+        <li class="list-group-item d-flex justify-content-between lh-sm">
+            <div>
+                <h6 class="my-0 text-black">Незарегистрированные ОНУ:</h6><br>
+            {% for u in unregonu %}
+
+            <span class="text-body-secondary">MAC/SN: {{ u.mac }}; Порт ОЛТа: {{ u.oltport }}</span><br>
+
+            {% endfor %}
+
+
+            </div>
+        </li>
 
         </ul>
 

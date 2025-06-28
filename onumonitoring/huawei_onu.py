@@ -1,10 +1,13 @@
-import subprocess
 import re
 import sqlite3
 
+from onumonitoring.snmpwalk import SnmpWalk
+
 
 class HuaweiGetOnuInfo:
-    ''' Класс для работы с ОНУ Huawei '''
+    ''' 
+    Класс для работы с ОНУ Huawei 
+    '''
     def __init__(self, hostname, pon_type, olt_ip, portoid, onuid, snmp_com, pathdb, snmp_conf):
         self.hostname = hostname
         self.pon_type = pon_type
@@ -17,169 +20,168 @@ class HuaweiGetOnuInfo:
 
 
     def getonustatus(self):
-        # Определение статуса ОНУ (В сети/Не в сети)
+        ''' 
+        Определение статуса ОНУ (В сети/Не в сети)
+        '''
         if "epon" in self.pon_type:
             ponstateoid = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.15"
-
-        if "gpon" in self.pon_type:
+        elif "gpon" in self.pon_type:
             ponstateoid = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.15"
 
-        cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {ponstateoid}.{self.portoid}.{self.onuid}"
-        cmd_to_subprocess = cmd.split()
+        parse_state = r'INTEGER: (?P<onustate>\d)'
 
-        process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-        data = process.communicate(timeout=5)
-        data2 = data[-2].decode('utf-8')
-        onu_state = data2.split()
-        onu_state_out = onu_state[-1]
+        onustateoid = f'{ponstateoid}.{self.portoid}.{self.onuid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onustateoid)
+        onustate = snmpget.snmpget()
 
+        for l in onustate:
+            match = re.search(parse_state, l)
+            if match:
+                onu_state_out = match.group('onustate')
 
         return onu_state_out
 
 
     def getlanstatus(self):
-        # Метод определяет статус LAN порта
-        try:
-            if "epon" in self.pon_type:
-                ethstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.81.1.31"
+        ''' 
+        Метод определяет статус LAN порта
+        '''
+        lan_out = "Не удалось определить"
+        if "epon" in self.pon_type:
+            ethstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.81.1.31"
+        elif "gpon" in self.pon_type:
+            ethstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.62.1.22"
 
-            if "gpon" in self.pon_type:
-                ethstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.62.1.22"
+        parse_lanstate = r'INTEGER: (?P<lanstate>\d)'
 
+        lanstateoid = f'{ethstatusoid}.{self.portoid}.{self.onuid}.1'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, lanstateoid)
+        lanstate = snmpget.snmpget()
 
-            cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {ethstatusoid}.{self.portoid}.{self.onuid}.1"
-            cmd_to_subprocess = cmd.split()
-            process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-            data = process.communicate(timeout=3)
-            data2 = data[-2].decode('utf-8')
-            lanstatus = data2.split()
-
-            if lanstatus[-1] == '1':
-                lan_out = "UP"
-            elif lanstatus[-1] == '2':
-                lan_out = "DOWN"
-            else:
-                lan_out = "Не удалось определить"
-
-        except subprocess.TimeoutExpired:
-            lan_out = "Не удалось определить"
+        for l in lanstate:
+            match = re.search(parse_lanstate, l)
+            if match:
+                lanstatus = match.group('lanstate')
+                if lanstatus == '1':
+                    lan_out = "UP"
+                elif lanstatus == '2':
+                    lan_out = "DOWN"
+                else:
+                    lan_out = "Не удалось определить"
 
         return lan_out
 
+
     def getcatvstate(self):
-        # Метод определяет статус CATV порта
-        try:
-            if self.pon_type == "epon":
-                catv_out = "Не поддерживается"
-                catv_level = "Не поддерживается"
-            if self.pon_type == "gpon":
-                catvstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.63.1.2"
-                cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {catvstatusoid}.{self.portoid}.{self.onuid}.1"
-                cmd_to_subprocess = cmd.split()
+        ''' 
+        Метод определяет статус CATV порта
+        '''
+        catv_out = "Неизвестно"
+        catv_level = "0"
+        if self.pon_type == "epon":
+            catv_out = "Не поддерживается"
+            catv_level = "Не поддерживается"
+        elif self.pon_type == "gpon":
+            catvstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.63.1.2"
 
-                process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-                data = process.communicate(timeout=3)
-                data2 = data[-2].decode('utf-8')
-                catvstatus = data2.split()
+            parse_catvstate = r'INTEGER: (?P<catvstate>\d)'
+            catvstateoid = f'{catvstatusoid}.{self.portoid}.{self.onuid}.1'
+            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, catvstateoid)
+            catvstate = snmpget.snmpget()
 
-                if catvstatus[-1] == '1':
-                    catv_out = "ON"
-                    catv_level = self.getcatvlevel()
-                elif catvstatus[-1] == '2':
-                    catv_out = "OFF"
-                    catv_level = self.getcatvlevel()
-                else:
-                    catv_out = "Не удалось определить"
-                    catv_level = "0"
-
-        except subprocess.TimeoutExpired:
-                catv_out = "Не удалось определить"
-                catv_level = "0"
+            for l in catvstate:
+                match = re.search(parse_catvstate, l)
+                if match:
+                    lanstatus = match.group('catvstate')
+                    if catvstate == '1':
+                        catv_out = "ON"
+                        catv_level = self.getcatvlevel()
+                    elif catvstate == '2':
+                        catv_out = "OFF"
+                        catv_level = self.getcatvlevel()
+                    else:
+                        catv_out = "Неизвестно"
+                        catv_level = "0"
 
         return catv_out, catv_level
 
     
     def getcatvlevel(self):
-        # Метод определяет уровень сигнала CATV порта
-        ''' Метод для получения уровня сигнала CATV порта '''
-        parse_data = r'INTEGER: (?P<level>-.+)'
+        ''' 
+        Метод для получения уровня сигнала CATV порта 
+        '''
+        parse_catvlevel = r'INTEGER: (?P<level>-.+)'
         level_catv = "0"
 
         snmp_rx_catv = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.7"
 
-        cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {snmp_rx_catv}.{self.portoid}.{self.onuid}"
+        catvleveloid = f'{snmp_rx_catv}.{self.portoid}.{self.onuid}'
 
-        cmd_to_subprocess = cmd.split()
-        process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, catvleveloid)
+        catvlevel = snmpget.snmpget()
 
-        while True:
-            output = process.stdout.readline()
-
-            if output == b'' and process.poll() is not None:
-                break
-
-            if output:
-                outlist = output.decode('utf-8')
-                match = re.search(parse_data, outlist)
-                if match:
-                    rx_catv = match.group('level')
-                    level_catv = int(rx_catv)/100
+        for l in catvlevel:
+            print(l)
+            match = re.search(parse_catvlevel, l)            
+            if match:
+                rx_catv = match.group('level')
+                level_catv = int(rx_catv)/100
 
         return level_catv
 
 
     def getlastdown(self):
-        # Метод определяет причину последнего отключения ОНУ
+        ''' 
+        Метод определяет причину последнего отключения ОНУ
+        '''
+        lastdownonu = "Неизвестно"
         if "epon" in self.pon_type:
             lastdownoid = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.25"
-
-        if "gpon" in self.pon_type:
+        elif "gpon" in self.pon_type:
             lastdownoid = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.24"
 
-        cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {lastdownoid}.{self.portoid}.{self.onuid}"
-        cmd_to_subprocess = cmd.split()
+        parse_onulastdown = r'INTEGER: (?P<onulastdown>.+)'
 
-        process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-        data = process.communicate(timeout=5)
-        data2 = data[-2].decode('utf-8')
-        last_down_onu = data2.split()
+        onulastdownoid = f'{lastdownoid}.{self.portoid}.{self.onuid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onulastdownoid)
+        onulastdown = snmpget.snmpget()
 
-        if last_down_onu[-1] == '13':
-            lastdownonu = "Power-Off"
-        elif last_down_onu[-1] == '1' or '2':
-            lastdownonu = "LOS"
-        else:
-            lastdownonu = "Неизвестно"
+        for l in onulastdown:
+            print(l)
+            match = re.search(parse_onulastdown, l)
+            if match:
+                last_down_onu = match.group('onulastdown')
+                if last_down_onu == '13':
+                    lastdownonu = "Power-Off"
+                elif last_down_onu == '1' or '2':
+                    lastdownonu = "LOS"
+                else:
+                    lastdownonu = "Неизвестно"
 
         return lastdownonu
 
 
     def getonuuptime(self):
-        # Метод определяет время включения ОНУ
+        ''' 
+        Метод определяет время включения ОНУ
+        '''
         timelist = "Нет времени отключения"
-
-        parse_data = r'STRING: "(?P<regtime>\S+ \S+)"'
+        parse_uptime = r'STRING: "(?P<regtime>\S+ \S+)"'
 
         if "epon" in self.pon_type:
             datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.103.1.6"
 
             i = 9
             while i > 0:
-                cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {datatimeoid}.{self.portoid}.{self.onuid}.{i}"
-                cmd_to_subprocess = cmd.split()
-                process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
+                uptimeoid = f'{datatimeoid}.{self.portoid}.{self.onuid}.{i}'
+                snmpget = SnmpWalk(self.olt_ip, self.snmp_com, uptimeoid)
+                onuuptime = snmpget.snmpget()
 
-                while True:
-                    output = process.stdout.readline()
-
-                    if output == b'' and process.poll() is not None:
-                        break
-
-                    if output:
-                        outlist = output.decode('utf-8')
-                        match = re.search(parse_data, outlist)
-                        if match:
-                            timelist = match.group('regtime')
+                for l in onuuptime:
+                    print(l)
+                    match = re.search(parse_uptime, l)
+                    if match:
+                        timelist = match.group('regtime')
 
                 i = i - 1
                 if timelist != "Нет времени отключения":
@@ -187,25 +189,18 @@ class HuaweiGetOnuInfo:
 
             datatime = timelist.replace("Z", "+03:00")
 
-
-        if "gpon" in self.pon_type:
+        elif "gpon" in self.pon_type:
             datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.101.1.6"
+            
+            uptimeoid = f'{datatimeoid}.{self.portoid}.{self.onuid}'
+            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, uptimeoid)
+            onuuptime = snmpget.snmpget()
 
-            cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {datatimeoid}.{self.portoid}.{self.onuid}"
-            cmd_to_subprocess = cmd.split()
-            process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-
-            while True:
-                output = process.stdout.readline()
-
-                if output == b'' and process.poll() is not None:
-                    break
-
-                if output:
-                    outlist = output.decode('utf-8')
-                    match = re.search(parse_data, outlist)
-                    if match:
-                        timelist = match.group('regtime')
+            for l in onuuptime:
+                print(l)
+                match = re.search(parse_uptime, l)
+                if match:
+                    timelist = match.group('regtime')
 
             datatime = timelist.replace("Z", "+03:00")
 
@@ -215,88 +210,83 @@ class HuaweiGetOnuInfo:
     def gettimedown(self):
         # Метод определяет время последнего отключения
         timelist = "Нет времени отключения"
-
-        parse_data = r'STRING: "(?P<regtime>\S+ \S+)"'
+        parse_downtime = r'STRING: "(?P<downtime>\S+ \S+)"'
 
         if "epon" in self.pon_type:
             datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.103.1.7"
 
             i = 9
             while i > 0:
-                cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {datatimeoid}.{self.portoid}.{self.onuid}.{i}"
-                cmd_to_subprocess = cmd.split()
-                process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
+                timedownoid = f'{datatimeoid}.{self.portoid}.{self.onuid}.{i}'
+                snmpget = SnmpWalk(self.olt_ip, self.snmp_com, timedownoid)
+                onudowntime = snmpget.snmpget()
 
-                while True:
-                    output = process.stdout.readline()
-
-                    if output == b'' and process.poll() is not None:
-                        break
-
-                    if output:
-                        outlist = output.decode('utf-8')
-                        match = re.search(parse_data, outlist)
-                        if match:
-                            timelist = match.group('regtime')
+                for l in onudowntime:
+                    print(l)
+                    match = re.search(parse_downtime, l)
+                    if match:
+                        timelist = match.group('downtime')
 
                 i = i - 1
                 if timelist != "Нет времени отключения":
                     break
 
-
             datatime = timelist.replace("Z", "+03:00")
 
-        if "gpon" in self.pon_type:
+        elif "gpon" in self.pon_type:
             datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.101.1.7"
 
-            cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {datatimeoid}.{self.portoid}.{self.onuid}"
-            cmd_to_subprocess = cmd.split()
-            process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
+            timedownoid = f'{datatimeoid}.{self.portoid}.{self.onuid}'
+            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, timedownoid)
+            onudowntime = snmpget.snmpget()
 
-            while True:
-                output = process.stdout.readline()
-
-                if output == b'' and process.poll() is not None:
-                    break
-
-                if output:
-                    outlist = output.decode('utf-8')
-                    match = re.search(parse_data, outlist)
-                    if match:
-                        timelist = match.group('regtime')
+            for l in onudowntime:
+                print(l)
+                match = re.search(parse_downtime, l)
+                if match:
+                    timelist = match.group('downtime')
 
             datatime = timelist.replace("Z", "+03:00")
 
         return datatime
 
+
     def getonulevel(self):
-        # Метод определяет уровни сигнала ОНУ
+        ''' 
+        Метод определяет уровни сигнала ОНУ
+        '''
         if "epon" in self.pon_type:
-            snmp_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.5"
-            snmp_rx_olt = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.1"
+            rx_onu_oid = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.5"
+            rx_olt_oid = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.1"
 
         if "gpon" in self.pon_type:
-            snmp_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.4"
-            snmp_rx_olt = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.6"
-
+            rx_onu_oid = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.4"
+            rx_olt_oid = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.6"
+        
+        parse_level = r'INTEGER: (?P<level>.+)'
         # ---- Получение уровня сигнала с ОНУ
-        cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {snmp_rx_onu}.{self.portoid}.{self.onuid}"
-        cmd_to_subprocess = cmd.split()
-        process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-        data = process.communicate(timeout=2)
-        data2 = data[-2].decode('utf-8')
-        rx_onu = data2.split()
-        level_onu = int(rx_onu[-1])/100
+
+        rxonuoid = f'{rx_onu_oid}.{self.portoid}.{self.onuid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, rxonuoid)
+        rxonu = snmpget.snmpget()
+
+        for l in rxonu:
+            match = re.search(parse_level, l)
+            if match:
+                rx_onu = match.group('level')
+                level_onu = int(rx_onu)/100
 
         # ---- Получение результата уровня в сторону ОЛТа
+        
+        rxoltoid = f'{rx_olt_oid}.{self.portoid}.{self.onuid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, rxoltoid)
+        rxolt = snmpget.snmpget()
 
-        cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {snmp_rx_olt}.{self.portoid}.{self.onuid}"
-        cmd_to_subprocess = cmd.split()
-        process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-        data = process.communicate(timeout=2)
-        data2 = data[-2].decode('utf-8')
-        rx_olt = data2.split()
-        level_olt = int(rx_olt[-1])/100-100
+        for l in rxolt:
+            match = re.search(parse_level, l)
+            if match:
+                rx_olt = match.group('level')
+                level_olt = int(rx_olt)/100-100
 
         return level_onu, format(level_olt, '.2f')
 
@@ -321,11 +311,9 @@ class HuaweiGetOnuInfo:
             oid_cose = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.24"
             pon_total = "128"
 
-
         parse_state = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<onustate>\d+|-\d+)'
         parse_down = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<downcose>\d+|-\d+)'
     
-
         # ---- Ищем порт олта
 
         conn = sqlite3.connect(self.pathdb)
@@ -359,53 +347,35 @@ class HuaweiGetOnuInfo:
 
             onureplace.setdefault(indexonu_out)
             onureplace.update({indexonu_out: onu_out})
-
         
         # ---- Получение статуса с дерева
-        cmd_onu_state = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {oid_state}.{self.portoid}"
-        cmd = cmd_onu_state.split()
+        stateonuoid = f'{oid_state}.{self.portoid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, stateonuoid)
+        statelist = snmpget.snmpget()
+        down_reason = {}
+        
+        for l in statelist:
+            match = re.search(parse_state, l)
+            if match:
+                onuid = match.group('onuid')
+                onustatus = match.group('onustate')
+                onustatus = onustatus.replace("1", "ONLINE").replace("2", "OFFLINE").replace("-1", "OFFLINE")
 
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
-
-        while True:
-            output = process.stdout.readline()
-
-            if output == b'' and process.poll() is not None:
-                break
-
-            if output:
-                outlist = output.decode('utf-8')
-                match = re.search(parse_state, outlist)
-                if match:
-                    onuid = match.group('onuid')
-                    onustatus = match.group('onustate')
-                    onustatus = onustatus.replace("1", "ONLINE").replace("2", "OFFLINE").replace("-1", "OFFLINE")
-
-                    onulist.append(onuid)
-                    statuslist.append(onustatus)
-
+                onulist.append(onuid)
+                statuslist.append(onustatus)
     
         # ---- Получение причины отключения ONU
-        cmd_down_cose = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {oid_cose}.{self.portoid}"
-        cmd = cmd_down_cose.split()
+        downcoseoid = f'{oid_cose}.{self.portoid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, downcoseoid)
+        downcoselist = snmpget.snmpget()
+        down_reason = {}
 
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
-
-        while True:
-            output = process.stdout.readline()
-
-            if output == b'' and process.poll() is not None:
-                break
-
-            if output:
-                outlist = output.decode('utf-8')
-                match = re.search(parse_down, outlist)
-                if match:
-                    downcose = match.group('downcose')
-                    downcose = downcose.replace("-1", "Неизвестно").replace("18", "RING").replace("13", "POWER-OFF").replace("2", "LOS").replace("1", "LOS").replace("3", "LOS")
-                    downlist.append(downcose)
+        for l in downcoselist:
+            match = re.search(parse_down, l)
+            if match:
+                downcose = match.group('downcose')
+                downcose = downcose.replace("-1", "Неизвестно").replace("18", "RING").replace("13", "POWER-OFF").replace("2", "LOS").replace("1", "LOS").replace("3", "LOS")
+                downlist.append(downcose)
 
         # ----
         for i in range(len(onulist)):
@@ -430,11 +400,11 @@ class HuaweiGetOnuInfo:
         level_tx = ""
 
         if "epon" in self.pon_type:
-            snmp_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.5"
-            snmp_rx_olt = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.1"
+            rx_onu_oid = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.5"
+            rx_olt_oid = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.1"
         if "gpon" in self.pon_type:
-            snmp_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.4"
-            snmp_rx_olt = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.6"
+            rx_onu_oid = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.4"
+            rx_olt_oid = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.6"
 
         parse_tree = r'(\d+){10}.(?P<onuid>\S+) .+(?P<treelevel>-\S+)'
 
@@ -468,55 +438,38 @@ class HuaweiGetOnuInfo:
             onureplace.update({indexonu_out: onu_out})
 
         # ---- Получение уровня сигнала с ОНУ
-        cmd_rx_onu = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {snmp_rx_onu}.{self.portoid}"
-        cmd = cmd_rx_onu.split()
+        rxonuoid = f'{rx_onu_oid}.{self.portoid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, rxonuoid)
+        rxonu = snmpget.snmpget()
 
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        for l in rxonu:
+            match = re.search(parse_tree, l)
+            if match:
+                onuid = match.group('onuid')
+                level = match.group('treelevel')
+                level_rx = int(level)/100
 
-
-        while True:
-            output = process.stdout.readline()
-
-            if output == b'' and process.poll() is not None:
-                break
-
-            if output:
-                outlist = output.decode('utf-8')
-                match = re.search(parse_tree, outlist)
-                if match:
-                    onuid = match.group('onuid')
-                    level = match.group('treelevel')
-                    level_rx = int(level)/100
-
-                    onulist.append(onuid)
-                    tree_in.append(level_rx)
+                onulist.append(onuid)
+                tree_in.append(level_rx)
 
         # ---- Получение результата уровня в сторону ОЛТа
         parse_tree_sn = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<treelevel>\d+)'
 
-        cmd_rx_olt = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {snmp_rx_olt}.{self.portoid}"
-        cmd = cmd_rx_olt.split()
+        rxonuoid = f'{rx_olt_oid}.{self.portoid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, rxonuoid)
+        rxonu = snmpget.snmpget()
 
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        for l in rxonu:
+            match = re.search(parse_tree_sn, l)
+            if match:
+                onuid = match.group('onuid')
+                level = match.group('treelevel')
 
-        while True:
-            output = process.stdout.readline()
+                if len(level) == 4:
+                    level_tx2 = int(level)/100-100
+                    level_tx = format(level_tx2, '.2f')
 
-            if output == b'' and process.poll() is not None:
-                break
-
-            if output:
-                outlist = output.decode('utf-8')
-                match = re.search(parse_tree_sn, outlist)
-                if match:
-                    onuid = match.group('onuid')
-                    level = match.group('treelevel')
-
-                    if len(level) == 4:
-                        level_tx2 = int(level)/100-100
-                        level_tx = format(level_tx2, '.2f')
-
-                        tree_out.append(level_tx)
+                    tree_out.append(level_tx)
 
         # ----
         for i in range(len(onulist)):
@@ -572,4 +525,3 @@ class HuaweiGetOnuInfo:
                 catv_out = "Не удалось определить"
 
         return catv_out
-

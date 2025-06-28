@@ -1,4 +1,5 @@
 from flask import Flask, render_template, url_for, request, redirect, flash
+from flask_restful import Api, Resource
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3
 import ipaddress
@@ -51,6 +52,7 @@ PF_HUAWEI = os.getenv('PF_HUAWEI')
 PF_BDCOM = os.getenv('PF_BDCOM')
 
 app = Flask(__name__)
+api = Api()
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{NAMEDB}'
 app.config['SECRET_KEY'] = 'asf09u23rpqdm0123r'
 
@@ -81,6 +83,22 @@ class AboutOlt(db.Model):
         return '<AboutOlt %r>' % self.number
 
 
+
+class Main_Api(Resource):
+    def get(self, onu):
+#        onuinfo = {onu: {"state": "Online", "level": -666}}
+
+        onurequest = FindOnu(onu, "epon", PATHDB)
+        out, test_out = onurequest.surveyonu()
+
+        return test_out
+#        return onuinfo
+
+
+api.add_resource(Main_Api, "/api/onuinfo/<string:onu>")
+api.init_app(app)
+
+
 @app.route("/", methods=['POST', 'GET'])
 def index():
     ''' Главная страница, получение через строку поиска мака или серийника ОНУ
@@ -92,17 +110,16 @@ def index():
             onu = searchonu.lower().replace(' ','').replace(':', '').replace('.', '').replace('hwtc', '48575443').replace('-', '')
             if len(onu) == 12:
             
-                onurequest = FindOnu(onu, "epon", PATHDB)
-                out = onurequest.surveyonu()
-
-                return render_template("/onuinfo.html", out=out, onu=onu)
+                onurequest = FindOnu(onu, PATHDB)
+                onu_info = onurequest.onuinfo()
+                return render_template("/onuinfo.html", onu_info=onu_info)
 
             elif len(onu) == 16:
             
-                onurequest = FindOnu(onu, "gpon", PATHDB)
-                out = onurequest.surveyonu()
+                onurequest = FindOnu(onu, PATHDB)
+                onu_info = onurequest.onuinfo()
 
-                return render_template("/onuinfo.html", out=out, onu=onu)
+                return render_template("/onuinfo.html", onu_info=onu_info)
            
             else:
                 onu = f"Неправильный мак или серийный номер: {onu}"
@@ -123,33 +140,15 @@ def help_page():
     return render_template("help.html")
 
 
-@app.route("/onuinfo/<string:onu>")
-def onu_info(onu):
-    ''' Страница информации об ОНУ '''
-    try:
-        onu = onu.lower().replace(' ','').replace(':', '').replace('.', '').replace('hwtc', '48575443').replace('-', '')
-        if len(onu) == 12:
+@app.route('/onuinfo/<string:onu>')
+def onuinfo(onu):
+    '''
+    Тестовая функция вывода инфы об ОНУ
+    '''
+    onurequest = FindOnu(onu, PATHDB)
+    onu_info = onurequest.onuinfo()
 
-            onurequest = FindOnu(onu, "epon", PATHDB)
-            out = onurequest.surveyonu()
-
-            return render_template("/onuinfo.html", out=out, onu=onu)
-
-
-        elif len(onu) == 16:
-
-            onurequest = FindOnu(onu, "gpon", PATHDB)
-            out = onurequest.surveyonu()
-
-            return render_template("/onuinfo.html", out=out, onu=onu)
-
-        else:
-            onu = f"Неправильный мак или серийный номер: {onu}"
-            return render_template("/onunotfound.html", onu=onu)
-
-    except AttributeError:
-        onu = f"Ону {onu} не найдена"
-        return render_template("/onunotfound.html", onu=onu)
+    return render_template('/onuinfo.html', onu_info=onu_info)
 
 
 @app.route("/oltinfo/<int:number>")
@@ -164,6 +163,16 @@ def olt_info(number):
             if i.ip_address == olts_list.ip_address:
                 ports.append(i.ponport)
 
+        oltinfo_params = {
+        "pathdb": PATHDB,
+        "olt_ip": olts_list.ip_address,
+        "olt_port": '',
+        "platform": olts_list.platform,
+        "pontype": olts_list.pon,
+        }
+        olt_info = OltInfo(**oltinfo_params)
+        unregonu = olt_info.hwunregonu()
+
     if PF_BDCOM in olts_list.platform:
         for i in port_list:
             if i.ip_address == olts_list.ip_address:
@@ -171,10 +180,11 @@ def olt_info(number):
                     pass
                 else:
                     ports.append(i.ponport)
+                    unregonu = []
 
     ports.sort()
 
-    return render_template("oltinfo.html", olts_list=olts_list, ports=ports)
+    return render_template("oltinfo.html", olts_list=olts_list, ports=ports, unregonu=unregonu)
 
 
 @app.route("/oltinfo/<int:number>/<string:port>")
@@ -200,31 +210,6 @@ def olt_port_info(number, port):
         return redirect(f"/oltinfo/{number}")
 
 
-@app.route("/leveltree/<string:onu>")
-def level_tree(onu):
-    ''' Страница информации о дереве '''
-    if len(onu) == 12:
-        out = ['Ошибка']
-        outstate = ['Ошибка']
-        onurequest = FindOnu(onu, "epon", PATHDB)
-        out = onurequest.surveytreelevel()
-        outstate = onurequest.surveytree()
-
-        return render_template("/leveltree.html", out=out, outstate=outstate)
-
-    elif len(onu) == 16:
-
-        onurequest = FindOnu(onu, "gpon", PATHDB)
-        out = onurequest.surveytreelevel()
-        outstate = onurequest.surveytree()
-
-        return render_template("/leveltree.html", out=out, outstate=outstate)
-
-
-    else:
-        return render_template("index.html")
-
-
 @app.route("/oltinfo/<int:number>/update")
 def olt_update(number):
     ''' Опрос конкретного ОЛТа '''
@@ -233,9 +218,6 @@ def olt_update(number):
     flash("ОЛТ опрошен")
     
     return redirect("/")
-
-#    except sqlite3.OperationalError: 
-#        return render_template("oltupdateerror.html")
 
 
 @app.route("/oltslistupdate")
@@ -275,9 +257,6 @@ def oltsupdate():
 
     return redirect('/')
    
-#    except sqlite3.OperationalError:
-#        return render_template("oltupdateerror.html")
-
 
 @app.route("/doubleonu")
 def doubleonu():
@@ -366,5 +345,4 @@ def olt_delete(number):
 
 
 if __name__ == "__main__":
-    print(IP_SRV, PORT_SRV)
     app.run(debug=DEBUG, host=IP_SRV, port=PORT_SRV)

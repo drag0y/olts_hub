@@ -1,6 +1,7 @@
-import subprocess
 import re
 import sqlite3
+
+from onumonitoring.snmpwalk import SnmpWalk
 
 
 class BdcomGetOnuInfo:
@@ -19,26 +20,30 @@ class BdcomGetOnuInfo:
 
     def getonustatus(self):
         # Определение статуса ОНУ (В сети/Не в сети)
+        onu_state_out = 'Не удалось определить статус ОНУ, ОЛТ не отвечает'
         if "epon" in self.pon_type:
-            ponstateoid = "1.3.6.1.2.1.2.2.1.8"
+            portstateoid = "1.3.6.1.2.1.2.2.1.8"
 
-        if "gpon" in self.pon_type:
-            ponstateoid = ""
+        elif "gpon" in self.pon_type:
+            portstateoid = ""
 
-        cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {ponstateoid}.{self.portoid}"
-        cmd_to_subprocess = cmd.split()
-
-        process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-        data = process.communicate(timeout=5)
-        data2 = data[-2].decode('utf-8')
-        onu_state = data2.split()
-        onu_state_out = onu_state[-1]
-
+        parse_state = "INTEGER: (?P<onustate>.+)"
+        onustateoid = f'{portstateoid}.{self.portoid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onustateoid)
+        onustate = snmpget.snmpget()
+        
+        for l in onustate:
+            match = re.search(parse_state, l)
+            if match:
+                onu_state_out = match.group('onustate')
+        print(onu_state_out)
         return onu_state_out
 
 
     def getlanstatus(self):
         # Метод определяет статус LAN порта
+        parse_lan_state = "INTEGER: (?P<lanstate>.+)"
+        lan_out = "Не удалось определить"
         try:
             if "epon" in self.pon_type:
                 ethstatusoid = "1.3.6.1.4.1.3320.101.12.1.1.8"
@@ -46,53 +51,54 @@ class BdcomGetOnuInfo:
             if "gpon" in self.pon_type:
                 ethstatusoid = ""
 
+            lanstateoid = f'{ethstatusoid}.{self.portoid}'
+            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, lanstateoid)
+            lanstatuslist = snmpget.snmpget()
 
-            cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {ethstatusoid}.{self.portoid}"
-            cmd_to_subprocess = cmd.split()
-            process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-            data = process.communicate(timeout=3)
-            data2 = data[-2].decode('utf-8')
-            lanstatus = data2.split()
-            if lanstatus[-1] == '1':
-                lan_out = "UP"
-            elif lanstatus[-1] == '2':
-                lan_out = "DOWN"
-            else:
-                lan_out = "Не удалось определить"
+            for l in lanstatuslist:
+                match = re.search(parse_lan_state, l)
+
+                if match:
+                    lanstatus = match.group('lanstate')
+                    lan_out = lanstatus.replace('1', 'UP').replace('2','DOWN')
+
+                else:
+                    lan_out = "Не удалось определить"
 
         except subprocess.TimeoutExpired:
             lan_out = "Не удалось определить"
-
+        print(lan_out)
         return lan_out
 
 
     def getlastdown(self):
         # Метод определяет причину последнего отключения ОНУ
         lastdownonu = "Неизвестно"
-
+        parse_reason = "INTEGER: (?P<downreason>.+)"
         if "epon" in self.pon_type:
             lastdownoid = "1.3.6.1.4.1.3320.101.11.1.1.11"
 
         if "gpon" in self.pon_type:
             lastdownoid = ""
 
-        cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {lastdownoid}.{self.portoltid}{self.onumacdec}"
-        cmd_to_subprocess = cmd.split()
+        downreasonoid = f'{lastdownoid}.{self.portoltid}{self.onumacdec}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, downreasonoid)
+        downreason = snmpget.snmpget()
 
-        process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-        data = process.communicate(timeout=5)
-        data2 = data[-2].decode('utf-8')
-        last_down_onu = data2.split()
+        for l in downreason:
+            match = re.search(parse_reason, l)
+            if match:
+                reason = match.group('downreason')
 
-        if last_down_onu[-1] == '9':
-            lastdownonu = "Power-Off"
-        elif last_down_onu[-1] == '8':
-            lastdownonu = "LOS"
-        else:
-            lastdownonu = "Неизвестно"
-
+                if reason == '9':
+                    lastdownonu = "Power-Off"
+                elif reason == '8':
+                    lastdownonu = "LOS"
+                else:
+                    lastdownonu = "Неизвестно"
 
         return lastdownonu
+
 
     def getonuuptime(self):
         # Метод определяет время включения ОНУ
@@ -105,99 +111,51 @@ class BdcomGetOnuInfo:
         if "gpon" in self.pon_type:
             datatimeoid = ""
 
-        cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {datatimeoid}.{self.portoid}"
-        cmd_to_subprocess = cmd.split()
-        process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-
-        while True:
-            out_time = process.stdout.readline()
-
-            if out_time == b'' and process.poll() is not None:
-                break
-
-            if out_time:
-                time_data = out_time.decode('utf-8')
-                match = re.search(parse_uptime, time_data)
+        uptimeoid = f'{datatimeoid}.{self.portoid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, uptimeoid)
+        uptime = snmpget.snmpget()
+        
+        for l in uptime:
+            match = re.search(parse_uptime, l)
                 
-                if match:
-                    onu_up_time = match.group('uptime')
-                    if int(onu_up_time) < 60:
-                        out_uptime = f"{onu_up_time} секунд(ы)"
-                    elif int(onu_up_time) > 60 and int(onu_up_time) < 3600:
-                        onu_up_time = int(onu_up_time)/60
-                        out_uptime = f"{int(onu_up_time)} минут(а)"
-                    else:
-                        onu_up_time = int(onu_up_time)/60/60
-                        out_uptime = f"{int(onu_up_time)} часа(ов)"
+            if match:
+                onu_up_time = match.group('uptime')
+                if int(onu_up_time) < 60:
+                    out_uptime = f"{onu_up_time} секунд(ы)"
+                elif int(onu_up_time) > 60 and int(onu_up_time) < 3600:
+                    onu_up_time = int(onu_up_time)/60
+                    out_uptime = f"{int(onu_up_time)} минут(а)"
+                else:
+                    onu_up_time = int(onu_up_time)/60/60
+                    out_uptime = f"{int(onu_up_time)} часа(ов)"
     
         return out_uptime
 
 
-    def gettimedown(self):
-        # Метод определяет время последнего отключения
-        timelist = "Нет времени отключения"
-
-        parse_data = r'STRING: "(?P<regtime>\S+ \S+)"'
-
-        if "epon" in self.pon_type:
-            datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.103.1.7"
-
-        if "gpon" in self.pon_type:
-            datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.101.1.7"
-
-        cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {datatimeoid}.{self.portoid}.{self.onuid}"
-        cmd_to_subprocess = cmd.split()
-        process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-
-        while True:
-            output = process.stdout.readline()
-
-            if output == b'' and process.poll() is not None:
-                break
-
-            if output:
-                outlist = output.decode('utf-8')
-                match = re.search(parse_data, outlist)
-                if match:
-                    timelist = match.group('regtime')
-
-        datatime = timelist.replace("Z", "+03:00")
-
-        return datatime
-
     def getonulevel(self):
         # Метод определяет уровни сигнала ОНУ
-        parse_data = r'INTEGER: (?P<level>.+)'
+        parse_level = r'INTEGER: (?P<level>.+)'
         level_onu = "0"
 
         if "epon" in self.pon_type:
-            snmp_rx_onu = ".1.3.6.1.4.1.3320.101.10.5.1.5"
-            snmp_rx_olt = ""
+            rx_onu_oid = ".1.3.6.1.4.1.3320.101.10.5.1.5"
+            rx_olt_oid = ""
 
         if "gpon" in self.pon_type:
-            snmp_rx_onu = ""
-            snmp_rx_olt = ""
+            rx_onu_oid = ""
+            rx_olt_oid = ""
 
         # ---- Получение уровня сигнала с ОНУ        
-        cmd = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {snmp_rx_onu}.{self.portoid}"
-        cmd_to_subprocess = cmd.split()
-        process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, rx_onu_oid)
+        rxonu = snmpget.snmpget()
 
-        while True:
-            output = process.stdout.readline()
+        for l in rxonu:
+            match = re.search(parse_level, l)
+            if match:
+                rx_onu = match.group('level')
+                level_onu = int(rx_onu)/10
 
-            if output == b'' and process.poll() is not None:
-                break
-
-            if output:
-                outlist = output.decode('utf-8')
-                match = re.search(parse_data, outlist)
-                if match:
-                    rx_onu = match.group('level')
-                    level_onu = int(rx_onu)/10
-
-
-        return level_onu #, format(level_olt, '.2f')
+        return level_onu
    
 
     def getleveltree(self):
@@ -212,16 +170,15 @@ class BdcomGetOnuInfo:
         level_tx = ""
 
         if "epon" in self.pon_type:
-            snmp_rx_onu = "1.3.6.1.4.1.3320.101.10.5.1.5"
-#            snmp_rx_olt = ""
+            rx_onu_oid = "1.3.6.1.4.1.3320.101.10.5.1.5"
+            rx_olt_oid = ""
         if "gpon" in self.pon_type:
-            snmp_rx_onu = ""
-#            snmp_rx_olt = ""
+            rx_onu_oid = ""
+            rx_olt_oid = ""
 
         parse_tree = r'INTEGER: (?P<level>.+)'
 
         # ---- Ищем порт олта
-
         conn = sqlite3.connect(self.pathdb)
         cursor = conn.cursor()
         sqlgetport = f'SELECT * FROM ponports WHERE ip_address="{self.olt_ip}" AND portoid like "{self.portoltid}";'
@@ -256,28 +213,17 @@ class BdcomGetOnuInfo:
             oltip = onuinfo[createcmd]['oltip']
             onu = onuinfo[createcmd]['onu']
             
+            rxonuoid = f'{rx_onu_oid}.{portid}'
+            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, rxonuoid)
+            rxonu = snmpget.snmpget()
 
-            cmd_rx_onu = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {snmp_rx_onu}.{portid}"
-            cmd = cmd_rx_onu.split()
+            for l in rxonu:
+                match = re.search(parse_tree, l)
+                if match:
+                    rx_onu = match.group('level')
+                    level_onu = int(rx_onu)/10
 
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
-            while True:
-                output = process.stdout.readline()
-
-                if output == b'' and process.poll() is not None:
-                    break
-
-                if output:
-                    outlist = output.decode('utf-8')
-                    match = re.search(parse_tree, outlist)
-
-                    if match:
-                        rx_onu = match.group('level')
-                        level_onu = int(rx_onu)/10
-
-                        out_treeinfo.append(str(onu) + " ; " + " 0 " + " ; " + str(level_onu))
-
+                    out_treeinfo.append(str(onu) + " ; " + " 0 " + " ; " + str(level_onu))
 
         conn.close()
         out_tree = "test"
@@ -307,10 +253,8 @@ class BdcomGetOnuInfo:
             oid_cose = "-"
             pon_total = "128"
 
-
         parse_state = r'INTEGER: (?P<onustate>\d+|-\d+)'
         parse_down = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<downcose>\d+|-\d+)'
-    
 
         # ---- Ищем порт олта
         conn = sqlite3.connect(self.pathdb)
@@ -342,73 +286,51 @@ class BdcomGetOnuInfo:
          # ---- Получение причины отключения ONU
         parse_down_reason = r'(?P<onudec>\d+.\d+.\d+.\d+.\d+.\d+) = INTEGER: (?P<downreason>\d+)'
 
-        cmd_onu_state = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {oid_cose}.{self.portoltid}"
-        cmd = cmd_onu_state.split()
-
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
+        downcoseoid = f'{oid_cose}.{self.portoltid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, downcoseoid)
+        downcoselist = snmpget.snmpget()
         down_reason = {}
-        while True:
-            output = process.stdout.readline()
 
-            if output == b'' and process.poll() is not None:
-                break
-
-            if output:
-                outlist = output.decode('utf-8')
-                match = re.search(parse_down_reason, outlist)
-
-                if match:
-                    onu = match.group('onudec')
-                    onudownreason = match.group('downreason')
-                    onudownreason = onudownreason.replace("8", "LOS").replace("9", "POWER-OFF").replace("0", "Неизвестно")
-                    down_reason.update({onu: onudownreason})
+        for l in downcoselist:
+            match = re.search(parse_down_reason, l)
+            if match:
+                onu = match.group('onudec')
+                onudownreason = match.group('downreason')
+                onudownreason = onudownreason.replace("8", "LOS").replace("9", "POWER-OFF").replace("0", "Неизвестно")
+                down_reason.update({onu: onudownreason})
        
-        # ---- Получение статуса с дерева
-        
+        # ---- Получение статуса с дерева       
         for createcmd in onuinfo:
             portonu = createcmd
             portid = onuinfo[createcmd]['portid']
             oltip = onuinfo[createcmd]['oltip']
             onu = onuinfo[createcmd]['onu']
 
-            cmd_onu_state = f"snmpwalk -c {self.snmp_com} -v2c {self.olt_ip} {oid_state}.{portid}"
-            cmd = cmd_onu_state.split()
-
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
-
-            while True:
-                output = process.stdout.readline()
-
-                if output == b'' and process.poll() is not None:
-                    break
-
-                if output:
-                    outlist = output.decode('utf-8')
-                    match = re.search(parse_state, outlist)
-
-                    if match:
-                        onustatus = match.group('onustate')
-                        onustatus = onustatus.replace("1", "ONLINE").replace("2", "OFFLINE").replace("-1", "OFFLINE")
-                        if onustatus == "OFFLINE":
-                            try:
-                                outmacdec = ""
-                                n = 2
-                                out = [onu[i:i+n] for i in range(0, len(onu), n)]
-
-                                for i in out:
-                                    dece = int(i, 16)
-                                    outmacdec = outmacdec + "." + str(dece)
-
-                                onustatus = down_reason[outmacdec[1:]]
-                            except KeyError:
-                                onustatus = "Неизвестно"
-
-                        out_treeinfo.append(str(onu) + " ; " + str(onustatus))
-                        
+            stateonuoid = f'{oid_state}.{portid}'
+            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, stateonuoid)
+            statelist = snmpget.snmpget()
     
+            for l in statelist:        
+                match = re.search(parse_state, l)
+                if match:
+                    onustatus = match.group('onustate')
+                    onustatus = onustatus.replace("1", "ONLINE").replace("2", "OFFLINE").replace("-1", "OFFLINE")
+                    if onustatus == "OFFLINE":
+                        try:
+                            outmacdec = ""
+                            n = 2
+                            out = [onu[i:i+n] for i in range(0, len(onu), n)]
 
+                            for i in out:
+                                dece = int(i, 16)
+                                outmacdec = outmacdec + "." + str(dece)
+
+                            onustatus = down_reason[outmacdec[1:]]
+                        except KeyError:
+                            onustatus = "Неизвестно"
+
+                    out_treeinfo.append(str(onu) + " ; " + str(onustatus))
+                        
         conn.close()
 
         return out_treeinfo

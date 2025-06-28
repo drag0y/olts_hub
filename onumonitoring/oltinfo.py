@@ -2,9 +2,11 @@ import subprocess
 import sqlite3
 import re
 import os
+from sqlalchemy import create_engine, text
 
 from onumonitoring.bdcom_onu import BdcomGetOnuInfo
 from onumonitoring.huawei_onu import HuaweiGetOnuInfo
+from onumonitoring.snmpwalk import SnmpWalk
 from dotenv import load_dotenv
 
 
@@ -355,3 +357,46 @@ class OltInfo:
 
         return status_tree
 
+
+    def hwunregonu(self):
+        '''
+        Метод проверяет есть ли на ОЛТе не зарегистрированные ОНУ
+        '''    
+        unregonu_out = []
+
+        if 'epon' in self.pontype:
+            unregoid = '1.3.6.1.4.1.2011.6.128.1.1.2.61.1.2'
+
+        elif 'gpon' in self.pontype:
+            unregoid = '1.3.6.1.4.1.2011.6.128.1.1.2.48.1.2'
+
+        parse_onu = "(?P<portoid>\d{10}).+ Hex-STRING: (?P<onu>.+)"
+
+        snmpget = SnmpWalk(self.olt_ip, SNMP_READ_H, unregoid)
+        onulist = snmpget.snmpget()
+        
+        for l in onulist:
+            match = re.search(parse_onu, l)
+            
+            if match:
+                unreg_onu = match.group('onu').replace(' ', '')
+                oltport_oid = match.group('portoid')
+
+                conn = sqlite3.connect(self.pathdb)
+                cursor = conn.cursor()
+
+                ponport = cursor.execute(f'SELECT * FROM ponports WHERE ip_address="{self.olt_ip}" AND portoid LIKE "{oltport_oid}";')
+                
+                for p in ponport:
+                    oltport = p[3]
+
+                conn.close()
+ 
+                onudict = {
+                'mac': unreg_onu,
+                'oltport': oltport,
+                }
+                unregonu_out.append(onudict)
+
+
+        return unregonu_out

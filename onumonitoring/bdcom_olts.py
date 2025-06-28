@@ -1,7 +1,7 @@
 import re
 import sqlite3
-import subprocess
-from contextlib import redirect_stdout
+
+from onumonitoring.snmpwalk import SnmpWalk
 
 
 class BdcomGetOltInfo:
@@ -17,108 +17,61 @@ class BdcomGetOltInfo:
     def getoltports(self):
         # --- Метод для запроса портов с ОЛТа
 
-        snmp_oid = "1.3.6.1.2.1.31.1.1.1.1"
-
-        parseout = r'(?P<portoid>\d+) = STRING: "(?P<ponport>EPON\S+)"'
+        oidoltports = "1.3.6.1.2.1.31.1.1.1.1"
+        parseports = r'(?P<portoid>\d+) = STRING: "(?P<ponport>EPON\S+)"'
 
         conn = sqlite3.connect(self.pathdb)
         cursor = conn.cursor()
-
         query_ports = "INSERT into ponports(hostname, ip_address, ponport, portoid) values (?, ?, ?, ?)"
 
         # --- Команда опроса OLTа
-        process = subprocess.Popen(['snmpwalk', '-c', self.snmp_com, '-v2c', self.olt_ip, snmp_oid], stdout=subprocess.PIPE)
-        listont = []
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, oidoltports)
+        portslist = snmpget.snmpget()
 
-        # --- Парсинг портов и добавление в базу
-        while True:
-            output = process.stdout.readline()
-            if output == b'' and process.poll() is not None:
-                break
-            if output:
-                outlist = output.strip().decode('utf-8')
-                match = re.search(parseout, outlist)
-                if match:
-                    portlist = self.olt_name, self.olt_ip, match.group('ponport'), match.group('portoid')
-                    cursor.execute(query_ports, portlist)
-
+        for l in portslist:
+            match = re.search(parseports, l)
+            if match:
+                portlist = self.olt_name, self.olt_ip, match.group('ponport'), match.group('portoid')
+                cursor.execute(query_ports, portlist)
 
         conn.commit()
         conn.close()
 
+
     def getonulist(self):
         # --- Функция для запроса списка зареганых ONU и парсинг
 
-        snmp_epon = "1.3.6.1.4.1.3320.101.10.1.1.3"
-        snmp_gpon = ""
+        oid_epon = "1.3.6.1.4.1.3320.101.10.1.1.3"
+        oid_gpon = ""
 
-        parseout = r'(?P<portonu>\d+)=hex-string:(?P<maconu>\S+)'
+        parseoutmac = r'(?P<portonu>\d+)=hex-string:(?P<maconu>\S+)'
         parseoutsn = r'(?P<portonu>\d{10}).(?P<onuid>\d+) = (.+: "|.+: )(?P<snonu>(\S+ ){7}\S+|.+(?="))'
 
         conn = sqlite3.connect(self.pathdb)
-
         cursor = conn.cursor()
-
 
         query = "INSERT into epon(maconu, portonu, idonu, oltip, oltname) values (?, ?, ?, ?, ?)"
         querygpon = "INSERT into gpon(snonu, portonu, idonu, oltip, oltname) values (?, ?, ?, ?, ?)"
 
         # --- Команда опроса OLTа
         if self.port_type == "epon":
-            process = subprocess.Popen(['snmpwalk', '-c', self.snmp_com, '-v2c', self.olt_ip, snmp_epon], stdout=subprocess.PIPE)
+            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, oid_epon)
+            onulist = snmpget.snmpget()
         
         if self.port_type == "gpon":
-            process = subprocess.Popen(['snmpwalk', '-c', self.snmp_com, '-v2c', self.olt_ip, snmp_gpon], stdout=subprocess.PIPE)
-        listont = []
-
+            pass
 
         # --- Парсинг Мак адресов и добавление в базу
         if self.port_type == "epon":
-
-            while True:
-                output = process.stdout.readline()
-                if output == b'' and process.poll() is not None:
-                    break
-                if output:
-                    outlist = output.strip().decode('utf-8').replace(" ", "").lower()
-                    match = re.search(parseout, outlist)
-                    if match:
-                        listont = match.group('maconu'), match.group('portonu'), match.group('portonu'), self.olt_ip, self.olt_name
-                        cursor.execute(query, listont)
-
+            for l in onulist:
+                match = re.search(parseoutmac, l.replace(" ", "").lower())
+                if match:
+                    listont = match.group('maconu'), match.group('portonu'), match.group('portonu'), self.olt_ip, self.olt_name
+                    cursor.execute(query, listont)
 
             conn.commit()
             conn.close()
-
 
         # --- Парсинг серийников и добавление в базу
-
         if self.port_type == "gpon":
-
-            try:
-                while True:
-                    output = process.stdout.readline()
-                    if output == b'' and process.poll() is not None:
-                        break
-                    if output:
-                        outlist = output.strip().decode('utf-8').replace('\\"', '"').replace("\\\\", "\\")
-                        match = re.search(parseoutsn, outlist)
-
-                        if match:
-                            if len(match.group('snonu')) > 16:
-                                listont = match.group('snonu').lower().replace(" ", ""), match.group('portonu'), match.group('onuid'), self.olt_ip, self.olt_name
-                                cursor.execute(querygpon, listont)
-
-
-                            elif len(match.group('snonu')) < 16:
-                                listont = match.group('snonu').encode().hex(), match.group('portonu'), match.group('onuid'), self.olt_ip, self.olt_name
-                                cursor.execute(querygpon, listont)
-
-
-
-            except ValueError:
-                print("Кривая ONU")
-
-            conn.commit()
-            conn.close()
-
+            pass

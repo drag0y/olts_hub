@@ -9,92 +9,79 @@ ONU info
 
 
 <div class="container col-md-5 col-lg-5 order-md-last">
+    <h4 class="d-flex justify-content-between align-items-center mb-3">
+        <span class="fw-bold">ONU information</span>
+            </h4>
+                <ul class="list-group mb-3">
 
-	 <h4 class="d-flex justify-content-between align-items-center mb-3">
-          <span class="fw-bold">ONU information</span>
-        </h4>
+                    {% for item in onu_info %}
+                    <table class="table">
+                        <div class="text-center">
+                    	{% if 'UP' in item.lanstate %}
+                    		<img src="{{ url_for('static', filename='images/onu_on.png') }}" width="300">
 
-        <ul class="list-group mb-3">
-
-<table class="table">
-
-
-        {% for item in out %}
-	{% set list1 = item.split(';') %}
+                        	{% elif 'DOWN' in item.lanstate %}
+                    		<img src="{{ url_for('static', filename='images/onu_lan_off.png') }}" width="300">
+                    	    {% elif 'Не удалось определить' in item.lanstate %}
+                            <img src="{{ url_for('static', filename='images/onu_lan_unknown.png') }}" width="300">
+                            {% elif 'Power-Off' in item.reason_offline %}
+                            <img src="{{ url_for('static', filename='images/onu_power_off.png') }}" width="300">
+                            {% elif 'LOS' in item.reason_offline %}
+                            <img src="{{ url_for('static', filename='images/onu_los.png') }}" width="300">
+                    	{% endif %}
+                    	</div>
         
+                    <tbody class="table-group-divider">
+                    
+                    <tr>
+                       	<td class="fw-bold" width="400">Состояние ONU {{ item['mac/sn'] }}:</td>
+                        {% if 'В сети' in item.iface_state %}
+                    	<td><span class="badge text-bg-success rounded-pill fw-bold">{{ item.iface_state }}</span></td>
+                        {% elif 'Не в сети' in item.iface_state %}
+                    	<td><span class="badge text-bg-danger rounded-pill fw-bold">{{ item.iface_state }}</span></td>
+                        {% endif %}
 
-<tbody class="table-group-divider">
-    <tr>
-	{% if 'Состояние' in list1[0] %}
-	<td class="fw-bold" width="400">{{ list1[0] }}</td>
-	{% else %}
-      <td width="400">{{ list1[0] }}</td>
-      {% endif %}
+                    </tr>
+                    <tbody class="table-group-divider">
+                    <td>ONU найдена на OLTе:</td><td>{{ item.oltname }}</td>
+                    </tbody>
+                    <tr><td>Порт: {{ item.iface_name }}</td><td>id: {{ item.onuid }}</td></tr>
+                    <tr><td>Статус LAN порта:</td><td>{{ item.lanstate }}</td></tr>
+                    <tr><td>Статус CATV порта:</td>
+                        {% if 'OFF' in item.catvstate %}
+                            <td>
+                                <span class="badge text-bg-danger rounded-pill fw-bold">
+                                {{ item.catvstate }}
+                                </span>
+                                <a href="/onuinfo/{{ item['mac/sn'] }}/catvon" class="btn btn-outline-dark">Включить</a>
+                            </td>
+    
+                        {% elif 'ON' in item.catvstate %}
+                            <td>
+                                <span class="badge text-bg-success rounded-pill fw-bold">
+                                {{ item.catvstate }}                          
+                                </span>
+                                <a href="/onuinfo/{{ item['mac/sn'] }}/catvoff" class="btn btn-outline-dark">Выключить</a>
+                            </td>
+                        {% else %}
+                            <td>{{ item.catvstate }}</td>
+                        {% endif %}       
+                    </tr>
+                    <tr><td>Уровень сигнала CATV:</td><td>{{ item.catvlevel }}</td></tr>
+                    <tr><td>Время включения:</td><td>{{ item.timeup }}</td></tr>
+                    <tr><td>Время последнего отключения:</td><td>{{ item.timedown }}</td></tr>
+                    <tr><td>Причина последнего отключения:</td><td>{{ item.reason_offline }}</td></tr>
+                    <tr><td>Сигнал в сторону ОНУ:</td><td>{{ item.level_onu_rx }}</td></tr>
+                    <tr><td>Сигнал в сторону ОЛТа:</td><td>{{ item.level_olt_rx }}</td></tr>
+                    </tbody>
+                </ul>
+            </table>
+        </div>
 
-
-      {% if 'В сети' in list1[1] %}
-	      <td><span class="badge text-bg-success rounded-pill fw-bold">{{ list1[1] }}</span></td>
-      {% elif 'Не в сети' in list1[1] %}
-	      <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ list1[1] }}</span></td>
-
-      {% elif 'Не удалось' in list1[1] %}
-              <td><span class="badge text-bg-secondary rounded-pill fw-bold">{{ list1[1] }}</span></td>
-
-        {% elif 'ON' in list1[1] %}
-	    <td><span class="badge text-bg-success rounded-pill fw-bold">
-	        {{ list1[1] }}</span>
-		    <a href="/onuinfo/{{ onu }}/catvoff" class="btn btn-outline-dark">Выключить</a>
-		</td>
-	{% elif 'OFF' in list1[1] %}
-	    <td><span class="badge text-bg-danger rounded-pill fw-bold">
-	        {{ list1[1] }}</span>
-		    <a href="/onuinfo/{{ onu }}/catvon" class="btn btn-outline-dark">Включить</a>
-		</td>
-      {% else %}
-	      <td>{{ list1[1] }}</td>
-      {% endif %}
-
-
-    </tr>
-      </tbody>
-	
-      <div class="text-center">
-	{% if 'UP' in list1[1] %}
-		<img src="{{ url_for('static', filename='images/onu_on.png') }}" width="300">
-
-	{% elif 'DOWN' in list1[1] %}
-		<img src="{{ url_for('static', filename='images/onu_lan_off.png') }}" width="300">
-	{% elif 'Не удалось определить' in list1[1] %}
-                <img src="{{ url_for('static', filename='images/onu_lan_unknown.png') }}" width="300">
-
-	{% elif 'Не в сети' in list1[1] %}
-
-		{% for item2 in out %}
-	        {% set list2 = item2.split(';') %}
-
-			{% if 'Power-Off' in list2[1] %}
-				<img src="{{ url_for('static', filename='images/onu_power_off.png') }}" width="300">
-			{% elif 'LOS' in list2[1] %}
-				<img src="{{ url_for('static', filename='images/onu_los.png') }}" width="300">
-			{% endif %}
-		{% endfor %}
-
-	{% endif %}
-
-	</div>
-
-	{% endfor %}
-        </ul>
-
-</table>
-
-</div>
-
-<div class="container container col-md-5 col-lg-4 order-md-last">
-	<a href="/leveltree/{{ onu }}" class="btn btn-warning">Уровень дерева</a>
-</div>
-
-
+        <div class="text-left container container col-md-5 col-lg-4 order-md-last">
+    	<a href="/oltinfo/{{ item.olt_id }}/{{ item.iface_name|replace("/", ".") }}" class="btn btn-warning">Уровень дерева</a>
+        </div>
+    	{% endfor %}
 
 
 {% endblock %}
