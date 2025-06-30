@@ -136,17 +136,18 @@ class BdcomGetOnuInfo:
         # Метод определяет уровни сигнала ОНУ
         parse_level = r'INTEGER: (?P<level>.+)'
         level_onu = "0"
+        level_olt = "0"
 
         if "epon" in self.pon_type:
-            rx_onu_oid = ".1.3.6.1.4.1.3320.101.10.5.1.5"
-            rx_olt_oid = ""
-
-        if "gpon" in self.pon_type:
+            rx_onu_oid = "1.3.6.1.4.1.3320.101.10.5.1.5"
+            rx_olt_oid = "1.3.6.1.4.1.3320.101.108.1.3"
+        elif "gpon" in self.pon_type:
             rx_onu_oid = ""
             rx_olt_oid = ""
 
-        # ---- Получение уровня сигнала с ОНУ        
-        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, rx_onu_oid)
+        # ---- Получение уровня сигнала с ОНУ       
+        rxonuoid = f'{rx_onu_oid}.{self.onuid}' 
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, rxonuoid)
         rxonu = snmpget.snmpget()
 
         for l in rxonu:
@@ -154,8 +155,18 @@ class BdcomGetOnuInfo:
             if match:
                 rx_onu = match.group('level')
                 level_onu = int(rx_onu)/10
+        
+        rxoltoid = f'{rx_olt_oid}.{self.onuid}'         
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, rxoltoid)
+        rxolt = snmpget.snmpget()
+        
+        for l in rxolt: 
+            match = re.search(parse_level, l)
+            if match:                
+                rx_olt = match.group('level')
+                level_olt = int(rx_olt)/10
 
-        return level_onu
+        return level_onu, level_olt
    
 
     def getleveltree(self):
@@ -171,8 +182,8 @@ class BdcomGetOnuInfo:
 
         if "epon" in self.pon_type:
             rx_onu_oid = "1.3.6.1.4.1.3320.101.10.5.1.5"
-            rx_olt_oid = ""
-        if "gpon" in self.pon_type:
+            rx_olt_oid = "1.3.6.1.4.1.3320.101.108.1.3"
+        elif "gpon" in self.pon_type:
             rx_onu_oid = ""
             rx_olt_oid = ""
 
@@ -335,3 +346,30 @@ class BdcomGetOnuInfo:
 
         return out_treeinfo
 
+
+    def setonureboot(self):
+        '''
+        Метод для ребута ОНУ
+        '''
+        parse_reboot = "INTEGER: (?P<setreboot>.+)"
+        if "epon" in self.pon_type:
+            setonurebootoid = "1.3.6.1.4.1.3320.101.10.1.1.29"
+                
+        if "gpon" in self.pon_type:
+            setonurebootoid = ""
+                    
+        onurebootoid = f'{setonurebootoid}.{self.onuid} i 0'
+        snmpset = SnmpWalk(self.olt_ip, self.snmp_com, onurebootoid)
+        onureboot = snmpset.snmpset()
+                    
+        setreboot_out = 'Ошибка. OLT не отвечает или не включен SNMP Write'
+        for l in onureboot:
+            match = re.search(parse_reboot, l)            
+            if match:
+                setreboot = match.group('setreboot')
+                if setreboot == '0':
+                    setreboot_out = "ОНУ перезагаружена"
+                else:
+                    setreboot_out = "Ошибка"
+
+        return setreboot_out

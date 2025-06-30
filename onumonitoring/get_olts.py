@@ -53,6 +53,7 @@ def get_netbox_olt_list():
 
     # --- Получениие списка Epon ОЛТов, если такие есть, то передаём их в функцию snmpgetonu 
     if EPON_TAG:
+        print(URLGETEPON)
         response = requests.get(URLGETEPON, headers=HEADERS, verify=False)
         olts_list = json.loads(json.dumps(response.json(), indent=4))
 
@@ -77,6 +78,7 @@ def get_netbox_olt_list():
 
     # --- Получение списка Gpon ОЛТов, если такие есть, то передаём их в функцию snmpgetonu 
     if GPON_TAG:
+        print(URLGETEPON)
         response = requests.get(URLGETGPON, headers=HEADERS, verify=False)
         olts2_list = json.loads(json.dumps(response.json(), indent=4))
 

@@ -1,3 +1,4 @@
+import subprocess
 import re
 import sqlite3
 
@@ -90,13 +91,15 @@ class HuaweiGetOnuInfo:
             catvstate = snmpget.snmpget()
 
             for l in catvstate:
+                print('--------------CATV--------------')
+                print(l)
                 match = re.search(parse_catvstate, l)
                 if match:
-                    lanstatus = match.group('catvstate')
-                    if catvstate == '1':
+                    catv_status = match.group('catvstate')
+                    if catv_status == '1':
                         catv_out = "ON"
                         catv_level = self.getcatvlevel()
-                    elif catvstate == '2':
+                    elif catv_status == '2':
                         catv_out = "OFF"
                         catv_level = self.getcatvlevel()
                     else:
@@ -110,7 +113,7 @@ class HuaweiGetOnuInfo:
         ''' 
         Метод для получения уровня сигнала CATV порта 
         '''
-        parse_catvlevel = r'INTEGER: (?P<level>-.+)'
+        parse_catvlevel = r'INTEGER: (?P<level>.+)'
         level_catv = "0"
 
         snmp_rx_catv = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.7"
@@ -525,3 +528,31 @@ class HuaweiGetOnuInfo:
                 catv_out = "Не удалось определить"
 
         return catv_out
+
+
+    def setonureboot(self):
+        '''
+        Метод для ребута ОНУ
+        '''
+#        parse_reboot = "INTEGER: (?P<setreboot>.+)"
+#        if "epon" in self.pon_type:
+#            setonurebootoid = "1.3.6.1.4.1.3320.101.10.1.1.29"
+
+#        if "gpon" in self.pon_type:
+#            setonurebootoid = ""
+
+#        onurebootoid = f'{setonurebootoid}.{self.onuid} i 0'
+#        snmpset = SnmpWalk(self.olt_ip, self.snmp_com, onurebootoid)
+#        onureboot = snmpset.snmpset()
+
+        setreboot_out = 'Ошибка. Функция работает только на ОЛТах BDCOM'
+#        for l in onureboot:
+#            match = re.search(parse_reboot, l)
+#            if match:
+#                setreboot = match.group('setreboot')
+#                if setreboot == '0':
+#                    setreboot_out = "ОНУ перезагаружена"
+#                else:
+#                    setreboot_out = "Ошибка"
+
+        return setreboot_out

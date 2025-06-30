@@ -102,8 +102,12 @@ class FindOnu:
         Состояние ОНУ и опрос
         '''
         out_onuinfo = []
+        print('--------------ONUINFO---------------')
+        print(self.onulist)
         if "huawei" in self.platform:
             for o in self.onulist:
+                print('-----o--------')
+                print(o)
                 onu_info = HuaweiGetOnuInfo(**o)
                 onu_state = onu_info.getonustatus()
 
@@ -193,7 +197,7 @@ class FindOnu:
             if onu_state == "1":
                 onustate = "В сети"
             
-                level_onu = onu_info.getonulevel()
+                level_onu, level_olt = onu_info.getonulevel()
                 state_lan = onu_info.getlanstatus()
                 time_up = onu_info.getonuuptime()
                 time_up = time_up.replace("-666 часов", "Не поддерживается")
@@ -213,7 +217,7 @@ class FindOnu:
                         "timedown": '-',
                         "reason_offline": '-',
                         "level_onu_rx": float(level_onu),
-                        "level_olt_rx": '-',
+                        "level_olt_rx": float(level_olt),
                     }
 
             if onu_state == "2":
@@ -261,8 +265,9 @@ class FindOnu:
     def onucatvon(self):
         # Включить CATV порт
         if "huawei" in self.platform:
-            onu_on = HuaweiGetOnuInfo(**self.onu_params)
-            outinformation = onu_on.setcatvon()
+            for o in self.onulist:
+                onu_on = HuaweiGetOnuInfo(**o)
+                outinformation = onu_on.setcatvon()
 
             return outinformation
 
@@ -270,7 +275,25 @@ class FindOnu:
     def onucatvoff(self):
         # Выключить CATV порт
         if "huawei" in self.platform:
-            onu_off = HuaweiGetOnuInfo(**self.onu_params)
-            outinformation = onu_off.setcatvoff()
+            for o in self.onulist:
+                onu_off = HuaweiGetOnuInfo(**o)
+                outinformation = onu_off.setcatvoff()
 
             return outinformation
+
+
+    def onureboot(self):
+        '''
+        Reboot ONU
+        '''
+        rebootonu_out = 'ERROR'
+        if "bdcom" in self.platform:
+            onu_reboot = BdcomGetOnuInfo(**self.onu_params)
+            rebootonu_out = onu_reboot.setonureboot()
+        elif "huawei" in self.platform:
+            for o in self.onulist:
+                onu_reboot = HuaweiGetOnuInfo(**o)
+                rebootonu_out = onu_reboot.setonureboot()
+
+        print(rebootonu_out)
+        return rebootonu_out

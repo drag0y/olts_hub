@@ -278,7 +278,7 @@ def pagenotfound(error):
 @app.route("/onuinfo/<string:onu>/catvon")
 def onu_catvon(onu):
     ''' Включить CATV порт '''
-    onurequest = FindOnu(onu, "gpon", PATHDB)
+    onurequest = FindOnu(onu, PATHDB)
     out = onurequest.onucatvon()
 
     return redirect(f'/onuinfo/{onu}')
@@ -287,7 +287,7 @@ def onu_catvon(onu):
 @app.route("/onuinfo/<string:onu>/catvoff")
 def onu_catvoff(onu):
     ''' Выключить CATV порт '''
-    onurequest = FindOnu(onu, "gpon", PATHDB)
+    onurequest = FindOnu(onu, PATHDB)
     out = onurequest.onucatvoff()
             
     return redirect(f'/onuinfo/{onu}')
@@ -342,6 +342,31 @@ def olt_delete(number):
     flash("ОЛТ удалён из базы")
 
     return redirect("/")
+
+
+@app.route("/onuinfo/<string:onu>/reboot")
+def onu_reboot(onu):    
+    ''' 
+    Перезагрузка ОНУ
+    '''
+    onurequest = FindOnu(onu, PATHDB)
+    out = onurequest.onureboot()
+    flash(out)
+                
+    return redirect(f'/onuinfo/{onu}')
+
+
+@app.route("/onuinfo/<string:onu>/deleteonu")
+def onu_delete(onu):    
+    ''' 
+    Удалить ОНУ с ОЛТа
+    '''
+#    onurequest = FindOnu(onu, PATHDB)
+#    out = onurequest.onureboot()
+#    flash(out)
+    flash('Ошибка. Функция в разработке')
+                
+    return redirect(f'/onuinfo/{onu}')
 
 
 if __name__ == "__main__":

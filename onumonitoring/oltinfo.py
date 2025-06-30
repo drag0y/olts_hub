@@ -224,6 +224,7 @@ class OltInfo:
             oid_state = "1.3.6.1.2.1.2.2.1.8"
             oid_cose = "1.3.6.1.4.1.3320.101.11.1.1.11"
             snmp_rx_onu = "1.3.6.1.4.1.3320.101.10.5.1.5"
+            snmp_rx_olt = "1.3.6.1.4.1.3320.101.108.1.3"
         if "gpon" in self.pontype:
             oid_state = "-"
             oid_cose = "-"
