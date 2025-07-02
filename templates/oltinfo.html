@@ -9,9 +9,19 @@
     <header>
         <h1 class="text-center fw-bold">Информация об ОЛТе</h1>
 
-	{% for msg in get_flashed_messages() %}
-            <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
-        {% endfor %}
+
+{% for msg in get_flashed_messages() %}
+
+        {% if "Ошибка" in msg or "ERROR" in msg or "отключена" in msg %}
+                <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
+            {% else %}
+        <h3 class="text-center"><span class="flash badge text-bg-success">{{msg}}</span></h3>
+        {% endif %}
+
+    {% endfor %}
+
+
+
     </header>
 
 </div>

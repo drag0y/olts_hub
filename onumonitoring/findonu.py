@@ -1,4 +1,4 @@
-import subprocess
+#import subprocess
 import sqlite3
 import os
 from dotenv import load_dotenv
@@ -102,151 +102,77 @@ class FindOnu:
         Состояние ОНУ и опрос
         '''
         out_onuinfo = []
-        print('--------------ONUINFO---------------')
-        print(self.onulist)
+        onustate = '-'
+        state_lan = '-'
+        catv_state = '-'
+        catv_level = -0.0
+        time_up = '-'
+        time_down = '-'
+        reason_down = '-'
+        level_onu = -0.0
+        level_olt = -0.0
+
         if "huawei" in self.platform:
             for o in self.onulist:
-                print('-----o--------')
-                print(o)
                 onu_info = HuaweiGetOnuInfo(**o)
                 onu_state = onu_info.getonustatus()
 
-            # ---- Если ONU в сети, то для опроса вызываем следующие методы
+                # ---- Если ONU в сети, то для опроса вызываем следующие методы
                 if onu_state == '1':
                     onustate = "В сети"
                     level_onu, level_olt = onu_info.getonulevel() # Уровень сигнала
-
                     state_lan = onu_info.getlanstatus()
                     catv_state, catv_level = onu_info.getcatvstate()
                     time_up = onu_info.getonuuptime()
                     time_down = onu_info.gettimedown()
                     reason_down = onu_info.getlastdown()
 
-                    onuinformation = {     
-                        "mac/sn": self.useronu,
-                        "onu_state": int(onu_state),
-                        "oltname": self.olt_name,
-                        "olt_id": self.olt_id,
-                        "iface_state": onustate,
-                        "iface_name": self.portonu_out,
-                        "onuid": self.onuid,
-                        "lanstate": state_lan,
-                        "catvstate": catv_state,
-                        "catvlevel": catv_level,
-                        "timeup": time_up,
-                        "timedown": time_down,
-                        "reason_offline": reason_down,
-                        "level_onu_rx": float(level_onu),
-                        "level_olt_rx": float(level_olt),
-                    }
-
                 # ---- Если ONU не в сети, то вызываем следующие методы
                 elif onu_state == '2':
                     onustate = "Не в сети"
-
                     time_down = onu_info.gettimedown()
                     reason_down = onu_info.getlastdown()
 
-                    onuinformation = {
-                        "mac/sn": self.useronu,
-                        "onu_state": int(onu_state),
-                        "oltname": self.olt_name,
-                        "olt_id": self.olt_id,
-                        "iface_state": onustate,
-                        "iface_name": self.portonu_out,
-                        "onuid": self.onuid,
-                        "lanstate": '-',
-                        "catvstate": '-',
-                        "catvlevel": '-',
-                        "timeup": '-',
-                        "timedown": time_down,
-                        "reason_offline": reason_down,
-                        "level_onu_rx": '-',
-                        "level_olt_rx": '-',
-                    }
-
-                # ---- Если состояние ONU определить не удалось
-                else:
-                    outinformation = {
-                        "mac/sn": self.useronu,
-                        "onu_state": onu_state,
-                        "oltname": self.olt_name,
-                        "olt_id": self.olt_id,
-                        "iface_state": '-',
-                        "iface_name": self.portonu_out,
-                        "onuid": '-',
-                        "lanstate": '-',
-                        "catvstate": '-',
-                        "catvlevel": '-',
-                        "timeup": '-',
-                        "timedown": '-',
-                        "reason_offline": '-',
-                        "level_onu_rx": '-',
-                        "level_olt_rx": '-',
-                        }
-
-
-                out_onuinfo.append(onuinformation)
-
-            return out_onuinfo
-
-        if "bdcom" in self.platform:
+        elif "bdcom" in self.platform:
             onu_info = BdcomGetOnuInfo(**self.onu_params)
             onu_state = onu_info.getonustatus()
 
             if onu_state == "1":
                 onustate = "В сети"
-            
                 level_onu, level_olt = onu_info.getonulevel()
                 state_lan = onu_info.getlanstatus()
                 time_up = onu_info.getonuuptime()
                 time_up = time_up.replace("-666 часов", "Не поддерживается")
-
-                onuinformation = {
-                        "mac/sn": self.useronu,
-                        "onu_state": int(onu_state),
-                        "oltname": self.olt_name,
-                        "olt_id": self.olt_id,
-                        "iface_state": onustate,
-                        "iface_name": self.portonu_out[0],
-                        "onuid": self.idonu,
-                        "lanstate": state_lan,
-                        "catvstate": 'Не поддерживается',
-                        "catvlevel": 'Не поддерживается',
-                        "timeup": time_up,
-                        "timedown": '-',
-                        "reason_offline": '-',
-                        "level_onu_rx": float(level_onu),
-                        "level_olt_rx": float(level_olt),
-                    }
+                self.onuid = self.idonu
+                self.portonu_out = self.portonu_out[0]
 
             if onu_state == "2":
                 onustate = "Не в сети"
-                
                 reason_down = onu_info.getlastdown()
+                self.onuid = self.idonu
+                self.portonu_out = self.portonu_out[0]
 
-                onuinformation = {
-                        "mac/sn": self.useronu,
-                        "onu_state": int(onu_state),
-                        "oltname": self.olt_name,
-                        "olt_id": self.olt_id,
-                        "iface_state": onustate,
-                        "iface_name": self.portonu_out[0],
-                        "onuid": self.idonu,
-                        "lanstate": '-',
-                        "catvstate": '-',
-                        "catvlevel": '-',
-                        "timeup": '-',
-                        "timedown": '-',
-                        "reason_offline": reason_down,
-                        "level_onu_rx": '-',
-                        "level_olt_rx": '-',
-                    }
+        onuinformation = {
+            "mac/sn": self.useronu,
+            "onu_state": int(onu_state),
+            "oltname": self.olt_name,
+            "olt_id": self.olt_id,
+            "iface_state": onustate,
+            "iface_name": self.portonu_out,
+            "onuid": self.onuid,
+            "lanstate": state_lan,
+            "catvstate": catv_state,
+            "catvlevel": float(catv_level),
+            "timeup": time_up,
+            "timedown": time_down,
+            "reason_offline": reason_down,
+            "level_onu_rx": float(level_onu),
+            "level_olt_rx": float(level_olt),
+            }
 
+        out_onuinfo.append(onuinformation)
 
-            out_onuinfo.append(onuinformation)
-
-            return out_onuinfo
+        return out_onuinfo
 
 
     def convert(self):
@@ -295,5 +221,4 @@ class FindOnu:
                 onu_reboot = HuaweiGetOnuInfo(**o)
                 rebootonu_out = onu_reboot.setonureboot()
 
-        print(rebootonu_out)
         return rebootonu_out

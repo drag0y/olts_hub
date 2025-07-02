@@ -80,8 +80,8 @@ class HuaweiGetOnuInfo:
         catv_out = "Неизвестно"
         catv_level = "0"
         if self.pon_type == "epon":
-            catv_out = "Не поддерживается"
-            catv_level = "Не поддерживается"
+            catv_out = 'Не поддерживается'
+            catv_level = -0.0
         elif self.pon_type == "gpon":
             catvstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.63.1.2"
 
@@ -91,8 +91,6 @@ class HuaweiGetOnuInfo:
             catvstate = snmpget.snmpget()
 
             for l in catvstate:
-                print('--------------CATV--------------')
-                print(l)
                 match = re.search(parse_catvstate, l)
                 if match:
                     catv_status = match.group('catvstate')
@@ -104,7 +102,7 @@ class HuaweiGetOnuInfo:
                         catv_level = self.getcatvlevel()
                     else:
                         catv_out = "Неизвестно"
-                        catv_level = "0"
+                        catv_level = -0.0
 
         return catv_out, catv_level
 
@@ -124,7 +122,6 @@ class HuaweiGetOnuInfo:
         catvlevel = snmpget.snmpget()
 
         for l in catvlevel:
-            print(l)
             match = re.search(parse_catvlevel, l)            
             if match:
                 rx_catv = match.group('level')
@@ -150,7 +147,6 @@ class HuaweiGetOnuInfo:
         onulastdown = snmpget.snmpget()
 
         for l in onulastdown:
-            print(l)
             match = re.search(parse_onulastdown, l)
             if match:
                 last_down_onu = match.group('onulastdown')
@@ -181,7 +177,6 @@ class HuaweiGetOnuInfo:
                 onuuptime = snmpget.snmpget()
 
                 for l in onuuptime:
-                    print(l)
                     match = re.search(parse_uptime, l)
                     if match:
                         timelist = match.group('regtime')
@@ -200,7 +195,6 @@ class HuaweiGetOnuInfo:
             onuuptime = snmpget.snmpget()
 
             for l in onuuptime:
-                print(l)
                 match = re.search(parse_uptime, l)
                 if match:
                     timelist = match.group('regtime')
@@ -225,7 +219,6 @@ class HuaweiGetOnuInfo:
                 onudowntime = snmpget.snmpget()
 
                 for l in onudowntime:
-                    print(l)
                     match = re.search(parse_downtime, l)
                     if match:
                         timelist = match.group('downtime')
@@ -244,7 +237,6 @@ class HuaweiGetOnuInfo:
             onudowntime = snmpget.snmpget()
 
             for l in onudowntime:
-                print(l)
                 match = re.search(parse_downtime, l)
                 if match:
                     timelist = match.group('downtime')

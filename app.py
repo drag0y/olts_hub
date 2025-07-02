@@ -217,7 +217,7 @@ def olt_update(number):
     update_olt(PATHDB, number)
     flash("ОЛТ опрошен")
     
-    return redirect("/")
+    return redirect(f'/oltinfo/{number}')
 
 
 @app.route("/oltslistupdate")

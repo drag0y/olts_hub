@@ -36,7 +36,7 @@ class BdcomGetOnuInfo:
             match = re.search(parse_state, l)
             if match:
                 onu_state_out = match.group('onustate')
-        print(onu_state_out)
+
         return onu_state_out
 
 
@@ -67,7 +67,7 @@ class BdcomGetOnuInfo:
 
         except subprocess.TimeoutExpired:
             lan_out = "Не удалось определить"
-        print(lan_out)
+        
         return lan_out
 
 
