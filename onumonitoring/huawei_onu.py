@@ -34,7 +34,8 @@ class HuaweiGetOnuInfo:
         onustateoid = f'{ponstateoid}.{self.portoid}.{self.onuid}'
         snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onustateoid)
         onustate = snmpget.snmpget()
-
+        
+        onu_state_out = '3' # Если ОЛТ не отвечает
         for l in onustate:
             match = re.search(parse_state, l)
             if match:

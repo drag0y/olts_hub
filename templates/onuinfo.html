@@ -46,8 +46,8 @@ ONU info
                        	<td class="fw-bold" width="400">Состояние ONU {{ item['mac/sn'] }}:</td>
                         {% if 'В сети' in item.iface_state %}
                     	<td><span class="badge text-bg-success rounded-pill fw-bold">{{ item.iface_state }}</span></td>
-                        {% elif 'Не в сети' in item.iface_state %}
-                    	<td><span class="badge text-bg-danger rounded-pill fw-bold">{{ item.iface_state }}</span></td>
+                        {% else %}
+                    	<td><span class="badge text-bg-danger rounded-pill fw-bold" width="400">{{ item.iface_state }}</span></td>
                         {% endif %}
 
                     </tr>

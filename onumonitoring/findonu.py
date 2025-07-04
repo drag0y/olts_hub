@@ -135,6 +135,9 @@ class FindOnu:
                     onustate = "Не в сети"
                     time_down = onu_info.gettimedown()
                     reason_down = onu_info.getlastdown()
+                
+                else:
+                    onustate = "Не удалось определить состояние ОНУ, возможно ОЛТ не в сети или не отвечает"
 
         elif "bdcom" in self.platform:
             for o in self.onulist:
@@ -150,11 +153,16 @@ class FindOnu:
                     self.onuid = self.idonu
                     self.portonu_out = self.portonu_out[0]
 
-                if onu_state == "2":
+                elif onu_state == "2":
                     onustate = "Не в сети"
                     reason_down = onu_info.getlastdown()
                     self.onuid = self.idonu
                     self.portonu_out = self.portonu_out[0]
+
+                else:
+                    self.onuid = self.idonu
+                    self.portonu_out = self.portonu_out[0]
+                    onustate = "Не удалось определить состояние ОНУ, возможно ОЛТ не в сети или не отвечает"
 
         onuinformation = {
             "mac/sn": self.useronu,
