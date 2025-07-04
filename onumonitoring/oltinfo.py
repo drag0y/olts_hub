@@ -1,4 +1,3 @@
-#import subprocess
 import sqlite3
 import re
 import os
@@ -314,14 +313,12 @@ class OltInfo:
         
         for l in onulist:
             match = re.search(parse_onu, l)
-            
             if match:
                 unreg_onu = match.group('onu').replace(' ', '')
                 oltport_oid = match.group('portoid')
 
                 conn = sqlite3.connect(self.pathdb)
                 cursor = conn.cursor()
-
                 ponport = cursor.execute(f'SELECT * FROM ponports WHERE ip_address="{self.olt_ip}" AND portoid LIKE "{oltport_oid}";')
                 
                 for p in ponport:
@@ -334,6 +331,5 @@ class OltInfo:
                 'oltport': oltport,
                 }
                 unregonu_out.append(onudict)
-
 
         return unregonu_out

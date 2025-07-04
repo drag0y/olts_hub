@@ -6,13 +6,14 @@ from onumonitoring.snmpwalk import SnmpWalk
 
 class BdcomGetOnuInfo:
     ''' Класс для работы с ОНУ BDCOM '''
-    def __init__(self, hostname, pon_type, olt_ip, portoid, onuid, snmp_com, pathdb, onumacdec, portoltid):
+    def __init__(self, hostname, pon_type, olt_ip, portoid, onuid, snmp_com, pathdb, onumacdec, portoltid, snmp_wr):
         self.hostname = hostname
         self.pon_type = pon_type
         self.olt_ip = olt_ip
         self.portoid = portoid
         self.onuid = onuid
         self.snmp_com = snmp_com
+        self.snmp_wr = snmp_wr
         self.pathdb = pathdb
         self.onumacdec = onumacdec
         self.portoltid = portoltid
@@ -359,7 +360,7 @@ class BdcomGetOnuInfo:
             setonurebootoid = ""
                     
         onurebootoid = f'{setonurebootoid}.{self.onuid} i 0'
-        snmpset = SnmpWalk(self.olt_ip, self.snmp_com, onurebootoid)
+        snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, onurebootoid)
         onureboot = snmpset.snmpset()
                     
         setreboot_out = 'Ошибка. OLT не отвечает или не включен SNMP Write'

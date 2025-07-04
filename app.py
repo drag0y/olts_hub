@@ -174,13 +174,13 @@ def olt_info(number):
         unregonu = olt_info.hwunregonu()
 
     if PF_BDCOM in olts_list.platform:
+        unregonu = []
         for i in port_list:
             if i.ip_address == olts_list.ip_address:
                 if ":" in i.ponport:
                     pass
                 else:
                     ports.append(i.ponport)
-                    unregonu = []
 
     ports.sort()
 
@@ -217,7 +217,7 @@ def olt_update(number):
     update_olt(PATHDB, number)
     flash("ОЛТ опрошен")
     
-    return redirect(f'/oltinfo/{number}')
+    return redirect(f'/')
 
 
 @app.route("/oltslistupdate")
@@ -367,6 +367,11 @@ def onu_delete(onu):
     flash('Ошибка. Функция в разработке')
                 
     return redirect(f'/onuinfo/{onu}')
+
+
+@app.route('/settings')
+def olthub_settings():
+    return render_template('/settings.html')
 
 
 if __name__ == "__main__":

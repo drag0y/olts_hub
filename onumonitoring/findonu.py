@@ -67,8 +67,8 @@ class FindOnu:
                     "portoid": self.portid,
                     "onuid": self.onuid,
                     "snmp_com": SNMP_READ_H,
+                    "snmp_wr": SNMP_CONF_H,
                     "pathdb": self.pathdb,
-                    "snmp_conf": SNMP_CONF_H,
                     }
                 self.onulist.append(onu_params)
     
@@ -91,12 +91,15 @@ class FindOnu:
                     "portoid": self.portid,
                     "onuid": self.onuid,
                     "snmp_com": SNMP_READ_B,
+                    "snmp_wr": SNMP_CONF_B,
                     "pathdb": self.pathdb,                
                     "onumacdec": onumacdec,
                     "portoltid": portoltid,
                     }
+                self.onulist.append(self.onu_params)
         conn.close()
 
+        
     def onuinfo(self):
         '''
         Состояние ОНУ и опрос
@@ -134,23 +137,24 @@ class FindOnu:
                     reason_down = onu_info.getlastdown()
 
         elif "bdcom" in self.platform:
-            onu_info = BdcomGetOnuInfo(**self.onu_params)
-            onu_state = onu_info.getonustatus()
+            for o in self.onulist:
+                onu_info = BdcomGetOnuInfo(**o)
+                onu_state = onu_info.getonustatus()
 
-            if onu_state == "1":
-                onustate = "В сети"
-                level_onu, level_olt = onu_info.getonulevel()
-                state_lan = onu_info.getlanstatus()
-                time_up = onu_info.getonuuptime()
-                time_up = time_up.replace("-666 часов", "Не поддерживается")
-                self.onuid = self.idonu
-                self.portonu_out = self.portonu_out[0]
+                if onu_state == "1":
+                    onustate = "В сети"
+                    level_onu, level_olt = onu_info.getonulevel()
+                    state_lan = onu_info.getlanstatus()
+                    time_up = onu_info.getonuuptime()
+                    time_up = time_up.replace("-666 часов", "Не поддерживается")
+                    self.onuid = self.idonu
+                    self.portonu_out = self.portonu_out[0]
 
-            if onu_state == "2":
-                onustate = "Не в сети"
-                reason_down = onu_info.getlastdown()
-                self.onuid = self.idonu
-                self.portonu_out = self.portonu_out[0]
+                if onu_state == "2":
+                    onustate = "Не в сети"
+                    reason_down = onu_info.getlastdown()
+                    self.onuid = self.idonu
+                    self.portonu_out = self.portonu_out[0]
 
         onuinformation = {
             "mac/sn": self.useronu,

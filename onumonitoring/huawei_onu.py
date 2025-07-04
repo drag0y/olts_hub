@@ -9,7 +9,7 @@ class HuaweiGetOnuInfo:
     ''' 
     Класс для работы с ОНУ Huawei 
     '''
-    def __init__(self, hostname, pon_type, olt_ip, portoid, onuid, snmp_com, pathdb, snmp_conf):
+    def __init__(self, hostname, pon_type, olt_ip, portoid, onuid, snmp_com, pathdb, snmp_wr):
         self.hostname = hostname
         self.pon_type = pon_type
         self.olt_ip = olt_ip
@@ -17,7 +17,7 @@ class HuaweiGetOnuInfo:
         self.onuid = onuid
         self.snmp_com = snmp_com
         self.pathdb = pathdb
-        self.snmp_conf = snmp_conf
+        self.snmp_wr = snmp_wr
 
 
     def getonustatus(self):
@@ -152,8 +152,10 @@ class HuaweiGetOnuInfo:
                 last_down_onu = match.group('onulastdown')
                 if last_down_onu == '13':
                     lastdownonu = "Power-Off"
-                elif last_down_onu == '1' or '2':
+                elif last_down_onu == '1' or last_down_onu == '2':
                     lastdownonu = "LOS"
+                elif last_down_onu == '9':
+                    lastdownonu = "Admin Reset"
                 else:
                     lastdownonu = "Неизвестно"
 
@@ -369,7 +371,7 @@ class HuaweiGetOnuInfo:
             match = re.search(parse_down, l)
             if match:
                 downcose = match.group('downcose')
-                downcose = downcose.replace("-1", "Неизвестно").replace("18", "RING").replace("13", "POWER-OFF").replace("2", "LOS").replace("1", "LOS").replace("3", "LOS")
+                downcose = downcose.replace("-1", "Неизвестно").replace("18", "RING").replace("13", "POWER-OFF").replace("2", "LOS").replace("1", "LOS").replace("3", "LOS").replace("9", "Admin Reset")
                 downlist.append(downcose)
 
         # ----
@@ -526,25 +528,25 @@ class HuaweiGetOnuInfo:
         '''
         Метод для ребута ОНУ
         '''
-#        parse_reboot = "INTEGER: (?P<setreboot>.+)"
-#        if "epon" in self.pon_type:
-#            setonurebootoid = "1.3.6.1.4.1.3320.101.10.1.1.29"
+        parse_reboot = "INTEGER: (?P<setreboot>.+)"
+        if "epon" in self.pon_type:
+            setonurebootoid = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.2"
 
-#        if "gpon" in self.pon_type:
-#            setonurebootoid = ""
+        if "gpon" in self.pon_type:
+            setonurebootoid = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.2"
 
-#        onurebootoid = f'{setonurebootoid}.{self.onuid} i 0'
-#        snmpset = SnmpWalk(self.olt_ip, self.snmp_com, onurebootoid)
-#        onureboot = snmpset.snmpset()
+        onurebootoid = f'{setonurebootoid}.{self.portoid}.{self.onuid} i 1'
+        snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, onurebootoid)
+        onureboot = snmpset.snmpset()
 
-        setreboot_out = 'Ошибка. Функция работает только на ОЛТах BDCOM'
-#        for l in onureboot:
-#            match = re.search(parse_reboot, l)
-#            if match:
-#                setreboot = match.group('setreboot')
-#                if setreboot == '0':
-#                    setreboot_out = "ОНУ перезагаружена"
-#                else:
-#                    setreboot_out = "Ошибка"
+        setreboot_out = 'Ошибка'
+        for l in onureboot:
+            match = re.search(parse_reboot, l)
+            if match:
+                setreboot = match.group('setreboot')
+                if setreboot == '1':
+                    setreboot_out = "ОНУ перезагаружена"
+                else:
+                    setreboot_out = "Ошибка"
 
         return setreboot_out
