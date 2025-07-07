@@ -19,7 +19,6 @@ class SnmpWalk:
         snmpget_out = []
         
         snmpget_cmd = f'snmpwalk -c {self.snmp_community} -v2c {self.host_ip} {self.oid}'
-        print(snmpget_cmd)
         cmd = snmpget_cmd.split()
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
@@ -30,7 +29,6 @@ class SnmpWalk:
                 break
 
             if output:
-                print(output)
                 outline = output.decode('utf-8')
                 snmpget_out.append(outline)
 
@@ -44,7 +42,6 @@ class SnmpWalk:
         snmpset_out = []
 
         snmpset_cmd = f'snmpset -c {self.snmp_community} -v2c {self.host_ip} {self.oid}'
-        print(snmpset_cmd)
         cmd = snmpset_cmd.split()
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
@@ -55,7 +52,6 @@ class SnmpWalk:
                 break
 
             if output:
-                print(output)
                 outline = output.decode('utf-8')
                 snmpset_out.append(outline)
 
