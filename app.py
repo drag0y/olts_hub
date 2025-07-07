@@ -21,7 +21,6 @@ PATHDB = f"instance/{NAMEDB}"
 
 IP_SRV = os.getenv('IP_SRV')
 PORT_SRV = os.getenv('PORT_SRV')
-NETBOX = os.getenv('NETBOX')
 
 SNMP_READ_H = os.getenv('SNMP_READ_H')
 SNMP_READ_B = os.getenv('SNMP_READ_B')
@@ -42,7 +41,6 @@ PATHDB = f"instance/{NAMEDB}"
 
 IP_SRV = os.getenv('IP_SRV')
 PORT_SRV = os.getenv('PORT_SRV')
-NETBOX = os.getenv('NETBOX')
 
 SNMP_READ_H = os.getenv('SNMP_READ_H')
 SNMP_READ_B = os.getenv('SNMP_READ_B')
@@ -223,28 +221,14 @@ def olt_update(number):
 @app.route("/oltslistupdate")
 def oltslistupdate():
     ''' Получить список ОЛТов из НетБокса '''
-    if NETBOX == "1":
-        try:
-            get_netbox_olt_list()
-            flash('Получен список ОЛТов из NetBox')
-#            flash("Функция отключена Администратором")
-
-            return redirect('/')
-
-        except:
-            flash('ERROR. Убедитесь, что на всех ОЛТах проставлены теги и платформы')
-
-            return redirect('/')
-
-    elif NETBOX == "2":
-#        flash("NetBox отключён, ОЛТы добавляются в ручном режиме")
-        
-        return redirect('/oltadd')
-
-    else:
-        flash("ERROR")
+    try:
+        get_netbox_olt_list()
+        flash('Получен список ОЛТов из NetBox')
 
         return redirect('/')
+
+    except:
+        flash('ERROR. Убедитесь, что на всех ОЛТах проставлены теги и платформы')
 
 
 @app.route("/oltsupdate")
