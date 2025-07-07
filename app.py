@@ -81,16 +81,12 @@ class AboutOlt(db.Model):
         return '<AboutOlt %r>' % self.number
 
 
-
 class Main_Api(Resource):
     def get(self, onu):
-#        onuinfo = {onu: {"state": "Online", "level": -666}}
+        onurequest = FindOnu(onu, PATHDB)
+        onu_info = onurequest.onuinfo()
 
-        onurequest = FindOnu(onu, "epon", PATHDB)
-        out, test_out = onurequest.surveyonu()
-
-        return test_out
-#        return onuinfo
+        return onu_info
 
 
 api.add_resource(Main_Api, "/api/onuinfo/<string:onu>")
