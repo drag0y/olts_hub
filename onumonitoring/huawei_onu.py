@@ -485,7 +485,7 @@ class HuaweiGetOnuInfo:
             catv_out = "Не поддерживается"
         if self.pon_type == "gpon":
             catvstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.63.1.2"
-            cmd = f"snmpset -c {self.snmp_conf} -v2c {self.olt_ip} {catvstatusoid}.{self.portoid}.{self.onuid}.1 i 1"
+            cmd = f"snmpset -c {self.snmp_wr} -v2c {self.olt_ip} {catvstatusoid}.{self.portoid}.{self.onuid}.1 i 1"
             cmd_to_subprocess = cmd.split()
             process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
             data = process.communicate(timeout=3)
@@ -508,7 +508,7 @@ class HuaweiGetOnuInfo:
             catv_out = "Не поддерживается"
         if self.pon_type == "gpon":
             catvstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.63.1.2"
-            cmd = f"snmpset -c {self.snmp_conf} -v2c {self.olt_ip} {catvstatusoid}.{self.portoid}.{self.onuid}.1 i 2"
+            cmd = f"snmpset -c {self.snmp_wr} -v2c {self.olt_ip} {catvstatusoid}.{self.portoid}.{self.onuid}.1 i 2"
             cmd_to_subprocess = cmd.split()
             process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
             data = process.communicate(timeout=3)
