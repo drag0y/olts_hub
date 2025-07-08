@@ -341,10 +341,10 @@ def onu_delete(onu):
     ''' 
     Удалить ОНУ с ОЛТа
     '''
-#    onurequest = FindOnu(onu, PATHDB)
-#    out = onurequest.onureboot()
-#    flash(out)
-    flash('Ошибка. Функция в разработке')
+    onurequest = FindOnu(onu, PATHDB)
+    out = onurequest.onudelete()
+    flash(out)
+#    flash('Ошибка. Функция в разработке')
                 
     return redirect(f'/onuinfo/{onu}')
 

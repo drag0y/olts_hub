@@ -162,12 +162,13 @@ class FindOnu:
                 else:
                     self.onuid = self.idonu
                     self.portonu_out = self.portonu_out[0]
-                    onustate = "Не удалось определить состояние ОНУ, возможно ОЛТ не в сети или не отвечает"
+                    onustate = "ОЛТ не в сети или не отвечает. Или ОНУ была удалена."
 
         onuinformation = {
             "mac/sn": self.useronu,
             "onu_state": int(onu_state),
             "oltname": self.olt_name,
+            "oltip": self.olt_ip,
             "olt_id": self.olt_id,
             "iface_state": onustate,
             "iface_name": self.portonu_out,
@@ -234,3 +235,20 @@ class FindOnu:
                 rebootonu_out = onu_reboot.setonureboot()
 
         return rebootonu_out
+
+
+    def onudelete(self):
+        '''
+        Delete ONU
+        '''
+        delete_out = 'ERROR'
+        if "bdcom" in self.platform:
+            onu_delete = BdcomGetOnuInfo(**self.onu_params)
+            delete_out = onu_delete.setonudelete()
+        elif "huawei" in self.platform:
+            delete_out = 'ERROR. Функция пока доступна только для BDCOM'
+#            for o in self.onulist:
+#                onu_reboot = HuaweiGetOnuInfo(**o)
+#                rebootonu_out = onu_reboot.setonureboot()
+
+        return delete_out

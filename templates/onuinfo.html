@@ -47,12 +47,12 @@ ONU info
                         {% if 'В сети' in item.iface_state %}
                     	<td><span class="badge text-bg-success rounded-pill fw-bold">{{ item.iface_state }}</span></td>
                         {% else %}
-                    	<td><span class="badge text-bg-danger rounded-pill fw-bold" width="400">{{ item.iface_state }}</span></td>
+                    	<td><span class="badge text-bg-danger rounded-pill fw-bold">{{ item.iface_state }}</span></td>
                         {% endif %}
 
                     </tr>
                     <tbody class="table-group-divider">
-                    <td>ONU найдена на OLTе:</td><td>{{ item.oltname }}</td>
+                    <td>ONU найдена на OLTе:</td><td>{{ item.oltname }}<br>{{ item.oltip }}</td>
                     </tbody>
                     <tr><td>Порт: {{ item.iface_name }}</td><td>id: {{ item.onuid }}</td></tr>
                     <tr><td>Статус LAN порта:</td><td>{{ item.lanstate }}</td></tr>

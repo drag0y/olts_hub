@@ -375,3 +375,32 @@ class BdcomGetOnuInfo:
                     setreboot_out = "Ошибка"
 
         return setreboot_out
+
+
+    def setonudelete(self):
+        '''
+        Метод для удаления ОНУ
+        '''
+        parse_delete = "INTEGER: (?P<setdelete>.+)"
+        if "epon" in self.pon_type:
+            setonudeleteoid = "1.3.6.1.4.1.3320.101.11.1.1.2"
+                
+        if "gpon" in self.pon_type:
+            setonudeleteoid = ""
+                    
+        onudeleteoid = f'{setonudeleteoid}.{self.portoltid}{self.onumacdec} i 0'
+        snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, onudeleteoid)
+        onudelete = snmpset.snmpset()
+                    
+        setdelete_out = 'Ошибка. OLT не отвечает или не включен SNMP Write'
+        for l in onudelete:
+            match = re.search(parse_delete, l)            
+            if match:
+                setdelete = match.group('setdelete')
+                if setdelete == '0':
+                    setdelete_out = "ОНУ удалена"
+                else:
+                    setdelete_out = "Ошибка"
+
+        return setdelete_out
+   
