@@ -403,4 +403,53 @@ class BdcomGetOnuInfo:
                     setdelete_out = "Ошибка"
 
         return setdelete_out
-   
+
+
+    def getllidmacsearch(self):
+        '''
+        Получение абонентских маков с LAN порта ОНУ
+        ''' 
+        searchmac_out = []
+        parse_mac = 'Hex-STRING: (?P<getmac>\S+ \S+ \S+ \S+ \S+ \S+)'
+        parse_set = 'INTEGER: (?P<setllidmac>.+)'
+
+        if "epon" in self.pon_type:
+            setllidmacoid = '1.3.6.1.4.1.3320.101.9.2.1.0'
+            getmacoid = '1.3.6.1.4.1.3320.152.1.1.3'
+            getmacoid2 = '1.3.6.1.4.1.3320.101.9.2.3'
+        if "gpon" in self.pon_type:
+            setllidmacoid = ''
+            getmacoid = ''
+
+        getmac_oid = f'{getmacoid}.{self.onuid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, getmac_oid)
+        searchmac = snmpget.snmpget()
+
+        for l in searchmac:
+            match = re.search(parse_mac, l)
+            if match:
+                mac = match.group('getmac')
+                searchmac_out.append(mac.replace(' ', ':'))
+            else:
+                setllidmac_oid = f'{setllidmacoid} i {self.onuid}'
+                snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, setllidmac_oid)
+                setllidmac = snmpset.snmpset()
+
+                if not setllidmac:
+                    searchmac_out = ['Не удалось получить МАК адреса']
+                for l in setllidmac:
+                    match = re.search(parse_set, l)
+                    if match:
+                        setmac = match.group('setllidmac')
+                        if setmac == f'{self.onuid}':
+                            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, getmacoid2)
+                            searchmac = snmpget.snmpget()
+
+                            for l in searchmac:
+                                match = re.search(parse_mac, l)
+                                if match:
+                                    mac = match.group('getmac')
+                                    searchmac_out.append(mac.replace(' ', ':'))
+
+        return searchmac_out
+        

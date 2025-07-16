@@ -56,6 +56,8 @@ ONU info
                     </tbody>
                     <tr><td>Порт: {{ item.iface_name }}</td><td>id: {{ item.onuid }}</td></tr>
                     <tr><td>Статус LAN порта:</td><td>{{ item.lanstate }}</td></tr>
+                    <tr><td>Мак адреса с LAN порта:</td>
+                        <td>{% for i in item.lan_mac %}{{ i }}<br>{% endfor %}</td></tr>
                     <tr><td>Статус CATV порта:</td>
                         {% if 'OFF' in item.catvstate %}
                             <td>

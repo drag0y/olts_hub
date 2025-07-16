@@ -157,6 +157,8 @@ class HuaweiGetOnuInfo:
                     lastdownonu = "LOS"
                 elif last_down_onu == '9':
                     lastdownonu = "Admin Reset"
+                elif last_down_onu == '18':
+                    lastdownonu = "RING"
                 else:
                     lastdownonu = "Неизвестно"
 

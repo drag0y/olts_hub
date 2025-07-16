@@ -114,6 +114,7 @@ class FindOnu:
         reason_down = '-'
         level_onu = -0.0
         level_olt = -0.0
+        lan_mac = []
 
         if "huawei" in self.platform:
             for o in self.onulist:
@@ -129,6 +130,7 @@ class FindOnu:
                     time_up = onu_info.getonuuptime()
                     time_down = onu_info.gettimedown()
                     reason_down = onu_info.getlastdown()
+                    lan_mac = []
 
                 # ---- Если ONU не в сети, то вызываем следующие методы
                 elif onu_state == '2':
@@ -152,6 +154,8 @@ class FindOnu:
                     time_up = time_up.replace("-666 часов", "Не поддерживается")
                     self.onuid = self.idonu
                     self.portonu_out = self.portonu_out[0]
+                    reason_down = onu_info.getlastdown()
+                    lan_mac = onu_info.getllidmacsearch()
 
                 elif onu_state == "2":
                     onustate = "Не в сети"
@@ -174,6 +178,7 @@ class FindOnu:
             "iface_name": self.portonu_out,
             "onuid": self.onuid,
             "lanstate": state_lan,
+            "lan_mac": lan_mac,
             "catvstate": catv_state,
             "catvlevel": float(catv_level),
             "timeup": time_up,

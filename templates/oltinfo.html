@@ -78,7 +78,7 @@
                 <h6 class="my-0 text-black">Незарегистрированные ОНУ:</h6><br>
             {% for u in unregonu %}
 
-            <span class="text-body-secondary">MAC/SN: {{ u.mac }}; Порт ОЛТа: {{ u.oltport }}</span><br>
+            <span>MAC/SN: <b class="text-danger">{{ u.mac }}</b>; Порт ОЛТа: <b class="text-danger">{{ u.oltport }}</p></span><br>
 
             {% endfor %}
 
