@@ -23,29 +23,54 @@
 
 
     </header>
-
+<div class="text-center">
+{% if 'В сети' in olt_information.olt_state %}
+<img src="{{ url_for('static', filename='images/olt_online.jpg') }}" width="200">
+{% else %}
+<img src="{{ url_for('static', filename='images/olt_offline.jpg') }}" width="200">
+{% endif %}
+</div>
 </div>
     <div class="container col-md-5 col-lg-5 order-md-last">
         <ul class="list-group mb-3">
+    		<li class="list-group-item d-flex justify-content-between lh-sm">
+                <div>
+		    <h6 class="my-0 text-black">Статус ОЛТа:</h6>
+ 	        </div>
+                {% if 'В сети' in olt_information.olt_state %}
+          	    <span class="badge text-bg-success rounded-pill fw-bold">{{ olt_information.olt_state }}</span>
+                {% else %}
+                <span class="badge text-bg-danger rounded-pill fw-bold">{{ olt_information.olt_state }}</span>
+                {% endif %}
+
+            </li>
+
+
             <li class="list-group-item d-flex justify-content-between lh-sm">
                 <div>
 		    <h6 class="my-0 text-black">Имя ОЛТа:</h6>
 	        </div>
-            	<span class="text-body-secondary">{{ olts_list.hostname }}</span>
+            	<span class="text-body-secondary">{{ olt_information.oltname }}</span>
             </li>
 
             <li class="list-group-item d-flex justify-content-between lh-sm">
                 <div>
 		    <h6 class="my-0 text-black">IP адрес:</h6>
  	        </div>
-          	    <span class="text-body-secondary">{{ olts_list.ip_address }}</span>
+          	    <span class="text-body-secondary">{{ olt_information.ip_address }}</span>
             </li>
-		
+
             <li class="list-group-item d-flex justify-content-between lh-sm">
                 <div>
                     <h6 class="my-0 text-black">Платформа:</h6>
                 </div>
-                <span class="text-body-secondary">{{ olts_list.platform }}</span>
+                <span class="text-body-secondary">{{ olt_information.platform }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between lh-sm">
+                <div>
+                    <h6 class="my-0 text-black">Зарегистрированные ОНУ:</h6>
+                </div>
+                <span class="text-body-secondary">{{ olt_information.countonu }}</span>
             </li>
 
 	    <li class="list-group-item d-flex justify-content-between lh-sm">
@@ -55,17 +80,17 @@
 		    {% set ns = namespace(counter=false) %}
 		    {% set ns.counter = 1 %}
 		   
-		    {% for port in ports %}
+		    {% for port in olt_information.ports %}
                         {% if ns.counter <= 16 %}
 		    
-                            <a href="/oltinfo/{{ olts_list.number }}/{{ port|replace("/", ".") }}" class="p-1 btn btn-outline-dark btn-sm" type="submit">{{ port }}</a>
+                            <a href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace("/", ".") }}" class="p-1 btn btn-outline-dark btn-sm" type="submit">{{ port }}</a>
 		    
 			    {% set ns.counter = ns.counter+1 %}
                         {% else %}
                             {% set ns.counter = 1 %}
                             <br>
 			    <hr>
-                            <a href="/oltinfo/{{ olts_list.number }}/{{ port|replace("/", ".") }}" class="btn btn-outline-dark btn-sm" type="submit">{{ port }}</a>
+                            <a href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace("/", ".") }}" class="btn btn-outline-dark btn-sm" type="submit">{{ port }}</a>
 
                             {% set ns.counter = ns.counter+1 %}
 		        {% endif %}
@@ -76,7 +101,7 @@
         <li class="list-group-item d-flex justify-content-between lh-sm">
             <div>
                 <h6 class="my-0 text-black">Незарегистрированные ОНУ:</h6><br>
-            {% for u in unregonu %}
+            {% for u in olt_information.unregonu %}
 
             <span>MAC/SN: <b class="text-danger">{{ u.mac }}</b>; Порт ОЛТа: <b class="text-danger">{{ u.oltport }}</p></span><br>
 
@@ -98,15 +123,18 @@
 
     <div class="btn-toolbar justify-content-between" role="toolbar" aria-label="Toolbar with button groups">
         <div class="btn-group" role="group" aria-label="First group">
-            <a href="/oltinfo/{{ olts_list.number }}/update" class="btn btn-warning">Опросить ОЛТ
+            <a href="/oltinfo/{{ olt_information.oltid }}/update" class="btn btn-warning">Опросить ОЛТ
 	    </a>
         </div>
             <div class="input-group">
-                <a href="/oltinfo/{{ olts_list.number }}/delete" class="btn btn-danger">Удалить ОЛТ
+                <a href="/oltinfo/{{ olt_information.oltid }}/delete" class="btn btn-danger">Удалить ОЛТ
 		</a>
 	    </div>
     </div>
 
 </div>
+
+
+
 
 {% endblock %}

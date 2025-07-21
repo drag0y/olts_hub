@@ -39,8 +39,10 @@ PF_BDCOM = os.getenv('PF_BDCOM')
 
 
 def get_netbox_olt_list():
-# --- Функция опрашивает NetBox по тегам, создаёт БД, обнуляя старую если есть.
-# --- И дальше передаёт данные об ОЛТе в другие функции для опроса
+    '''
+    Функция опрашивает NetBox по тегам, создаёт БД, обнуляя старую если есть.
+    И дальше передаёт данные об ОЛТе в другие функции для опроса
+    '''
     out_epon_olts = []
     out_gpon_olts = []
 
@@ -165,3 +167,9 @@ def delete_olt(pathdb, number):
     
     conn.close()
 
+
+def olt_add(pathdb, hostname, oltip, platform, pontype):
+    '''
+    Добавление ОЛТа вручную
+    '''
+    pass

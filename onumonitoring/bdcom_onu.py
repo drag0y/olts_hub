@@ -104,7 +104,7 @@ class BdcomGetOnuInfo:
 
     def getonuuptime(self):
         # Метод определяет время включения ОНУ
-        out_uptime = -666
+        out_uptime = '-666'
         parse_uptime = r'INTEGER: (?P<uptime>\S+)'
 
         if "epon" in self.pon_type:
@@ -130,7 +130,7 @@ class BdcomGetOnuInfo:
                 else:
                     onu_up_time = int(onu_up_time)/60/60
                     out_uptime = f"{int(onu_up_time)} часа(ов)"
-    
+
         return out_uptime
 
 
@@ -436,7 +436,8 @@ class BdcomGetOnuInfo:
                 setllidmac = snmpset.snmpset()
 
                 if not setllidmac:
-                    searchmac_out = ['Не удалось получить МАК адреса']
+                    searchmac_out = ['Не поддерживается']
+                
                 for l in setllidmac:
                     match = re.search(parse_set, l)
                     if match:

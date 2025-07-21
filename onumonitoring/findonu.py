@@ -30,14 +30,16 @@ class FindOnu:
             pon_type = 'epon'
         elif len(self.useronu) == 16:
             pon_type = 'gpon'
+        else:
+            raise ValueError('Wrong MAC or SN')
                 
         # ---- Подключение к базе и поиск ONU
         conn = sqlite3.connect(self.pathdb)
         cursor = conn.cursor()
         if pon_type == "epon":
-            findonu = cursor.execute(f'select * from epon where maconu glob "{useronu}"')
+            findonu = cursor.execute(f'select * from epon where maconu glob "{self.useronu}"')
         if pon_type == "gpon":
-            findonu = cursor.execute(f'select * from gpon where snonu glob "{useronu}"')
+            findonu = cursor.execute(f'select * from gpon where snonu glob "{self.useronu}"')
 
         for onuinfo in findonu:
             self.portid = onuinfo[2]
@@ -130,7 +132,7 @@ class FindOnu:
                     time_up = onu_info.getonuuptime()
                     time_down = onu_info.gettimedown()
                     reason_down = onu_info.getlastdown()
-                    lan_mac = []
+                    lan_mac = ['Не поддерживается']
 
                 # ---- Если ONU не в сети, то вызываем следующие методы
                 elif onu_state == '2':
@@ -151,7 +153,7 @@ class FindOnu:
                     level_onu, level_olt = onu_info.getonulevel()
                     state_lan = onu_info.getlanstatus()
                     time_up = onu_info.getonuuptime()
-                    time_up = time_up.replace("-666 часов", "Не поддерживается")
+                    time_up = time_up.replace("-666", "Не поддерживается")
                     self.onuid = self.idonu
                     self.portonu_out = self.portonu_out[0]
                     reason_down = onu_info.getlastdown()

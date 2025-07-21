@@ -9,6 +9,7 @@ from onumonitoring.oltinfo import OltInfo
 from onumonitoring.findonu import FindOnu
 from onumonitoring.get_olts import get_netbox_olt_list, olts_update, update_olt, delete_olt
 from onumonitoring.work_db import WorkDB
+from onumonitoring.findolt import FindOlt
 
 from dotenv import load_dotenv
 
@@ -31,23 +32,6 @@ PF_BDCOM = os.getenv('PF_BDCOM')
 DEBUG = os.getenv('DEBUG')
 
 load_dotenv()
-# NetBox
-TOKEN_API = os.getenv('API_KEY')
-HEADERS = {"Authorization": TOKEN_API}
-
-# Имя базы и путь до неё, папка должна быть instance, иначе не будет работать
-NAMEDB = "onulist.db"
-PATHDB = f"instance/{NAMEDB}"
-
-IP_SRV = os.getenv('IP_SRV')
-PORT_SRV = os.getenv('PORT_SRV')
-
-SNMP_READ_H = os.getenv('SNMP_READ_H')
-SNMP_READ_B = os.getenv('SNMP_READ_B')
-SNMP_CONF_H = os.getenv('SNMP_CONF_H')
-SNMP_CONF_B = os.getenv('SNMP_CONF_B')
-PF_HUAWEI = os.getenv('PF_HUAWEI')
-PF_BDCOM = os.getenv('PF_BDCOM')
 
 app = Flask(__name__)
 api = Api()
@@ -95,29 +79,22 @@ api.init_app(app)
 
 @app.route("/", methods=['POST', 'GET'])
 def index():
-    ''' Главная страница, получение через строку поиска мака или серийника ОНУ
-    и дальнейшая обработка'''
+    ''' 
+    Главная страница, получение через строку поиска мака или серийника ОНУ
+    и дальнейшая обработка
+    '''
 
     if request.method == "POST":
         try:
-            searchonu = request.form['searchonu']
-            onu = searchonu.lower().replace(' ','').replace(':', '').replace('.', '').replace('hwtc', '48575443').replace('-', '')
-            if len(onu) == 12:
-            
-                onurequest = FindOnu(onu, PATHDB)
-                onu_info = onurequest.onuinfo()
-                return render_template("/onuinfo.html", onu_info=onu_info)
+            onu = request.form['searchonu']
+            onurequest = FindOnu(onu, PATHDB)
+            onu_info = onurequest.onuinfo()
 
-            elif len(onu) == 16:
-            
-                onurequest = FindOnu(onu, PATHDB)
-                onu_info = onurequest.onuinfo()
-
-                return render_template("/onuinfo.html", onu_info=onu_info)
+            return render_template("/onuinfo.html", onu_info=onu_info)
            
-            else:
-                onu = f"Неправильный мак или серийный номер: {onu}"
-                return render_template("/onunotfound.html", onu=onu)
+        except ValueError:
+            onu = f"Неправильный мак или серийный номер: {onu}"
+            return render_template("/onunotfound.html", onu=onu)
 
         except AttributeError:
             onu = f"Ону {onu} не найдена"
@@ -147,38 +124,21 @@ def onuinfo(onu):
 
 @app.route("/oltinfo/<int:number>")
 def olt_info(number):
-    ''' Страница просмотра информации об ОЛТе '''
+    ''' 
+    Страница просмотра информации об ОЛТе
+    '''
     olts_list = OLTs.query.get(number)
     port_list = AboutOlt.query.all()
-   
-    ports = []
-    if PF_HUAWEI in olts_list.platform:
-        for i in port_list:
-            if i.ip_address == olts_list.ip_address:
-                ports.append(i.ponport)
+    
+    olt_params = {
+    "pathdb": PATHDB,
+    "olt_id": number,
+    }   
 
-        oltinfo_params = {
-        "pathdb": PATHDB,
-        "olt_ip": olts_list.ip_address,
-        "olt_port": '',
-        "platform": olts_list.platform,
-        "pontype": olts_list.pon,
-        }
-        olt_info = OltInfo(**oltinfo_params)
-        unregonu = olt_info.hwunregonu()
+    olt_find = FindOlt(**olt_params) 
+    olt_information = olt_find.olt_info()
 
-    if PF_BDCOM in olts_list.platform:
-        unregonu = []
-        for i in port_list:
-            if i.ip_address == olts_list.ip_address:
-                if ":" in i.ponport:
-                    pass
-                else:
-                    ports.append(i.ponport)
-
-    ports.sort()
-
-    return render_template("oltinfo.html", olts_list=olts_list, ports=ports, unregonu=unregonu)
+    return render_template("oltinfo.html", olt_information=olt_information)
 
 
 @app.route("/oltinfo/<int:number>/<string:port>")
@@ -206,12 +166,13 @@ def olt_port_info(number, port):
 
 @app.route("/oltinfo/<int:number>/update")
 def olt_update(number):
-    ''' Опрос конкретного ОЛТа '''
-#    try:
+    ''' 
+    Опрос конкретного ОЛТа
+    '''
     update_olt(PATHDB, number)
     flash("ОЛТ опрошен")
     
-    return redirect(f'/')
+    return redirect('/')
 
 
 @app.route("/oltslistupdate")
@@ -229,19 +190,20 @@ def oltslistupdate():
 
 @app.route("/oltsupdate")
 def oltsupdate():
-    ''' Опросить ВСЕ ОЛТы '''
-#    try:
+    '''
+    Опросить ВСЕ ОЛТы
+    '''
     olts_update(PATHDB)
     flash('Опрос ОЛТов завершён')
-#    flash("Функция отключена Администратором")
 
     return redirect('/')
    
 
 @app.route("/doubleonu")
 def doubleonu():
-    ''' Поиск дубликатов ОНУ '''
-#    try:
+    '''
+    Поиск дубликатов ОНУ
+    '''
     db = WorkDB(PATHDB)
     maconu = db.finddoublemac();
     snonu = db.finddoublesn();
@@ -275,8 +237,9 @@ def onu_catvoff(onu):
 
 @app.route("/oltadd", methods=['POST', 'GET'])
 def olt_add():
-    ''' Добавление нового ОЛТа (Если нет НетБокса) '''
-#    olt_add = OLTs.query.get(number)
+    '''
+    Добавление нового ОЛТа (Если нет НетБокса) 
+    '''
     if request.method == "POST":
         hostname = request.form['hostname']
         oltip = request.form['ip_address']
@@ -310,7 +273,6 @@ def olt_add():
             return render_template("oltadd.html", pf_huawei=PF_HUAWEI, pf_bdcom=PF_BDCOM)
 
     else:
-
         return render_template("oltadd.html", pf_huawei=PF_HUAWEI, pf_bdcom=PF_BDCOM)
 
 
@@ -344,7 +306,6 @@ def onu_delete(onu):
     onurequest = FindOnu(onu, PATHDB)
     out = onurequest.onudelete()
     flash(out)
-#    flash('Ошибка. Функция в разработке')
                 
     return redirect(f'/onuinfo/{onu}')
 
