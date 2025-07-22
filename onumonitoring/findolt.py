@@ -62,8 +62,8 @@ class FindOlt:
         }
         # Пингуем ОЛТ
         p = ping(f'{self.olt_ip}')
-
-        if p == None:
+        print('PING ---->', p)
+        if p == None or p == False:
             olt_state = 'Не в сети'
         else:
             olt_state = 'В сети'

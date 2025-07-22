@@ -172,6 +172,17 @@ def olt_update(number):
     update_olt(PATHDB, number)
     flash("ОЛТ опрошен")
     
+    return redirect(f'/oltinfo/{number}')
+
+
+@app.route("/oltupdate/<int:number>")
+def updateolt(number):
+    ''' 
+    Опрос конкретного ОЛТа с главной страницы
+    '''
+    update_olt(PATHDB, number)
+    flash("ОЛТ опрошен")
+    
     return redirect('/')
 
 
