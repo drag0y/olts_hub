@@ -1,4 +1,4 @@
-from cl_db.work_db import WorkDB
+from cl_db.db_migrate import MigrateDB
 
 
 # Имя базы и путь до неё, папка должна быть instance, иначе не будет работать
@@ -7,6 +7,6 @@ PATHDB = f"instance/{NAMEDB}"
 
 
 if __name__ == "__main__":
-    newdb = WorkDB(PATHDB)
-    newdb.createnewdb()
-    print(f"Создана новая база данных: {PATHDB}")
+    newdb = MigrateDB(PATHDB)
+    newdb.updatev1v2()
+    print('Миграция базы с версии 1, в версию 2, прошла успешно.')

@@ -1,0 +1,48 @@
+{% extends 'settings_base.html' %}
+
+{% block title %}
+Пользователи
+{% endblock %}
+
+{% block settings %}
+<div class="container col-md-4 col-lg-4 order-md-last">
+<form method="post">
+
+    {% for msg in get_flashed_messages() %}
+        {% if "Ошибка" in msg %}
+            <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
+        {% else %}
+            <h3 class="text-center"><span class="flash badge text-bg-success">{{msg}}</span></h3>
+        {% endif %}
+    {% endfor %}
+
+    <header>
+        <h1 class="text-center fw-bold">Профиль пользователя</h1>
+    </header>
+
+<table class="table">
+    <thead class="table-dark">
+        <tr>
+        <th scope="row">Пользователь</th>
+        <th scope="col">Привилегии</th>
+        </tr>
+    </thead>
+        <tbody class="table-group-divider">
+            <tr>
+            <td>{{ user_profile.username }}</td>
+            <td>{{ user_profile.privilage }}</td>
+            </tr>
+        </tbody>
+    </table>
+    <br>
+
+    <header>
+        <h1 class="text-center fw-bold">Смена пароля</h1>
+    </header>
+    <form method="post">
+    <input type="password" name="psw" id="psw" class="form-control" placeholder="Введите пароль (не менее 8-и символов)"><br>
+    <input type="password" name="psw_repeat" id="psw_repeat" class="form-control" placeholder="Повторите пароль"><br>
+<input type="submit" class="btn btn-success" value="Сменить пароль">
+</form>
+</div>
+{% endblock %}

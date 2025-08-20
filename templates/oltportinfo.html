@@ -23,9 +23,9 @@ ONU info
                     </tr>
                 </thead>
 
-	{% set ns = out_tree|length %}
+	{% set ns = pon_status|length %}
 	{% set ln = namespace(counter=false) %}
-	{% for item in out_tree %}
+	{% for item in pon_status %}
         
 	{% if item|length == 12 %} 
 		{% set ln.totalonu = 64 %}
@@ -37,17 +37,17 @@ ONU info
                     <tr>
                         <td><a href="/onuinfo/{{ item }}" class="link-dark" type="submit">{{ item }}</a></td>
 
-	    {% if 'ONLINE' in out_tree[item]['onustatus'] %}
+	    {% if 'ONLINE' in pon_status[item]['onustatus'] %}
 
-                        <td><span class="badge text-bg-success rounded-pill fw-bold">{{ out_tree[item]['onustatus'] }}</span></td>
+                        <td><span class="badge text-bg-success rounded-pill fw-bold">{{ pon_status[item]['onustatus'] }}</span></td>
 
 	    {% else %}
 
-                        <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ out_tree[item]['onustatus'] }}</span></td>
+                        <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ pon_status[item]['onustatus'] }}</span></td>
 	    {% endif %}
 
-                        <td>{{ out_tree[item]['levelin'] }}</td>
-                        <td>{{ out_tree[item]['levelout'] }}</td>
+                        <td>{{ pon_status[item]['levelin'] }}</td>
+                        <td>{{ pon_status[item]['levelout'] }}</td>
 
                     </tr>
                 </tbody>

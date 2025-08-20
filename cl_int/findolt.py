@@ -1,32 +1,32 @@
 import sqlite3
 import os
 from ping3 import ping
-from dotenv import load_dotenv
 
-from onumonitoring.oltinfo import OltInfo
-
-load_dotenv()
-
-PF_HUAWEI = os.getenv('PF_HUAWEI')
-PF_BDCOM = os.getenv('PF_BDCOM')
+from cl_db.db_cfg import Init_Cfg
+from cl_olt.huawei_olts import HuaweiGetOltInfo
+from cl_olt.bdcom_olts import BdcomGetOltInfo
 
 
 class FindOlt:
     """
     Класс для поиска ОЛТа, и определения состояния и параметров
     """
-    def __init__(self, pathdb, olt_id):
+    def __init__(self, pathdb, olt_id, olt_port=''):
         # ---- Подключение к базе и поиск ОЛТа
+        snmp_cfg = Init_Cfg(pathdb)
+        cfg = snmp_cfg.getcfg()
+        self.PF_HUAWEI = cfg['PL_H']
+        self.PF_BDCOM = cfg['PL_B']
+        self.SNMP_READ_H = cfg['SNMP_READ_H']
+        self.SNMP_READ_B = cfg['SNMP_READ_B']
+
         self.pathdb = pathdb
         self.olt_id = olt_id
+        self.olt_port = olt_port
     
-   
-    def olt_info(self):     
-        olt_state = ''
-        unregonu = []
+        # Поиск ОЛТа
         conn = sqlite3.connect(self.pathdb)
         cursor = conn.cursor()
-        # Поиск ОЛТа
         olt_info = cursor.execute(f'SELECT * FROM olts WHERE number="{self.olt_id}";')
 
         for o in olt_info:
@@ -34,6 +34,20 @@ class FindOlt:
             self.olt_ip = o[2]
             self.platform = o[3]
             self.pontype = o[4]
+
+        if olt_port:
+            ponport = cursor.execute(f'SELECT * FROM ponports WHERE ip_address="{self.olt_ip}" AND ponport LIKE "{self.olt_port}";')
+            for p in ponport:
+                self.port_oid = p[4]
+
+        conn.close()
+
+
+    def oltinfo(self):     
+        olt_state = ''
+        unregonu = []
+        conn = sqlite3.connect(self.pathdb)
+        cursor = conn.cursor()
         # Сбор списка портов
         port_info = cursor.execute(f'SELECT * from ponports WHERE ip_address="{self.olt_ip}";')
 
@@ -62,14 +76,13 @@ class FindOlt:
         }
         # Пингуем ОЛТ
         p = ping(f'{self.olt_ip}')
-        print('PING ---->', p)
         if p == None or p == False:
             olt_state = 'Не в сети'
         else:
             olt_state = 'В сети'
             # Ищем незарегистрированные ОНУ (только Huawei)
-            if PF_HUAWEI in self.platform:
-                oltinfo = OltInfo(**oltinfo_params)
+            if self.PF_HUAWEI in self.platform:
+                oltinfo = HuaweiGetOltInfo(self.hostname, self.olt_ip, self.SNMP_READ_H, self.pathdb, self.pontype)
                 unregonu = oltinfo.hwunregonu()
             else:
                 unregonu = []
@@ -82,7 +95,22 @@ class FindOlt:
         "platform": self.platform,
         "countonu": self.countonu,
         "ports": self.pon_ports,
+        "pontype": self.pontype,
         "unregonu": unregonu,
         }
 
         return olt_information
+
+
+    def ponportstatus(self):
+        '''
+        Уровни и статус пон дерева
+        '''
+        if self.PF_HUAWEI in self.platform:
+            olt_info = HuaweiGetOltInfo(self.hostname, self.olt_ip, self.SNMP_READ_H, self.pathdb, self.pontype) 
+            out_tree = olt_info.hwponstatustree(self.port_oid)
+
+        elif self.PF_BDCOM in self.platform:
+            olt_info = BdcomGetOltInfo(self.hostname, self.olt_ip, self.SNMP_READ_B, self.pathdb, self.pontype)
+            out_tree = olt_info.bdcomponstatustree(self.port_oid) 
+        return out_tree  

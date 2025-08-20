@@ -1,0 +1,59 @@
+{% extends 'settings_base.html' %}
+
+{% block title %}
+Пользователи
+{% endblock %}
+
+{% block settings %}
+<div class="container col-md-4 col-lg-4 order-md-last">
+<form method="post">
+
+    {% for msg in get_flashed_messages() %}
+        {% if "Ошибка" in msg %}
+            <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
+        {% else %}
+            <h3 class="text-center"><span class="flash badge text-bg-success">{{msg}}</span></h3>
+        {% endif %}
+    {% endfor %}
+
+    <header>
+        <h1 class="text-center fw-bold">Пользователи</h1>
+    </header>
+
+<table class="table">
+    <thead class="table-dark">
+        <tr>
+        <th scope="row">Пользователь</th>
+        <th scope="col">Привилегии</th>
+        <th scope="col">Действие</th>
+        </tr>
+    </thead>
+    {% for u in users %}
+        <tbody class="table-group-divider">
+            <tr>
+            <td>{{ u.user }}</td>
+            <td>{{ u.privilage }}</td>
+            <td>
+        <a href="/settings/deluser/{{ u.user }}" class="btn btn-dark text-danger btn-sm" type="submit">Удалить</a>
+            </td>
+            </tr>
+        </tbody>
+    {% endfor %}
+    </table>
+    <br>
+
+    <header>
+        <h1 class="text-center fw-bold">Создать пользователя</h1>
+    </header>
+    <form method="post">
+    <input type="text" name="username" id="username" class="form-control" placeholder="Введите имя пользователи"><br>
+    <input type="password" name="psw" id="psw" class="form-control" placeholder="Введите пароль (не менее 8-и символов)"><br>
+    <select class="form-select mb-4" name="privilage" id="privilage">
+        <option selected>Права пользователя</option>
+        <option value="Administrator">Administrator</option>
+        <option value="Operator">Operator</option>
+</select>
+<input type="submit" class="btn btn-success" value="Добавить">
+</form>
+</div>
+{% endblock %}

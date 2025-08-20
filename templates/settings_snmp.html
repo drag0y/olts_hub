@@ -1,0 +1,68 @@
+{% extends 'settings_base.html' %}
+
+{% block title %}
+Настройка SNMP
+{% endblock %}
+
+{% block settings %}
+<div class="container col-md-4 col-lg-4 order-md-last">
+{% for msg in get_flashed_messages() %}
+        {% if "Ошибка" in msg %}
+            <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
+        {% else %}
+            <h3 class="text-center"><span class="flash badge text-bg-success">{{msg}}</span></h3>
+        {% endif %}
+    {% endfor %}
+    <header>
+        <h1 class="text-center fw-bold">Настройки SNMP</h1>
+    </header>
+<table class="table">
+    <thead class="table-dark">
+        <tr>
+        <th scope="row">Параметр</th>
+        <th scope="col">Значение</th>
+        </tr>
+    </thead>
+        <tbody class="table-group-divider">
+            <tr>
+            <td>SNMP community Huawei Read</td>
+            <td>{{ cfg.SNMP_READ_H }}</td>
+            </tr>
+        </tbody>
+        <tbody class="table-group-divider">
+            <tr>
+            <td>SNMP community Huawei Write</td>
+            <td>{{ cfg.SNMP_CONF_H }}</td>
+            </tr>
+
+        </tbody>
+<tbody class="table-group-divider">
+            <tr>
+            <td>SNMP community BDCOM Read</td>
+            <td>{{ cfg.SNMP_READ_B }}</td>
+            </tr>
+        </tbody>
+<tbody class="table-group-divider">
+            <tr>
+            <td>SNMP community BDCOM Write</td>
+            <td>{{ cfg.SNMP_CONF_B }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+
+
+    <br>
+
+    <header>
+        <h1 class="text-center fw-bold">Редактировать настройки</h1>
+    </header>
+    <form method="post">
+    <input type="text" name="snmp_read_h" id="snmp_read_h" class="form-control" placeholder="SNMP community Huawei Read"><br>
+    <input type="text" name="snmp_conf_h" id="snmp_conf_h" class="form-control" placeholder="SNMP community Huawei Write"><br>
+    <input type="text" name="snmp_read_b" id="snmp_read_b" class="form-control" placeholder="SNMP community BDCOM Read"><br>
+    <input type="text" name="snmp_conf_b" id="snmp_conf_b" class="form-control" placeholder="SNMP community BDCOM Write"><br>
+    <input type="submit" class="btn btn-success" value="Добавить/Редактировать">
+    </form>
+</div>
+{% endblock %}

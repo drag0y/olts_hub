@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Добавление нового ОЛТа
+{% endblock %}
+
+{% block body %}
+<main class="d-flex flex-nowrap">
+<div class="d-flex flex-column flex-shrink-0 p-3" style="width: 280px;">
+      <span class="fs-4">Меню настроек</span>
+
+    <hr>
+        <ul class="nav nav-pills flex-column mb-auto">
+
+    {% for m in menu %}
+    <li>
+        <a href="{{ m.url }}" class="nav-link link-body-emphasis">
+          {{ m.menuname }}
+        </a>
+      </li>
+    {% endfor %}
+    </ul>
+    </hr>
+    
+  </div>
+<div class="b-example-divider b-example-vr"></div>
+{% block settings %}{% endblock %}
+</main>
+{% endblock %}

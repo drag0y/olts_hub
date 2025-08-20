@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <link rel="icon" type="image/x-icon" sizes="16x16" href="static//images/favicon.ico">
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+    <title>Вход</title>
+</head>
+<body class="d-flex align-items-center py-4 bg-body-tertiary">
+<main class="form-signin w-10 m-auto">
+{% for msg in get_flashed_messages() %}
+    {% if "Неправильный" in msg %}
+        <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
+    {% else %}
+        <h3 class="text-center"><span class="flash badge text-bg-success">{{msg}}</span></h3>
+    {% endif %}
+{% endfor %}
+<form method="post">
+<p align="center">
+<img class="mb-0" src="{{ url_for('static', filename='images/oltshub_login_logo.jpg') }}" alt="" width="150"> 
+</p>
+<h1 class="h3 mb-3 fw-normal">Введите логин и пароль</h1> 
+
+<div class="form-floating"> 
+    <input type="text" class="form-control" id="UserNameInput" name="username" placeholder="Username"> 
+    <label for="UserNameInput">Логин</label> 
+</div> 
+
+<div class="form-floating"> 
+    <input type="password" class="form-control" id="floatingPassword" name="psw" placeholder="Password"> 
+    <label for="floatingPassword">Пароль</label> 
+</div> 
+
+<div class="form-check text-start my-3"> 
+    <input class="form-check-input" type="checkbox" name="remember-me" value="remember-me" id="checkDefault"> 
+    <label class="form-check-label" for="checkDefault">
+Запомнить меня
+</label> 
+</div> 
+
+<input class="btn btn-warning w-100 py-2" type="submit" value="Войти">
+<p align="center" class="mt-5 mb-3 text-body-secondary">OLTs HUB v2.0 © 2025 by Drag0y</p> 
+
+</form> 
+
+</main>
+</body>

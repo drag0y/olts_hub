@@ -1,25 +1,24 @@
-{% extends 'base.html' %}
+{% extends 'settings_base.html' %}
 
 {% block title %}
 Добавление нового ОЛТа
 {% endblock %}
 
-{% block body %}
-<div class="container col-md-5 col-lg-4 order-md-last">
-    <header>
-        <h1 class="text-center fw-bold">Добавление нового ОЛТа</h1>
-    </header>
+{% block settings %}
 
-</div>
+<div class="container col-md-4 col-lg-4 order-md-last">
+    <form method="post">
 
 	{% for msg in get_flashed_messages() %}
 
-                <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
+    <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
 
         {% endfor %}
+ <header>
+        <h1 class="text-center fw-bold">Добавление нового ОЛТа</h1>
+    </header>
 
-<div class="container col-md-5 col-lg-4 order-md-last">
-    <form method="post">
+
 	<input type="text" name="hostname" id="hostname" class="form-control" placeholder="Введите имя ОЛТа"><br>
        	<input type="text" name="ip_address" id="ip_address" class="form-control" placeholder="Введите IP адрес ОЛТа"><br>
 
@@ -37,8 +36,8 @@
 
 	<input type="submit" class="btn btn-success" value="Добавить">
     </form>
-</div><br>
-<div class="container col-md-5 col-lg-4 order-md-last">
+<br>
+
     <header>
         <h1 class="text-center fw-bold">Получение списка ОЛТов из NetBox</h1>
     </header>

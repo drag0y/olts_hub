@@ -22,7 +22,7 @@ ONU info
 	    {% endif %}
 
 	{% endfor %}
-
+    
                     {% for item in onu_info %}
                     <table class="table">
                         <div class="text-center">
@@ -64,7 +64,7 @@ ONU info
                                 <span class="badge text-bg-danger rounded-pill fw-bold">
                                 {{ item.catvstate }}
                                 </span>
-                                <a href="/onuinfo/{{ item['mac/sn'] }}/catvon" class="btn btn-outline-dark">Включить</a>
+                                <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/catvon" class="btn btn-outline-dark">Включить</a>
                             </td>
     
                         {% elif 'ON' in item.catvstate %}
@@ -72,7 +72,7 @@ ONU info
                                 <span class="badge text-bg-success rounded-pill fw-bold">
                                 {{ item.catvstate }}                          
                                 </span>
-                                <a href="/onuinfo/{{ item['mac/sn'] }}/catvoff" class="btn btn-outline-dark">Выключить</a>
+                                <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/catvoff" class="btn btn-outline-dark">Выключить</a>
                             </td>
                         {% else %}
                             <td>{{ item.catvstate }}</td>
@@ -96,15 +96,19 @@ ONU info
         	<a href="/oltinfo/{{ item.olt_id }}/{{ item.iface_name|replace("/", ".") }}" class="btn btn-success ml-auto">Уровень дерева</a>
         </div>
         <div class="col-md-4">
-            <a href="/onuinfo/{{ item['mac/sn'] }}/reboot" class="btn btn-warning ml-auto">Перезагрузить ОНУ</a>
+            <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/reboot" class="btn btn-warning ml-auto">Перезагрузить ОНУ</a>
         </div>
         <div class="col-md-4">
-         <a href="/onuinfo/{{ item['mac/sn'] }}/deleteonu" class="btn btn-danger text-right">Удалить ОНУ</a>
+         <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/deleteonu" class="btn btn-danger text-right">Удалить ОНУ</a>
         </div>
     </div>
-</div>
+<br>
+<br>
+<br>
+<br>
 {% endfor %}
 
+</div>
 
 {% endblock %}
                     

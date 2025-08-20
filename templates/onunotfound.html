@@ -7,19 +7,17 @@ ONU info
 {% block body %}
 
 <div class="container col-md-5 col-lg-4 order-md-last">
-        
-<header>
-    <h4 class="text-center text-danger fw-bold">OLTs list</h4>
-</header>
-
+        <br> 
         <ul class="list-group mb-3">
-        
-          <li class="list-group-item d-flex justify-content-between">
-            <div>
-                        <h6 class="my-0 fw-bold">{{ onu }}</h6>
-            </div>
-          </li>
-        
+        <div class="text-center">
+        {% if 'Неправильный' in onu %}
+            <img src="{{ url_for('static', filename='images/onu_wrong_macorsn.png') }}" width="200">
+            <h5 class="my-0 fw-bold">{{ onu }}</h5>
+        {% else %}
+            <img src="{{ url_for('static', filename='images/onu_not_found.png') }}" width="300">
+            <h5 class="my-0 fw-bold">{{ onu }}</h5>
+        {% endif %}
+        </div>
         </ul>
 
 </div>

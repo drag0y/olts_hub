@@ -4,38 +4,35 @@ import ipaddress
 import sqlite3
 import os
 
-from onumonitoring.bdcom_olts import BdcomGetOltInfo
-from onumonitoring.huawei_olts import HuaweiGetOltInfo
-from onumonitoring.work_db import WorkDB, WorkingDB
+from cl_olt.bdcom_olts import BdcomGetOltInfo
+from cl_olt.huawei_olts import HuaweiGetOltInfo
+from cl_db.work_db import WorkDB, WorkingDB
+from cl_db.db_cfg import Init_Cfg
 
-from dotenv import load_dotenv
-
-
-load_dotenv()
-# NetBox
-TOKEN_API = os.getenv('API_KEY')
-HEADERS = {"Authorization": TOKEN_API}
 
 # Имя базы и путь до неё, папка должна быть instance, иначе не будет работать
 NAMEDB = "onulist.db"
 PATHDB = f"instance/{NAMEDB}"
 
-IP_SRV = os.getenv('IP_SRV')
-PORT_SRV = os.getenv('PORT_SRV')
-NETBOX = os.getenv('NETBOX')
+
+nbcfg = Init_Cfg(PATHDB)
+cfg = nbcfg.getcfg()
+TOKEN_API = cfg['API_KEY']
+URLNB = cfg['URLNB']
+EPON_TAG = cfg['EPON_TAG']
+GPON_TAG = cfg['GPON_TAG']
+
+HEADERS = {"Authorization": TOKEN_API}
 #
-EPON_TAG = os.getenv('EPON_TAG')
-GPON_TAG = os.getenv('GPON_TAG')
-URLNB = os.getenv('URLNB')
 URLGETEPON = f"{URLNB}/api/dcim/devices/?q=&tag={EPON_TAG}"
 URLGETGPON = f"{URLNB}/api/dcim/devices/?q=&tag={GPON_TAG}"
 #
-SNMP_READ_H = os.getenv('SNMP_READ_H')
-SNMP_READ_B = os.getenv('SNMP_READ_B')
-SNMP_CONF_H = os.getenv('SNMP_CONF_H')
-SNMP_CONF_B = os.getenv('SNMP_CONF_B')
-PF_HUAWEI = os.getenv('PF_HUAWEI')
-PF_BDCOM = os.getenv('PF_BDCOM')
+SNMP_READ_H = cfg['SNMP_READ_H']
+SNMP_READ_B = cfg['SNMP_READ_B']
+SNMP_CONF_H = cfg['SNMP_CONF_H']
+SNMP_CONF_B = cfg['SNMP_CONF_B']
+PF_HUAWEI = cfg['PL_H']
+PF_BDCOM = cfg['PL_B']
 
 
 def get_netbox_olt_list():
@@ -45,7 +42,6 @@ def get_netbox_olt_list():
     '''
     out_epon_olts = []
     out_gpon_olts = []
-
     epon = "epon"
     gpon = "gpon"
 
@@ -125,7 +121,7 @@ def olts_update(pathdb):
             ip_address = olt[2]
             platform = olt[3]
             pon_type = olt[4]
-
+            print(PF_HUAWEI,PF_BDCOM, platform)
             if PF_HUAWEI in platform:
                 olt = HuaweiGetOltInfo(hostname, ip_address, SNMP_READ_H, PATHDB, pon_type)
                 olt.getoltports()
