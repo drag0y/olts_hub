@@ -4,6 +4,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 import ipaddress
 import os
+import logging
+import logging.handlers
+from dotenv import load_dotenv
 
 from cl_int.findonu import FindOnu
 from cl_int.actonu import ActionOnu
@@ -16,8 +19,6 @@ from cl_db.db_users import Users_Cfg, UserInfo
 from cl_db.userlogin import UserLogin
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from dotenv import load_dotenv
-
 
 load_dotenv()
 
@@ -29,6 +30,9 @@ IP_SRV = os.getenv('IP_SRV')
 PORT_SRV = os.getenv('PORT_SRV')
 DEBUG = os.getenv('DEBUG')
 
+LOGDIR = './'
+LOGFILE = 'logging_oltshub.log'
+
 app = Flask(__name__)
 api = Api()
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{NAMEDB}'
@@ -38,6 +42,16 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Авторизуйтесь для доступа к сайту'
+
+
+logger = logging.getLogger('OLTsHUB')
+logger.setLevel(logging.DEBUG)
+logfile = logging.handlers.RotatingFileHandler(
+    f'{LOGDIR}{LOGFILE}', maxBytes=10000000, backupCount=3)
+logfile.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+logfile.setFormatter(formatter)
+logger.addHandler(logfile)
 
 
 @login_manager.user_loader
@@ -323,6 +337,9 @@ def onu_catvon(oltid, onu):
     '''
     onurequest = ActionOnu(PATHDB, onu, oltid)
     out = onurequest.onucatvon()
+    userid = current_user.get_id()
+    userinfo = dbase.getUser(userid)
+    logger.info(f"User {userinfo['username']} changed ONU {onu} CATV port state to ON")
     return redirect(f'/onuinfo/{onu}')
 
 
@@ -333,7 +350,10 @@ def onu_catvoff(oltid, onu):
     Выключить CATV порт
     '''
     onurequest = ActionOnu(PATHDB, onu, oltid)
-    out = onurequest.onucatvoff()        
+    out = onurequest.onucatvoff()
+    userid = current_user.get_id()
+    userinfo = dbase.getUser(userid)
+    logger.info(f"User {userinfo['username']} changed ONU {onu} CATV port state to OFF") 
     return redirect(f'/onuinfo/{onu}')
 
 
@@ -401,10 +421,11 @@ def olt_delete(number):
     if userinfo['privilage'] == 'Administrator':    
         delete_olt(PATHDB, number)
         flash("ОЛТ удалён из базы")
-
+        logger.info(f"User {userinfo['username']} deleted OLT id {number}")
         return redirect("/")
     else:
         flash('Ошибка! У вас недостаточно прав для удаления ОЛТа.')
+        logger.warning(f"User {userinfo['username']} tried delete OLT id {number}")
         return redirect(f'/oltinfo/{number}')
 
 
@@ -417,6 +438,9 @@ def onu_reboot(oltid, onu):
     onurequest = ActionOnu(PATHDB, onu, oltid)
     out = onurequest.onureboot()
     flash(out)
+    userid = current_user.get_id()
+    userinfo = dbase.getUser(userid)
+    logger.info(f"User {userinfo['username']} rebooted ONU {onu}, out text '{out}'")
                 
     return redirect(f'/onuinfo/{onu}')
 
@@ -430,6 +454,9 @@ def onu_delete(oltid, onu):
     onurequest = ActionOnu(PATHDB, onu, oltid)
     out = onurequest.onudelete()
     flash(out)
+    userid = current_user.get_id()
+    userinfo = dbase.getUser(userid)
+    logger.info(f"User {userinfo['username']} deleted ONU {onu}, out text '{out}'")
                 
     return redirect(f'/onuinfo/{onu}')
 
@@ -512,6 +539,7 @@ def olthub_adduser():
             add_user = Users_Cfg(PATHDB)
             user_out = add_user.adduser(username, psw, privilage)
             flash(user_out)
+            logger.info(f"User {userinfo['username']} created user {username}")
             return redirect('/settings/adduser')
         else:
             menu = menucfg.getmenucfg(userinfo['privilage'])
@@ -534,6 +562,7 @@ def olthub_deluser(username):
         deluser = Users_Cfg(PATHDB)
         deluser.deluser(username)
         flash('Пользователь удалён')
+        logger.info(f"User {userinfo['username']} deleted user {username}")
         return redirect('/settings/adduser')
     else:
         return redirect('/forbidden')
