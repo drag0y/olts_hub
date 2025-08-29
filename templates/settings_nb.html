@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block settings %}
-<div class="container col-md-4 col-lg-4 order-md-last">
+<div class="container col-md-6 col-lg-6 order-md-last">
 {% for msg in get_flashed_messages() %}
         {% if "Ошибка" in msg %}
             <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
@@ -16,67 +16,53 @@
     <header>
         <h1 class="text-center fw-bold">Настройки NetBox</h1>
     </header>
+    <form method="post">
 <table class="table">
     <thead class="table-dark">
         <tr>
         <th scope="row">Параметр</th>
-        <th scope="col">Значение</th>
+        <th scope="col">Текущее значение</th>
+        <th scope="col">Новое значение</th>
         </tr>
     </thead>
-        <tbody class="table-group-divider">
             <tr>
-            <td>API токен</td>
-            <td>{{ cfg.API_KEY }}</td>
+                <td>API токен</td>
+                <td>{{ cfg.API_KEY }}</td>
+                <td><input type="text" name="api_key" id="api_key" class="form-control" placeholder="Введите API токен для NetBox"><td>
             </tr>
-        </tbody>
-        <tbody class="table-group-divider">
             <tr>
-            <td>URL Netbox</td>
-            <td>{{ cfg.URLNB }}</td>
+                <td>URL Netbox</td>
+                <td>{{ cfg.URLNB }}</td>
+                <td><input type="text" name="urlnb" id="urlnb" class="form-control" placeholder="Введите URL NetBox"></td>
             </tr>
-
-        </tbody>
-<tbody class="table-group-divider">
             <tr>
-            <td>Tag Epon</td>
-            <td>{{ cfg.EPON_TAG }}</td>
+                <td>Tag Epon</td>
+                <td>{{ cfg.EPON_TAG }}</td>
+                <td><input type="text" name="tag_epon" id="tag_epon" class="form-control" placeholder="Введите тег Epon"></td>
             </tr>
-        </tbody>
-<tbody class="table-group-divider">
             <tr>
-            <td>Tag Gpon</td>
-            <td>{{ cfg.GPON_TAG }}</td>
+                <td>Tag Gpon</td>
+                <td>{{ cfg.GPON_TAG }}</td>
+                <td><input type="text" name="tag_gpon" id="tag_gpon" class="form-control" placeholder="Введите тег Gpon"></td>
             </tr>
-        </tbody>
-        <tbody class="table-group-divider">
             <tr>
-            <td>Платформа Huawei</td>
-            <td>{{ cfg.PL_H }}</td>
+                <td>Платформа Huawei</td>
+                <td>{{ cfg.PL_H }}</td>
+                <td><input type="text" name="pl_h" id="pl_h" class="form-control" placeholder="Введите платформу Huawei"></td>
             </tr>
-        </tbody>
-<tbody class="table-group-divider">
             <tr>
-            <td>Платформа BDCOM</td>
-            <td>{{ cfg.PL_B }}</td>
+                <td>Платформа BDCOM</td>
+                <td>{{ cfg.PL_B }}</td>
+                <td><input type="text" name="pl_b" id="pl_b" class="form-control" placeholder="Введите платформу BDCOM"></td>
             </tr>
-        </tbody>
+            <tr>
+               <td>Платформа C-DATA</td>
+               <td>{{ cfg.PL_C }}</td>
+               <td><input type="text" name="pl_c" id="pl_c" class="form-control" placeholder="Введите платформу C-Data"></td>
+            </tr>
     </table>
 
-
-
-    <br>
-
-    <header>
-        <h1 class="text-center fw-bold">Редактировать настройки</h1>
-    </header>
-    <form method="post">
-    <input type="text" name="api_key" id="api_key" class="form-control" placeholder="Введите API токен для NetBox"><br>
-    <input type="text" name="urlnb" id="urlnb" class="form-control" placeholder="Введите URL NetBox"><br>
-    <input type="text" name="tag_epon" id="tag_epon" class="form-control" placeholder="Введите тег Epon"><br>
-    <input type="text" name="tag_gpon" id="tag_gpon" class="form-control" placeholder="Введите тег Gpon"><br>
-    <input type="text" name="pl_h" id="pl_h" class="form-control" placeholder="Введите платформу Huawei"><br>
-    <input type="text" name="pl_b" id="pl_b" class="form-control" placeholder="Введите платформу BDCOM"><br>
-    <input type="submit" class="btn btn-success" value="Добавить/Редактировать">
+    <input type="submit" class="btn btn-success" value="Сохранить изменения">
     </form>
 </div>
 {% endblock %}

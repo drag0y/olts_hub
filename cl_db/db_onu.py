@@ -33,11 +33,9 @@ class DBOnuInfo:
                 'pontype': self.pon_type,
                 }
             onu_list_tmp1.append(onuinfo)
-
         onu_list_tmp2 = []
         for t1 in onu_list_tmp1:
             ponportonu = cursor.execute(f'''SELECT * FROM ponports WHERE ip_address="{t1['oltip']}" AND portoid="{t1['portid']}";''')
-
             self.portonu_out = "Не удалось определить порт"
             for portonu in ponportonu:
                 portinfo = {'portonu': portonu[3]}

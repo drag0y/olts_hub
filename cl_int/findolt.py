@@ -5,6 +5,7 @@ from ping3 import ping
 from cl_db.db_cfg import Init_Cfg
 from cl_olt.huawei_olts import HuaweiGetOltInfo
 from cl_olt.bdcom_olts import BdcomGetOltInfo
+from cl_olt.cdata_olts import CdataGetOltInfo
 
 
 class FindOlt:
@@ -17,8 +18,10 @@ class FindOlt:
         cfg = snmp_cfg.getcfg()
         self.PF_HUAWEI = cfg['PL_H']
         self.PF_BDCOM = cfg['PL_B']
+        self.PF_CDATA = cfg['PL_C']
         self.SNMP_READ_H = cfg['SNMP_READ_H']
         self.SNMP_READ_B = cfg['SNMP_READ_B']
+        self.SNMP_READ_C = cfg['SNMP_READ_C']
 
         self.pathdb = pathdb
         self.olt_id = olt_id
@@ -50,14 +53,15 @@ class FindOlt:
         cursor = conn.cursor()
         # Сбор списка портов
         port_info = cursor.execute(f'SELECT * from ponports WHERE ip_address="{self.olt_ip}";')
-
         self.pon_ports = []
         for p in port_info:
             if ':' in p[3]:
-                pass
+                self.ports = p[3].split(':')[0]
+                self.pon_ports.append(self.ports)
             else:
                self.ports = p[3]
                self.pon_ports.append(self.ports)
+        self.pon_ports_out = list(dict.fromkeys(self.pon_ports))
 
         self.pon_ports.sort()
         # Считаем количество ОНУ на ОЛТе
@@ -94,11 +98,11 @@ class FindOlt:
         "ip_address": self.olt_ip,
         "platform": self.platform,
         "countonu": self.countonu,
-        "ports": self.pon_ports,
+        "ports": self.pon_ports_out,
         "pontype": self.pontype,
         "unregonu": unregonu,
         }
-
+        
         return olt_information
 
 
@@ -113,4 +117,9 @@ class FindOlt:
         elif self.PF_BDCOM in self.platform:
             olt_info = BdcomGetOltInfo(self.hostname, self.olt_ip, self.SNMP_READ_B, self.pathdb, self.pontype)
             out_tree = olt_info.bdcomponstatustree(self.port_oid) 
+
+        elif self.PF_CDATA in self.platform:
+            olt_info = CdataGetOltInfo(self.hostname, self.olt_ip, self.SNMP_READ_C, self.pathdb, self.pontype)
+            out_tree = olt_info.cdataponstatustree(self.olt_port)
+
         return out_tree  

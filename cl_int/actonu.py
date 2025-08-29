@@ -5,6 +5,7 @@ from cl_db.db_cfg import Init_Cfg
 from cl_db.db_onu import DBOnuInfo
 from cl_onu.bdcom_onu import BdcomGetOnuInfo
 from cl_onu.huawei_onu import HuaweiGetOnuInfo
+from cl_onu.cdata_onu import CdataGetOnuInfo
 
 
 class ActionOnu:
@@ -28,11 +29,14 @@ class ActionOnu:
         cfg = snmp_cfg.getcfg()
         self.PF_HUAWEI = cfg['PL_H']
         self.PF_BDCOM = cfg['PL_B']
+        self.PF_CDATA = cfg['PL_C']
         self.SNMP_READ_H = cfg['SNMP_READ_H']
         self.SNMP_CONF_H = cfg['SNMP_CONF_H']
         self.SNMP_READ_B = cfg['SNMP_READ_B']
         self.SNMP_CONF_B = cfg['SNMP_CONF_B']
-               
+        self.SNMP_READ_C = cfg['SNMP_READ_C']
+        self.SNMP_CONF_C = cfg['SNMP_CONF_C']
+            
         onuinfo = DBOnuInfo(pathdb, useronu, pon_type)
         self.onulist = onuinfo.getonufromdb()
 
@@ -84,6 +88,30 @@ class ActionOnu:
                     self.onuid = self.idonu
                     self.portonu_out = self.portonu_out[0]
 
+                elif self.PF_CDATA in o['platform']:
+                    conn = sqlite3.connect(self.pathdb)
+                    cursor = conn.cursor()
+
+                    onumacdec = self.convert()
+                    self.portonu_out = o['portonu'].split(":")
+                    self.portolt = self.portonu_out[0]
+                    self.idonu = self.portonu_out[1]
+                    self.onu_params = {
+                        "hostname": o['oltname'],
+                        "pon_type": o['pontype'],
+                        "olt_ip": o['oltip'],
+                        "portoid": o['portid'],
+                        "onuid": o['onuid'],
+                        "snmp_com": self.SNMP_READ_C,
+                        "snmp_wr": self.SNMP_CONF_C,
+                        "pathdb": self.pathdb,
+                        "onumacdec": onumacdec,
+                        }
+                    conn.close()
+
+                    self.onuid = self.idonu
+                    self.portonu_out = self.portonu_out[0]
+
     def convert(self):
     # Метод конвертирует МАК ОНУ в десятичный формат
         outmacdec = ""
@@ -126,6 +154,9 @@ class ActionOnu:
         elif self.PF_HUAWEI in self.platform:
             onu_reboot = HuaweiGetOnuInfo(**self.onu_params)
             rebootonu_out = onu_reboot.setonureboot()
+        elif self.PF_CDATA in self.platform:
+            onu_reboot = CdataGetOnuInfo(**self.onu_params)
+            rebootonu_out = onu_reboot.setonureboot()
 
         return rebootonu_out
 
@@ -139,6 +170,8 @@ class ActionOnu:
             onu_delete = BdcomGetOnuInfo(**self.onu_params)
             delete_out = onu_delete.setonudelete()
         elif self.PF_HUAWEI in self.platform:
+            delete_out = 'ERROR. Функция пока доступна только для BDCOM'
+        elif self.PF_CDATA in self.platform:
             delete_out = 'ERROR. Функция пока доступна только для BDCOM'
 
         return delete_out

@@ -30,7 +30,7 @@ class Init_Cfg:
         return nb_values
 
 
-    def insertcfgnb(self, api_key, epon_tag, gpon_tag, urlnb, pl_h, pl_b):
+    def insertcfgnb(self, api_key, epon_tag, gpon_tag, urlnb, pl_h, pl_b, pl_c):
         '''
         Редактирование конфигурации NetBox
         '''
@@ -48,6 +48,8 @@ class Init_Cfg:
             cursor.execute(f"UPDATE cfg SET value = '{pl_h}' WHERE key = 'PL_H'")
         if pl_b:
             cursor.execute(f"UPDATE cfg SET value = '{pl_b}' WHERE key = 'PL_B'")
+        if pl_c:
+            cursor.execute(f"UPDATE cfg SET value = '{pl_c}' WHERE key = 'PL_C'")
 
         conn.commit()
         conn.close()
@@ -55,7 +57,7 @@ class Init_Cfg:
         return 'Настройки отредактированы.'
 
 
-    def insercfgsnmp(self, snmp_read_h, snmp_conf_h, snmp_read_b, snmp_conf_b):
+    def insercfgsnmp(self, snmp_read_h, snmp_conf_h, snmp_read_b, snmp_conf_b, snmp_read_c, snmp_conf_c):
         '''
         Редактирование конфигурации SNMP
         '''
@@ -69,6 +71,10 @@ class Init_Cfg:
             cursor.execute(f"UPDATE cfg SET value = '{snmp_read_b}' WHERE key = 'SNMP_READ_B'")
         if snmp_conf_b:
             cursor.execute(f"UPDATE cfg SET value = '{snmp_conf_b}' WHERE key = 'SNMP_CONF_B'")
+        if snmp_read_c:
+            cursor.execute(f"UPDATE cfg SET value = '{snmp_read_c}' WHERE key = 'SNMP_READ_C'")
+        if snmp_conf_c:
+            cursor.execute(f"UPDATE cfg SET value = '{snmp_conf_c}' WHERE key = 'SNMP_CONF_C'")
 
         conn.commit()
         conn.close()        

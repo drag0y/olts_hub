@@ -4,6 +4,7 @@ import os
 from cl_db.db_cfg import Init_Cfg
 from cl_olt.bdcom_olts import BdcomGetOltInfo
 from cl_olt.huawei_olts import HuaweiGetOltInfo
+from cl_olt.cdata_olts import CdataGetOltInfo
 from werkzeug.security import generate_password_hash
 
 
@@ -51,8 +52,9 @@ class WorkDB:
                 ['EPON_TAG', 'epon'],
                 ['GPON_TAG', 'gpon'],
                 ['URLNB', 'https://'],
-                ['PL_H', 'huawei'],
-                ['PL_B', 'bdcom'],
+                ['PL_H', 'Huawei_OLT'],
+                ['PL_B', 'BDCOM'],
+                ['PL_C', 'C-Data']
             ]
         # Создаём дефолтные настройки для SNMP (как образец)
         snmp_cfg = [
@@ -60,6 +62,8 @@ class WorkDB:
                 ['SNMP_READ_B', 'public'],
                 ['SNMP_CONF_H', 'private'],
                 ['SNMP_CONF_B', 'private'],
+                ['SNMP_READ_C', 'public'],
+                ['SNMP_CONF_C', 'private'],
             ]
 
         menu_cfg = [
@@ -185,8 +189,10 @@ class WorkingDB:
         cfg = snmp_cfg.getcfg()
         self.PF_HUAWEI = cfg['PL_H']
         self.PF_BDCOM = cfg['PL_B']
+        self.PF_CDATA = cfg['PL_C']
         self.SNMP_READ_H = cfg['SNMP_READ_H']
         self.SNMP_READ_B = cfg['SNMP_READ_B']
+        self.SNMP_READ_C = cfg['SNMP_READ_C']
 
 
     def drop_olt(self):
@@ -236,5 +242,8 @@ class WorkingDB:
                     olt = BdcomGetOltInfo(hostname, ip_address, self.SNMP_READ_B, self.pathdb, pon_type)
                     olt.getoltports()
                     olt.getonulist()
-
-
+                
+                elif self.PF_CDATA in platform:
+                    olt = CdataGetOltInfo(hostname, ip_address, self.SNMP_READ_C, self.pathdb, pon_type)
+                    olt.getoltports()
+                    olt.getonulist()

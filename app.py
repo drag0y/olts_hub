@@ -368,8 +368,7 @@ def olt_add():
     if userinfo['privilage'] == 'Administrator':
         getcfg = Init_Cfg(PATHDB)
         cfg = getcfg.getcfg()
-        PF_HUAWEI = cfg['PL_H']
-        PF_BDCOM = cfg['PL_B']
+        PF_LIST = [cfg['PL_H'], cfg['PL_B'], cfg['PL_C']]
         menu = menucfg.getmenucfg(userinfo['privilage'])
         if request.method == "POST":
             hostname = request.form['hostname']
@@ -383,7 +382,7 @@ def olt_add():
                 if "Выберите" in platform or "Выберите" in pontype:
                     flash("Не выбрана платформа или тип портов")
 
-                    return render_template("oltadd.html", pf_huawei=PF_HUAWEI, pf_bdcom=PF_BDCOM, menu=menu)
+                    return render_template("oltadd.html", pf_list=PF_LIST, menu=menu)
 
                 else:
                     oltadd = OLTs(hostname=hostname, ip_address=oltip, platform=platform, pon=pontype)
@@ -401,10 +400,10 @@ def olt_add():
             except:
                 flash("Некорректный IP адресс")
 
-                return render_template("oltadd.html", pf_huawei=PF_HUAWEI, pf_bdcom=PF_BDCOM, menu=menu)
+                return render_template("oltadd.html", pf_list=PF_LIST, menu=menu)
 
         else:
-            return render_template("oltadd.html", pf_huawei=PF_HUAWEI, pf_bdcom=PF_BDCOM, menu=menu)
+            return render_template("oltadd.html", pf_list=PF_LIST, menu=menu)
 
     else:
         return redirect('forbidden')
@@ -476,9 +475,12 @@ def olthub_settings_snmp():
                 'snmp_conf_h': request.form['snmp_conf_h'],
                 'snmp_read_b': request.form['snmp_read_b'],
                 'snmp_conf_b': request.form['snmp_conf_b'],
+                'snmp_read_c': request.form['snmp_read_c'],
+                'snmp_conf_c': request.form['snmp_conf_c'],
             }
             setsnmpcfg = Init_Cfg(PATHDB)
             out = setsnmpcfg.insercfgsnmp(**snmp_cfg)
+            print(snmp_cfg)
             flash(out)
             return redirect('/settings/cfgsnmp')
         else:
@@ -507,6 +509,7 @@ def olthub_settings_nb():
                 'urlnb': request.form['urlnb'],
                 'pl_h': request.form['pl_h'],
                 'pl_b': request.form['pl_b'],
+                'pl_c': request.form['pl_c'],
             }
             setnbcfg = Init_Cfg(PATHDB)
             out = setnbcfg.insertcfgnb(**nb_cfg)

@@ -15,31 +15,33 @@ NAMEDB = "onulist.db"
 PATHDB = f"instance/{NAMEDB}"
 
 
-nbcfg = Init_Cfg(PATHDB)
-cfg = nbcfg.getcfg()
-TOKEN_API = cfg['API_KEY']
-URLNB = cfg['URLNB']
-EPON_TAG = cfg['EPON_TAG']
-GPON_TAG = cfg['GPON_TAG']
-
-HEADERS = {"Authorization": TOKEN_API}
-#
-URLGETEPON = f"{URLNB}/api/dcim/devices/?q=&tag={EPON_TAG}"
-URLGETGPON = f"{URLNB}/api/dcim/devices/?q=&tag={GPON_TAG}"
-#
-SNMP_READ_H = cfg['SNMP_READ_H']
-SNMP_READ_B = cfg['SNMP_READ_B']
-SNMP_CONF_H = cfg['SNMP_CONF_H']
-SNMP_CONF_B = cfg['SNMP_CONF_B']
-PF_HUAWEI = cfg['PL_H']
-PF_BDCOM = cfg['PL_B']
-
-
 def get_netbox_olt_list():
     '''
     Функция опрашивает NetBox по тегам, создаёт БД, обнуляя старую если есть.
     И дальше передаёт данные об ОЛТе в другие функции для опроса
     '''
+    nbcfg = Init_Cfg(PATHDB)
+    cfg = nbcfg.getcfg()
+    TOKEN_API = cfg['API_KEY']
+    URLNB = cfg['URLNB']
+    EPON_TAG = cfg['EPON_TAG']
+    GPON_TAG = cfg['GPON_TAG']
+
+    HEADERS = {"Authorization": TOKEN_API}
+    #
+    URLGETEPON = f"{URLNB}/api/dcim/devices/?q=&tag={EPON_TAG}"
+    URLGETGPON = f"{URLNB}/api/dcim/devices/?q=&tag={GPON_TAG}"
+    #
+    SNMP_READ_H = cfg['SNMP_READ_H']
+    SNMP_READ_B = cfg['SNMP_READ_B']
+    SNMP_READ_C = cfg['SNMP_READ_C']
+    SNMP_CONF_H = cfg['SNMP_CONF_H']
+    SNMP_CONF_B = cfg['SNMP_CONF_B']
+    SNMP_CONF_C = cfg['SNMP_CONF_C']
+    PF_HUAWEI = cfg['PL_H']
+    PF_BDCOM = cfg['PL_B']
+    PF_CDATA = cfg['PL_C']
+
     out_epon_olts = []
     out_gpon_olts = []
     epon = "epon"
@@ -129,6 +131,12 @@ def olts_update(pathdb):
 
             elif PF_BDCOM in platform:
                 olt = BdcomGetOltInfo(hostname, ip_address, SNMP_READ_B, PATHDB, pon_type)
+                olt.getoltports()
+                olt.getonulist()
+
+            elif PF_CDATA in platform:
+                print("C-Data OLT found, starting polling...")
+                olt = CdataGetOltInfo(hostname, ip_address, SNMP_READ_C, PATHDB, pon_type)
                 olt.getoltports()
                 olt.getonulist()
 

@@ -24,8 +24,9 @@
 
 <select class="form-select mb-4" aria-label="Пример выбора по умолчанию" name="platform" id="platform">
   <option selected>Выберите платформу</option>
-  <option value="{{ pf_huawei }}">{{ pf_huawei }}</option>
-  <option value="{{ pf_bdcom }}">{{ pf_bdcom }}</option>
+  {% for pf in pf_list %}
+  <option value="{{ pf }}">{{ pf }}</option>
+  {% endfor %}
 </select>
 
 <select class="form-select mb-4" aria-label="Пример выбора по умолчанию" name="pontype" id="pontype">

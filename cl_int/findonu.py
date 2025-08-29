@@ -5,6 +5,7 @@ from cl_db.db_cfg import Init_Cfg
 from cl_db.db_onu import DBOnuInfo
 from cl_onu.bdcom_onu import BdcomGetOnuInfo
 from cl_onu.huawei_onu import HuaweiGetOnuInfo
+from cl_onu.cdata_onu import CdataGetOnuInfo
 
 
 class FindOnu:
@@ -25,10 +26,13 @@ class FindOnu:
         cfg = snmp_cfg.getcfg()
         self.PF_HUAWEI = cfg['PL_H']
         self.PF_BDCOM = cfg['PL_B']
+        self.PF_CDATA = cfg['PL_C']
         self.SNMP_READ_H = cfg['SNMP_READ_H']
         self.SNMP_CONF_H = cfg['SNMP_CONF_H']
         self.SNMP_READ_B = cfg['SNMP_READ_B']
         self.SNMP_CONF_B = cfg['SNMP_CONF_B']
+        self.SNMP_READ_C = cfg['SNMP_READ_C']
+        self.SNMP_CONF_C = cfg['SNMP_CONF_C']
                
         onuinfo = DBOnuInfo(pathdb, self.useronu, pon_type)
         self.onulist = onuinfo.getonufromdb()
@@ -69,10 +73,10 @@ class FindOnu:
                 self.portolt = self.portonu_out[0]
                 self.idonu = self.portonu_out[1]
                 ponportolt2 = cursor.execute(f'''SELECT portoid FROM ponports WHERE ip_address="{o['oltip']}" AND ponport="{self.portolt}";''')
+
                 if ponportolt2:
                     for portolt2 in ponportolt2:
                         portoltid = portolt2[0]
-
                 onu_params = {
                     "hostname": o['oltname'],
                     "pon_type": o['pontype'],
@@ -88,6 +92,33 @@ class FindOnu:
                 conn.close()
 
                 onu_info = BdcomGetOnuInfo(**onu_params)
+                onu_state = onu_info.getonustatus()
+                self.onuid = self.idonu
+                self.portonu_out = self.portonu_out[0]
+
+            elif self.PF_CDATA in o['platform']:
+
+                conn = sqlite3.connect(self.pathdb)
+                cursor = conn.cursor()
+
+                onumacdec = self.convert()
+                self.portonu_out = o['portonu'].split(":")
+                self.portolt = self.portonu_out[0]
+                self.idonu = self.portonu_out[1]
+                onu_params = {
+                    "hostname": o['oltname'],
+                    "pon_type": o['pontype'],
+                    "olt_ip": o['oltip'],
+                    "portoid": o['portid'],
+                    "onuid": o['onuid'],
+                    "snmp_com": self.SNMP_READ_C,
+                    "snmp_wr": self.SNMP_CONF_C,
+                    "pathdb": self.pathdb,
+                    "onumacdec": onumacdec,
+                    }
+                conn.close()
+
+                onu_info = CdataGetOnuInfo(**onu_params)
                 onu_state = onu_info.getonustatus()
                 self.onuid = self.idonu
                 self.portonu_out = self.portonu_out[0]

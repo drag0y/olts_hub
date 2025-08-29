@@ -48,6 +48,8 @@ class MigrateDB:
                 ['SNMP_READ_B', 'public'],
                 ['SNMP_CONF_H', 'private'],
                 ['SNMP_CONF_B', 'private'],
+                ['SNMP_CONF_C', 'private'],
+                ['SNMP_CONF_C', 'private'],
             ]
 
         menu_cfg = [
@@ -71,3 +73,27 @@ class MigrateDB:
         conn.commit()
         conn.close()
 
+
+    def updatev2v22(self):
+        conn = sqlite3.connect(self.pathdb)
+        cursor = conn.cursor()
+
+        # Добавляем C-Data
+        nb_cfg = [
+                ['PL_C', 'C-Data'],
+            ]
+
+        snmp_cfg = [
+                ['SNMP_READ_C', 'public'],
+                ['SNMP_CONF_C', 'private'],
+            ]
+
+        insert_cfg = "INSERT into cfg(key, value) values (?, ?)"
+
+        for s in snmp_cfg:
+            cursor.execute(insert_cfg, s)
+        for s in nb_cfg:
+            cursor.execute(insert_cfg, s)
+
+        conn.commit()
+        conn.close()

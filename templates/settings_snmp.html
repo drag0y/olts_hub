@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block settings %}
-<div class="container col-md-4 col-lg-4 order-md-last">
+<div class="container col-md-6 col-lg-6 order-md-last">
 {% for msg in get_flashed_messages() %}
         {% if "Ошибка" in msg %}
             <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
@@ -14,55 +14,50 @@
         {% endif %}
     {% endfor %}
     <header>
-        <h1 class="text-center fw-bold">Настройки SNMP</h1>
+        <h1 class="text-center fw-bold">Глобальные настройки SNMP</h1>
     </header>
-<table class="table">
+    <form method="post">
+    <table class="table">
     <thead class="table-dark">
         <tr>
         <th scope="row">Параметр</th>
-        <th scope="col">Значение</th>
+        <th scope="col">Текущее значение</th>
+        <th scope="col">Новое значение</th>
         </tr>
     </thead>
-        <tbody class="table-group-divider">
             <tr>
-            <td>SNMP community Huawei Read</td>
-            <td>{{ cfg.SNMP_READ_H }}</td>
+                <td>Huawei Read SNMP community</td>
+                <td>{{ cfg.SNMP_READ_H }}</td>
+                <td><input type="text" name="snmp_read_h" id="snmp_read_h" class="form-control" placeholder="Введите новое значение"></td>
             </tr>
-        </tbody>
-        <tbody class="table-group-divider">
             <tr>
-            <td>SNMP community Huawei Write</td>
-            <td>{{ cfg.SNMP_CONF_H }}</td>
+                <td>Huawei Write SNMP community</td>
+                <td>{{ cfg.SNMP_CONF_H }}</td>
+                <td><input type="text" name="snmp_conf_h" id="snmp_conf_h" class="form-control" placeholder="Введите новое значение"></td>
             </tr>
-
-        </tbody>
-<tbody class="table-group-divider">
             <tr>
-            <td>SNMP community BDCOM Read</td>
-            <td>{{ cfg.SNMP_READ_B }}</td>
+                <td>BDCOM Read SNMP community</td>
+                <td>{{ cfg.SNMP_READ_B }}</td>
+                <td><input type="text" name="snmp_read_b" id="snmp_read_b" class="form-control" placeholder="Введите новое значение"></td>
             </tr>
-        </tbody>
-<tbody class="table-group-divider">
             <tr>
-            <td>SNMP community BDCOM Write</td>
-            <td>{{ cfg.SNMP_CONF_B }}</td>
+                <td>BDCOM Write SNMP community</td>
+                <td>{{ cfg.SNMP_CONF_B }}</td>
+                <td><input type="text" name="snmp_conf_b" id="snmp_conf_b" class="form-control" placeholder="Введите новое значение"></td>
             </tr>
-        </tbody>
+            <tr>
+                <td>C-Data Read SNMP community</td>
+                <td>{{ cfg.SNMP_READ_C }}</td>
+                <td><input type="text" name="snmp_read_c" id="snmp_read_c" class="form-control" placeholder="Введите новое значение"></td>
+            </tr>
+            <tr>
+                <td>C-Data Write SNMP community</td>
+                <td>{{ cfg.SNMP_CONF_C }}</td>
+                <td><input type="text" name="snmp_conf_c" id="snmp_conf_c" class="form-control" placeholder="Введите новое значение"></td>
+            </tr>
     </table>
 
-
-
-    <br>
-
-    <header>
-        <h1 class="text-center fw-bold">Редактировать настройки</h1>
-    </header>
-    <form method="post">
-    <input type="text" name="snmp_read_h" id="snmp_read_h" class="form-control" placeholder="SNMP community Huawei Read"><br>
-    <input type="text" name="snmp_conf_h" id="snmp_conf_h" class="form-control" placeholder="SNMP community Huawei Write"><br>
-    <input type="text" name="snmp_read_b" id="snmp_read_b" class="form-control" placeholder="SNMP community BDCOM Read"><br>
-    <input type="text" name="snmp_conf_b" id="snmp_conf_b" class="form-control" placeholder="SNMP community BDCOM Write"><br>
-    <input type="submit" class="btn btn-success" value="Добавить/Редактировать">
+    <input type="submit" class="btn btn-success" value="Сохранить изменения">
     </form>
 </div>
 {% endblock %}
