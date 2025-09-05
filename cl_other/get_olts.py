@@ -103,6 +103,20 @@ def get_netbox_olt_list():
 
 def olts_update(pathdb):
     # Функция запускает процесс опроса ОЛТов
+
+    nbcfg = Init_Cfg(PATHDB)
+    cfg = nbcfg.getcfg()
+    #
+    SNMP_READ_H = cfg['SNMP_READ_H']
+    SNMP_READ_B = cfg['SNMP_READ_B']
+    SNMP_READ_C = cfg['SNMP_READ_C']
+    SNMP_CONF_H = cfg['SNMP_CONF_H']
+    SNMP_CONF_B = cfg['SNMP_CONF_B']
+    SNMP_CONF_C = cfg['SNMP_CONF_C']
+    PF_HUAWEI = cfg['PL_H']
+    PF_BDCOM = cfg['PL_B']
+    PF_CDATA = cfg['PL_C']
+
     conn = sqlite3.connect(pathdb)
     cursor = conn.cursor()
     olts = []
@@ -123,7 +137,6 @@ def olts_update(pathdb):
             ip_address = olt[2]
             platform = olt[3]
             pon_type = olt[4]
-            print(PF_HUAWEI,PF_BDCOM, platform)
             if PF_HUAWEI in platform:
                 olt = HuaweiGetOltInfo(hostname, ip_address, SNMP_READ_H, PATHDB, pon_type)
                 olt.getoltports()
@@ -135,7 +148,6 @@ def olts_update(pathdb):
                 olt.getonulist()
 
             elif PF_CDATA in platform:
-                print("C-Data OLT found, starting polling...")
                 olt = CdataGetOltInfo(hostname, ip_address, SNMP_READ_C, PATHDB, pon_type)
                 olt.getoltports()
                 olt.getonulist()

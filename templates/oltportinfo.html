@@ -6,7 +6,7 @@ ONU info
 
 {% block body %}
 
-    <div class="container col-md-5 col-lg-5 order-md-last">
+    <div class="container col-md-6 col-lg-6 order-md-last">
         <h4 class="d-flex justify-content-between align-items-center mb-3">
  	    <span class="fw-bold">Уровень сигнала с дерева</span>
         </h4>
@@ -16,10 +16,11 @@ ONU info
             <table class="table">
                 <thead class="table-dark">
                     <tr>
+                    <th scope="row">ID</th>
                     <th scope="row">ОНУ</th>
                     <th scope="col">Статус</th>
-                    <th scope="col">Сигнал в сторону ОНУ</th>
-                    <th scope="col">Сигнал в сторону ОЛТа</th>
+                    <th scope="col">RX ONU</th>
+                    <th scope="col">RX OLT</th>
                     </tr>
                 </thead>
 
@@ -27,32 +28,51 @@ ONU info
 	{% set ln = namespace(counter=false) %}
 	{% for item in pon_status %}
         
-	{% if item|length == 12 %} 
+	{% if item['onu']|length == 12 %} 
 		{% set ln.totalonu = 64 %}
-	{% elif item|length == 16 %}
+	{% elif item['onu']|length == 16 %}
 		{% set ln.totalonu = 128 %}
 	{% endif %}
 
-                <tbody class="table-group-divider">
-                    <tr>
-                        <td><a href="/onuinfo/{{ item }}" class="link-dark" type="submit">{{ item }}</a></td>
-
-	    {% if 'ONLINE' in pon_status[item]['onustatus'] %}
-
-                        <td><span class="badge text-bg-success rounded-pill fw-bold">{{ pon_status[item]['onustatus'] }}</span></td>
-
-	    {% else %}
-
-                        <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ pon_status[item]['onustatus'] }}</span></td>
-	    {% endif %}
-
-                        <td>{{ pon_status[item]['levelin'] }}</td>
-                        <td>{{ pon_status[item]['levelout'] }}</td>
-
-                    </tr>
-                </tbody>
-
-        {% endfor %}
+    <tbody class="table-group-divider">
+       <tr>
+           <td>
+             {{ item['id'] }}
+           </td>
+           <td>
+             <a href="/onuinfo/{{ item['onu'] }}" class="link-dark" type="submit">{{ item['onu'] }}</a></td>
+             {% if 'ONLINE' in item['onu_status'] %}
+               <td>
+                 <span class="badge text-bg-success rounded-pill fw-bold">{{ item['onu_status'] }}</span></td>
+             {% else %}
+               <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ item['onu_status'] }}</span></td>
+             {% endif %}
+           </td>             
+           <td>
+            {% if item['rx_onu'] <= -1 and item['rx_onu'] >= -25.00 %}
+                <span class="badge text-bg-success rounded-pill fw-bold">{{ item['rx_onu'] }}</span>
+            {% elif item['rx_onu'] <= -25.01 and item['rx_onu'] >= -30.00 %}
+                <span class="badge text-bg-warning rounded-pill fw-bold">{{ item['rx_onu'] }}</span>
+            {% elif item['rx_onu'] <= -30.01 %}
+                <span class="badge text-bg-danger rounded-pill fw-bold">{{ item['rx_onu'] }}</span>
+            {% elif item['rx_onu'] == 0.00 %}
+                <span class="badge text-bg-secondary rounded-pill fw-bold">{{ item['rx_onu'] }}</span>
+            {% endif %}
+           </td>
+           <td>
+            {% if item['rx_olt'] <= -1 and item['rx_olt'] >= -25.00 %}
+                <span class="badge text-bg-success rounded-pill fw-bold">{{ item['rx_olt'] }}</span>
+            {% elif item['rx_olt'] <= -25.01 and item['rx_olt'] >= -30.00 %}
+                <span class="badge text-bg-warning rounded-pill fw-bold">{{ item['rx_olt'] }}</span>
+            {% elif item['rx_olt'] <= -30.01 %}
+                <span class="badge text-bg-danger rounded-pill fw-bold">{{ item['rx_olt'] }}</span>
+            {% elif item['rx_olt'] == 0.00 %}
+                <span class="badge text-bg-secondary rounded-pill fw-bold">{{ item['rx_olt'] }}</span>
+            {% endif %}
+           </td>
+        </tr>
+      </tbody>
+  {% endfor %}
 
 
 	<span class="fw-bold">ОЛТ: {{ hostname }}</span>

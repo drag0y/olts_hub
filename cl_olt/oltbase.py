@@ -2,13 +2,13 @@ class GetOltInfoBase:
     '''
     Класс шаблон для работы с OLT
     '''
-    def __init__(self, olt_name, olt_ip, snmp_com, pathdb, pontype):
-        self.olt_name = olt_name
-        self.olt_ip = olt_ip
-        self.snmp_com = snmp_com
+    def __init__(self, dboltinfo, pathdb, snmp_com):
+        self.dboltinfo = isinstance(dboltinfo, dict)
+        self.olt_name = dboltinfo['hostname']
+        self.olt_ip = dboltinfo['ip_address']
+        self.pontype = dboltinfo['pontype']
         self.pathdb = pathdb
-        self.pontype = pontype
-
+        self.snmp_com = snmp_com
 
     def getoltports(self):
         '''

@@ -1,27 +1,23 @@
 import re
-import sqlite3
 
 from cl_onu.onubase import GetOnuInfoBase
 from cl_other.snmpwalk import SnmpWalk
 from collections import OrderedDict
-from datetime import datetime, timedelta, timezone
 
 
 class CdataGetOnuInfo(GetOnuInfoBase):
     '''
     Класс для работы с ОНУ C-Data
     '''
-    def __init__(self, hostname, pon_type, olt_ip, portoid, onuid, snmp_com, pathdb, onumacdec, snmp_wr, platform='C-Data'):
-        self.hostname = hostname
-        self.pon_type = pon_type
-        self.olt_ip = olt_ip
-        self.portoid = portoid
-        self.onuid = onuid
-        self.snmp_com = snmp_com
-        self.snmp_wr = snmp_wr
-        self.pathdb = pathdb
-        self.onumacdec = onumacdec
-        self.platform = platform
+    def __init__(self, dbonuinfo):
+        self.dbonuinfo = isinstance(dbonuinfo, dict)
+        self.hostname = dbonuinfo['hostname']
+        self.pon_type = dbonuinfo['pon_type']
+        self.olt_ip = dbonuinfo['olt_ip']
+        self.portoid = dbonuinfo['portoid']
+        self.onuid = dbonuinfo['onuid']
+        self.snmp_com = dbonuinfo['snmp_com']
+        self.snmp_wr = dbonuinfo['snmp_wr']
 
 
     def getonustatus(self):

@@ -1,6 +1,4 @@
-import subprocess
 import re
-import sqlite3
 
 from cl_onu.onubase import GetOnuInfoBase
 from cl_other.snmpwalk import SnmpWalk
@@ -10,15 +8,15 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
     ''' 
     Класс для работы с ОНУ Huawei 
     '''
-    def __init__(self, hostname, pon_type, olt_ip, portoid, onuid, snmp_com, pathdb, snmp_wr):
-        self.hostname = hostname
-        self.pon_type = pon_type
-        self.olt_ip = olt_ip
-        self.portoid = portoid
-        self.onuid = onuid
-        self.snmp_com = snmp_com
-        self.pathdb = pathdb
-        self.snmp_wr = snmp_wr
+    def __init__(self, dbonuinfo):
+        self.dbonuinfo = isinstance(dbonuinfo, dict)
+        self.hostname = dbonuinfo['hostname']
+        self.pon_type = dbonuinfo['pon_type']
+        self.olt_ip = dbonuinfo['olt_ip']
+        self.portoid = dbonuinfo['portoid']
+        self.onuid = dbonuinfo['onuid']
+        self.snmp_com = dbonuinfo['snmp_com']
+        self.snmp_wr = dbonuinfo['snmp_wr']
 
 
     def getonustatus(self):
@@ -295,22 +293,28 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
     def setcatvon(self):
 
         if self.pon_type == "epon":
-            catv_out = "Не поддерживается"
+            oidcatvon = ""
+            catv_out = 'Не поддерживается'
         if self.pon_type == "gpon":
-            catvstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.63.1.2"
-            cmd = f"snmpset -c {self.snmp_wr} -v2c {self.olt_ip} {catvstatusoid}.{self.portoid}.{self.onuid}.1 i 1"
-            cmd_to_subprocess = cmd.split()
-            process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-            data = process.communicate(timeout=3)
-            data2 = data[-2].decode('utf-8')
-            catvstatus = data2.split()
+            oidcatvon = "1.3.6.1.4.1.2011.6.128.1.1.2.63.1.2"
 
-            if catvstatus[-1] == '1':
-                catv_out = "ON"
-            elif catvstatus[-1] == '2':
-                catv_out = "OFF"
-            else:
-                catv_out = "Не удалось определить"
+        parse_catv = "INTEGER: (?P<setcatvon>.+)"
+            
+        oid_setcatvon = f'{oidcatvon}.{self.portoid}.{self.onuid}.1 i 1'
+        snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, oid_setcatvon)
+        catvseton = snmpset.snmpset()
+
+        catv_out = 'Ошибка. OLT не отвечает или не включен SNMP Write'
+
+        for c in catvseton:
+            match = re.search(parse_catv, c)
+            if match:
+                setcatvon = match.group('setcatvon')
+                if setcatvon == '0':
+                    catv_out = "Порт CATV включен"
+                else:
+                    catv_out = "Ошибка"
+
 
         return catv_out
 
@@ -318,25 +322,30 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
     def setcatvoff(self):
 
         if self.pon_type == "epon":
-            catv_out = "Не поддерживается"
+            oidcatvoff = ""
+            catv_out = 'Не поддерживается'
         if self.pon_type == "gpon":
-            catvstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.63.1.2"
-            cmd = f"snmpset -c {self.snmp_wr} -v2c {self.olt_ip} {catvstatusoid}.{self.portoid}.{self.onuid}.1 i 2"
-            cmd_to_subprocess = cmd.split()
-            process = subprocess.Popen(cmd_to_subprocess, stdout=subprocess.PIPE)
-            data = process.communicate(timeout=3)
-            data2 = data[-2].decode('utf-8')
-            catvstatus = data2.split()
+            oidcatvoff = "1.3.6.1.4.1.2011.6.128.1.1.2.63.1.2"
 
-            if catvstatus[-1] == '1':
-                catv_out = "ON"
-            elif catvstatus[-1] == '2':
-                catv_out = "OFF"
-            else:
-                catv_out = "Не удалось определить"
+        parse_catv = "INTEGER: (?P<setcatvoff>.+)"
+
+        oid_setcatvoff = f'{oidcatvoff}.{self.portoid}.{self.onuid}.1 i 2'
+        snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, oid_setcatvoff)
+        catvsetoff = snmpset.snmpset()
+
+        catv_out = 'Ошибка. OLT не отвечает или не включен SNMP Write'
+
+        for c in catvsetoff:
+            match = re.search(parse_catv, c)
+            if match:
+                setcatvoff = match.group('setcatvoff')
+                if setcatvoff == '0':
+                    catv_out = "Порт CATV выключен"
+                else:
+                    catv_out = "Ошибка"
+
 
         return catv_out
-
 
     def setonureboot(self):
         '''

@@ -95,21 +95,14 @@ class HuaweiGetOltInfo:
             conn.close()
 
 
-    def hwponstatustree(self, port_oid):
-        ''' Îïðåäåëåíèå ñòàòóñà âñåãî äåðåâà (ïîðòà) íà ÎËÒå Huawei '''
-
-        onulist = []
-        statuslist = []
-#        out_tree2 = []
-        downlist = []
-        tree_in = []
-        tree_out = []
-        onulist2 = []
-        status_tree = {}
-
+    def ponstatustree(self, port_oid):
+        '''
+        Метод для построение статуса и уровней с дерева Huawei
+        '''
         parse_state = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<onustate>\d+|-\d+)'
         parse_down = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<downcose>\d+|-\d+)'
         parse_tree = r'(\d+){10}.(?P<onuid>\S+) .+(?P<treelevel>-\S+)'
+        parse_tree_rx_olt = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<treelevel>\d+)'
 
         if "epon" in self.pontype:
             oid_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.5"
@@ -123,31 +116,53 @@ class HuaweiGetOltInfo:
             oid_state = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.15"
             oid_cose = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.24"
 
+        # Ищем порт ОЛТа
+        conn = sqlite3.connect(self.pathdb)
+        cursor = conn.cursor()
+        sqlgetport = f'SELECT * FROM ponports WHERE ip_address="{self.olt_ip}" AND portoid like "{port_oid}";'
+        ponportonu = cursor.execute(sqlgetport)
 
-    # ---- Èùåì â áàçå ìàê ÎÍÓ äëÿ ñîïîñòàâëåíèÿ ñ èíäåêñàìè
-        onureplace = {}
+        portonu_out = "Не удалось определить порт"
+        for portonu in ponportonu:
+            portonu_out = portonu[3]
 
         conn = sqlite3.connect(self.pathdb)
         cursor = conn.cursor()
 
-        onureplace_in = cursor.execute(f'SELECT * FROM {self.pontype} WHERE oltip="{self.olt_ip}" AND portonu="{port_oid}";')
-        onu_count = 0
+        getonu = cursor.execute(f'SELECT * FROM {self.pontype} WHERE oltip="{self.olt_ip}" AND portonu="{port_oid}";')
 
-        for onu in onureplace_in:
-            onu_count += 1
-            indexonu_out = onu[3]
-            onu_out = onu[1]
+        db_onuinfo = []
+        for onu in getonu:
+            db_onuinfo.append(
+                            {
+                            'id': onu[3],
+                            'onu': onu[1],
+                            'portoid': onu[2],
+                            }
+                        )
 
-            onureplace.setdefault(indexonu_out)
-            onureplace.update({indexonu_out: onu_out})
+        # Определяем причину отключени всех ону на пон порту
+        onudownreasonoid = f'{oid_cose}.{port_oid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onudownreasonoid)
+        onudownreason = snmpget.snmpget()
 
-#        if PF_HUAWEI: #in self.platform and "gpon" in self.pontype:
-        '''
-        Ïîëó÷åíèå ñòàòóñà ñ äåðåâà
-        '''
+        down_reason = {}
+        for l in onudownreason:
+            match = re.search(parse_down, l)
+            if match:
+                onuid = match.group('onuid')
+                downreason = match.group('downcose')
+                downreason = downreason.replace("-1", "Неизвестно").replace("18", "RING").replace("13", "POWER-OFF").replace("2", "LOS").replace("1", "LOS").replace("3", "LOS")
+                
+                down_reason.setdefault(onuid)
+                down_reason.update({onuid: {'down_reason': downreason}})
+
+        # Определяем статус (в сети/не в сети) всех ОНУ на пон порту
         onustateoid = f'{oid_state}.{port_oid}'
         snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onustateoid)
         onustate = snmpget.snmpget()
+
+        status_onu = {}
         for l in onustate:
             match = re.search(parse_state, l)
             if match:
@@ -155,68 +170,72 @@ class HuaweiGetOltInfo:
                 onustatus = match.group('onustate')
                 onustatus = onustatus.replace("1", "ONLINE").replace("2", "OFFLINE").replace("-1", "OFFLINE")
 
-                onulist.append(onuid)
-                statuslist.append(onustatus)
-
-        onudownreasonoid = f'{oid_cose}.{port_oid}'
-        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onudownreasonoid)
-        onudownreason = snmpget.snmpget()
-        for l in onudownreason:
-            match = re.search(parse_down, l)
-            if match:
-                downcose = match.group('downcose')
-                downcose = downcose.replace("-1", "Íåèçâåñòíî").replace("18", "RING").replace("13", "POWER-OFF").replace("2", "LOS").replace("1", "LOS").replace("3", "LOS")
-                downlist.append(downcose)
-
-    # ----
-        for i in range(len(onulist)):
-            onu = str(onulist[i])
-            onudown = str(downlist[i])
-            if statuslist[i] == "OFFLINE":
-                statuslist[i] = statuslist[i].replace("OFFLINE", onudown)
-
-#                out_tree2.append(str(onureplace[onu]) + " ; " + str(statuslist[i]))
-
-            status_tree.setdefault(onureplace[onu])
-            status_tree.update({onureplace[onu]: {'onustatus': statuslist[i], 'levelin': '0', 'levelout': '0'}})
-
-        # ---- Ïîëó÷åíèå óðîâíÿ ñèãíàëà â ñòîðîíó ÎÍÓ
+                status_onu.setdefault(onuid)
+                if onustatus == 'OFFLINE':
+                    onustatus = down_reason[onuid]['down_reason']
+                    status_onu.update({onuid: {'status': onustatus}})
+                else:
+                    status_onu.update({onuid: {'status': onustatus}})
+        
+        # Смотрим уровни со всего пон порта в сторону ОНУ (rxonu)
+        rx_onu = {}
         rxonuoid = f'{oid_rx_onu}.{port_oid}'
         snmpget = SnmpWalk(self.olt_ip, self.snmp_com, rxonuoid)
-        rxonu = snmpget.snmpget()
+        getrxonu = snmpget.snmpget()
 
-        for l in rxonu:
+        for l in getrxonu:
             match = re.search(parse_tree, l)
             if match:
                 onuid = match.group('onuid')
                 level = match.group('treelevel')
                 level_rx = int(level)/100
-
-                onulist2.append(onuid)
-                tree_in.append(level_rx)
-
-        # ---- Ïîëó÷åíèå ðåçóëüòàòà óðîâíÿ â ñòîðîíó ÎËÒà
-        parse_tree_sn = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<treelevel>\d+)'
+        
+                rx_onu.setdefault(onuid)
+                rx_onu.update({onuid: {'rxonu': float(level_rx)}})
+                
+        # Смотрим уровни со всего пон порта в сторону ОЛТа (rxolt)
+        rx_olt = {}
         rxoltoid = f'{oid_rx_olt}.{port_oid}'
         snmpget = SnmpWalk(self.olt_ip, self.snmp_com, rxoltoid)
         rxolt = snmpget.snmpget()
 
         for l in rxolt:
-            match = re.search(parse_tree_sn, l)
+            match = re.search(parse_tree_rx_olt, l)
             if match:
                 onuid = match.group('onuid')
                 level = match.group('treelevel')
                 if len(level) == 4:
-                    level_tx2 = int(level)/100-100
-                    level_tx = format(level_tx2, '.2f')
+                    level_rx = int(level)/100-100
+                    level_rx = format(level_rx, '.2f')
 
-                    tree_out.append(level_tx)
+                    rx_olt.setdefault(onuid)
+                    rx_olt.update({onuid: {'rxolt': float(level_rx)}})
         
-        for i in range(len(onulist2)):
-            onu = str(onulist2[i])
-            status_tree.update({onureplace[onu]: {'onustatus': 'ONLINE', 'levelin': tree_in[i], 'levelout': tree_out[i]}})
+        # Перебираем список ОНУ из БД, и создаем список со словарями с метриками
+        out_tree=[]        
+        for onu in db_onuinfo:
+            if status_onu[onu['id']]['status'] == 'ONLINE':
+                out_tree.append(
+                            {
+                            'id':         onu['id'],
+                            'onu':        onu['onu'],
+                            'onu_status': status_onu[onu['id']]['status'],
+                            'rx_onu':     rx_onu[onu['id']]['rxonu'],
+                            'rx_olt':     rx_olt[onu['id']]['rxolt'],
+                            }
+                        )
+            else:
+                out_tree.append(
+                            {
+                            'id':         onu['id'],
+                            'onu':        onu['onu'],
+                            'onu_status': status_onu[onu['id']]['status'],
+                            'rx_onu':     0.00,
+                            'rx_olt':     0.00,
+                            }
+                        )
 
-        return status_tree
+        return out_tree
 
 
     def hwunregonu(self):

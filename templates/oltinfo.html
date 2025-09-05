@@ -81,21 +81,32 @@
 		    {% set ns.counter = 1 %}
 		   
 		    {% for port in olt_information.ports %}
-                        {% if ns.counter <= 16 %}
-		    
-                            <a href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace("/", ".") }}" class="p-1 btn btn-outline-dark btn-sm" type="submit">{{ port }}</a>
+            {% if 'В сети' in olt_information.olt_state %}
+              {% if ns.counter <= 16 %}
+                <a href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace("/", ".") }}" class="p-1 btn btn-outline-dark btn-sm" type="submit">{{ port }}</a>
 		    
 			    {% set ns.counter = ns.counter+1 %}
-                        {% else %}
-                            {% set ns.counter = 1 %}
-                            <br>
-			    <hr>
-                            <a href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace("/", ".") }}" class="btn btn-outline-dark btn-sm" type="submit">{{ port }}</a>
+              {% else %}
+                {% set ns.counter = 1 %}
+                 <br>
+		       <hr>                            
+                 <a href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace("/", ".") }}" class="btn btn-outline-dark btn-sm" type="submit">{{ port }}</a>
+                 {% set ns.counter = ns.counter+1 %}
+                {% endif %}
+                {% else %}
+                    {% if ns.counter <= 16 %}
+                <a href="/" class="p-1 btn btn-outline-dark btn-sm disabled" type="submit">{{ port }}</a>
 
-                            {% set ns.counter = ns.counter+1 %}
-		        {% endif %}
-                    {% endfor %}
-	
+                {% set ns.counter = ns.counter+1 %}
+              {% else %}
+                {% set ns.counter = 1 %}
+                 <br>
+               <hr>
+                <a href="/" class="btn btn-outline-dark btn-sm disabled" type="submit">{{ port }}</a>
+                 {% set ns.counter = ns.counter+1 %}
+                {% endif %}
+                {% endif %}
+                {% endfor %}
                 </div>
 	    </li>
         <li class="list-group-item d-flex justify-content-between lh-sm">
@@ -123,8 +134,11 @@
 
     <div class="btn-toolbar justify-content-between" role="toolbar" aria-label="Toolbar with button groups">
         <div class="btn-group" role="group" aria-label="First group">
-            <a href="/oltinfo/{{ olt_information.oltid }}/update" class="btn btn-warning">Опросить ОЛТ
-	    </a>
+            {% if 'В сети' in olt_information.olt_state %}
+                <a href="/oltinfo/{{ olt_information.oltid }}/update" class="btn btn-warning">Опросить ОЛТ</a>
+            {% else %}
+                <a href="/oltinfo/{{ olt_information.oltid }}/update" class="btn btn-warning disabled">Опросить ОЛТ</a>
+            {% endif %}
         </div>
             <div class="input-group">
                 <a href="/oltinfo/{{ olt_information.oltid }}/delete" class="btn btn-danger">Удалить ОЛТ

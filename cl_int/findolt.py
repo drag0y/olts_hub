@@ -72,12 +72,12 @@ class FindOlt:
         conn.close()    
         
         oltinfo_params = {
-        "pathdb": self.pathdb,
-        "olt_ip": self.olt_ip,
-        "olt_port": '',
-        "platform": self.platform,
-        "pontype": self.pontype,
-        }
+                    "pathdb":   self.pathdb,
+                    "olt_ip":   self.olt_ip,
+                    "olt_port": '',
+                    "platform": self.platform,
+                    "pontype":  self.pontype,
+                }
         # Пингуем ОЛТ
         p = ping(f'{self.olt_ip}')
         if p == None or p == False:
@@ -92,16 +92,16 @@ class FindOlt:
                 unregonu = []
 
         olt_information = {
-        "oltid": self.olt_id,
-        "oltname": self.hostname,
-        "olt_state": olt_state,
-        "ip_address": self.olt_ip,
-        "platform": self.platform,
-        "countonu": self.countonu,
-        "ports": self.pon_ports_out,
-        "pontype": self.pontype,
-        "unregonu": unregonu,
-        }
+                    "oltid":      self.olt_id,
+                    "oltname":    self.hostname,
+                    "olt_state":  olt_state,
+                    "ip_address": self.olt_ip,
+                    "platform":   self.platform,
+                    "countonu":   self.countonu,
+                    "ports":      self.pon_ports_out,
+                    "pontype":    self.pontype,
+                    "unregonu":   unregonu,
+                }
         
         return olt_information
 
@@ -112,14 +112,14 @@ class FindOlt:
         '''
         if self.PF_HUAWEI in self.platform:
             olt_info = HuaweiGetOltInfo(self.hostname, self.olt_ip, self.SNMP_READ_H, self.pathdb, self.pontype) 
-            out_tree = olt_info.hwponstatustree(self.port_oid)
+            out_tree = olt_info.ponstatustree(self.port_oid)
 
         elif self.PF_BDCOM in self.platform:
             olt_info = BdcomGetOltInfo(self.hostname, self.olt_ip, self.SNMP_READ_B, self.pathdb, self.pontype)
-            out_tree = olt_info.bdcomponstatustree(self.port_oid) 
+            out_tree = olt_info.ponstatustree(self.port_oid) 
 
         elif self.PF_CDATA in self.platform:
             olt_info = CdataGetOltInfo(self.hostname, self.olt_ip, self.SNMP_READ_C, self.pathdb, self.pontype)
-            out_tree = olt_info.cdataponstatustree(self.olt_port)
+            out_tree = olt_info.ponstatustree(self.olt_port)
 
         return out_tree  

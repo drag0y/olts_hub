@@ -2,22 +2,23 @@ class GetOnuInfoBase:
     ''' 
     Класс шаблон для работы с ОНУ 
     '''
-    def __init__(self, hostname, pon_type, olt_ip, portoid, onuid, snmp_com, pathdb, snmp_wr):
-        self.hostname = hostname
-        self.pon_type = pon_type
-        self.olt_ip = olt_ip
-        self.portoid = portoid
-        self.onuid = onuid
-        self.snmp_com = snmp_com
-        self.pathdb = pathdb
-        self.snmp_wr = snmp_wr
-
+    def __init__(self, dbonuinfo):
+        self.dbonuinfo = isinstance(dbonuinfo, dict)
+        self.onu = dbonuinfo['onu']
+        self.hostname = dbonuinfo['hostname']
+        self.pon_type = dbonuinfo['pon_type']
+        self.olt_ip = dbonuinfo['olt_ip']
+        self.portoid = dbonuinfo['portoid']
+        self.onuid = dbonuinfo['onuid']
+        self.snmp_com = dbonuinfo['snmp_com']
+        self.snmp_wr = dbonuinfo['snmp_wr']
+        self.portoltid = dbonuinfo['portoltid']
 
     def getonustatus(self):
         ''' 
         Определение статуса ОНУ (В сети/Не в сети)
         '''
-        onu_state_out = 'Не удалось определить'
+        onu_state_out = 'Не поддерживается'
         return onu_state_out
 
 
@@ -25,7 +26,7 @@ class GetOnuInfoBase:
         ''' 
         Метод определяет статус LAN порта
         '''
-        lan_out = 'Не удалось определить'
+        lan_out = 'Не поддерживается'
         return lan_out
 
 
@@ -34,15 +35,14 @@ class GetOnuInfoBase:
         Метод определяет статус CATV порта
         '''
         catv_state = 'Не поддерживается'
-        level_catv = -0.0
-        return catv_state, level_catv
+        return catv_state
 
     
     def getcatvlevel(self):
         ''' 
         Метод для получения уровня сигнала CATV порта 
         '''
-        level_catv = -0.0
+        level_catv = 'Не поддерживается'
         return level_catv
 
 
@@ -50,7 +50,7 @@ class GetOnuInfoBase:
         ''' 
         Метод определяет причину последнего отключения ОНУ
         '''
-        lastdownonu = 'Неизвестно'
+        lastdownonu = 'Не поддерживается'
         return lastdownonu
 
 
@@ -58,13 +58,13 @@ class GetOnuInfoBase:
         ''' 
         Метод определяет время включения ОНУ
         '''
-        onu_uptime = 'Нет времени включения'
+        onu_uptime = 'Не поддерживается'
         return onu_uptime
 
 
     def gettimedown(self):
         # Метод определяет время последнего отключения
-        onu_downtime = 'Нет времени отключения'
+        onu_downtime = 'Не поддерживается'
         return onu_downtime
 
 
@@ -72,8 +72,8 @@ class GetOnuInfoBase:
         ''' 
         Метод определяет уровни сигнала ОНУ
         '''
-        level_onu = 0
-        level_olt = 0
+        level_onu = 'Не поддерживается'
+        level_olt = 'Не поддерживается'
         return level_onu, level_olt
 
 

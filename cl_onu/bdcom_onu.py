@@ -1,28 +1,14 @@
 import re
-import sqlite3
 
 from cl_onu.onubase import GetOnuInfoBase
 from cl_other.snmpwalk import SnmpWalk
+from funcs.hextodec import convert
 
 
 class BdcomGetOnuInfo(GetOnuInfoBase):
     '''
     Класс для работы с ОНУ BDCOM
     '''
-    def __init__(self, hostname, pon_type, olt_ip, portoid, onuid, snmp_com, pathdb, onumacdec, portoltid, snmp_wr, platform='bdcom'):
-        self.hostname = hostname
-        self.pon_type = pon_type
-        self.olt_ip = olt_ip
-        self.portoid = portoid
-        self.onuid = onuid
-        self.snmp_com = snmp_com
-        self.snmp_wr = snmp_wr
-        self.pathdb = pathdb
-        self.onumacdec = onumacdec
-        self.portoltid = portoltid
-        self.platform = platform
-
-
     def getonustatus(self):
         # Определение статуса ОНУ (В сети/Не в сети)
         onu_state_out = 'Не удалось определить статус ОНУ, ОЛТ не отвечает'
@@ -81,13 +67,14 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
         # Метод определяет причину последнего отключения ОНУ
         lastdownonu = "Неизвестно"
         parse_reason = "INTEGER: (?P<downreason>.+)"
+        onumacdec = convert(self.onu)
         if "epon" in self.pon_type:
             lastdownoid = "1.3.6.1.4.1.3320.101.11.1.1.11"
 
         if "gpon" in self.pon_type:
             lastdownoid = ""
 
-        downreasonoid = f'{lastdownoid}.{self.portoltid}{self.onumacdec}'
+        downreasonoid = f'{lastdownoid}.{self.portoltid}{onumacdec}'
         snmpget = SnmpWalk(self.olt_ip, self.snmp_com, downreasonoid)
         downreason = snmpget.snmpget()
 
@@ -207,6 +194,7 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
         '''
         Метод для удаления ОНУ
         '''
+        onumacdec = convert(self.onu)
         parse_delete = "INTEGER: (?P<setdelete>.+)"
         if "epon" in self.pon_type:
             setonudeleteoid = "1.3.6.1.4.1.3320.101.11.1.1.2"
@@ -214,7 +202,7 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
         if "gpon" in self.pon_type:
             setonudeleteoid = ""
                     
-        onudeleteoid = f'{setonudeleteoid}.{self.portoltid}{self.onumacdec} i 0'
+        onudeleteoid = f'{setonudeleteoid}.{self.portoltid}{onumacdec} i 0'
         snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, onudeleteoid)
         onudelete = snmpset.snmpset()
                     
@@ -224,7 +212,7 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
             if match:
                 setdelete = match.group('setdelete')
                 if setdelete == '0':
-                    setdelete_out = "ОНУ удалена"
+                    setdelete_out = "ОНУ удалена, опросите ОЛТ"
                 else:
                     setdelete_out = "Ошибка"
 

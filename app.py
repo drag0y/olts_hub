@@ -480,7 +480,6 @@ def olthub_settings_snmp():
             }
             setsnmpcfg = Init_Cfg(PATHDB)
             out = setsnmpcfg.insercfgsnmp(**snmp_cfg)
-            print(snmp_cfg)
             flash(out)
             return redirect('/settings/cfgsnmp')
         else:

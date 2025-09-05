@@ -3,7 +3,7 @@ import sqlite3
 
 class DBOnuInfo:
     '''
-    Сбор из базы всеё информации об ОНУ
+    Сбор из базы всей информации об ОНУ
     '''
     def __init__(self, pathdb, useronu, pon_type):
         self.pathdb = pathdb
@@ -49,5 +49,5 @@ class DBOnuInfo:
                 platform = {'oltid': p[0], 'platform': p[3]}
                 onulist3 = {**t2, **platform}
             onu_list.append(onulist3)
-
+        
         return onu_list
