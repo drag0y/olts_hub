@@ -1,109 +1,38 @@
 import sqlite3
-import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
 from cl_db.db_cfg import Init_Cfg
 from cl_olt.bdcom_olts import BdcomGetOltInfo
 from cl_olt.huawei_olts import HuaweiGetOltInfo
 from cl_olt.cdata_olts import CdataGetOltInfo
-from werkzeug.security import generate_password_hash
+from models.base import Base
+from models.models import Users, Cfg, MenuCfg, OLTs, PonPorts
 
 
 class WorkDB:
-    ''' Класс для работы с БД, создание/удаление таблиц, поиск дубликатов '''
+    """
+    Класс для работы с БД, создание/удаление таблиц, поиск дубликатов
+    """
     def __init__(self, pathdb):
-        self.pathdb = pathdb     
+        self.pathdb = pathdb
 
-
-    def createnewdb(self):
-        # Создание новой базы
-        conn = sqlite3.connect(self.pathdb)
-        cursor = conn.cursor()
-        # Удаляем таблицы если есть
-        cursor.execute("DROP TABLE IF EXISTS users")
-        cursor.execute("DROP TABLE IF EXISTS cfg")
-        cursor.execute("DROP TABLE IF EXISTS menu_cfg")
-        cursor.execute("DROP TABLE IF EXISTS olts")
-        cursor.execute("DROP TABLE IF EXISTS ponports")
-        cursor.execute("DROP TABLE IF EXISTS epon")
-        cursor.execute("DROP TABLE IF EXISTS gpon")
-
-        # Создаём таблицы
-        cursor.execute("CREATE TABLE users(id integer primary key autoincrement, login text UNIQUE NOT NULL, password text NOT NULL, privilage text NOT NULL)")
-        cursor.execute("CREATE TABLE cfg(id integer primary key autoincrement, key text UNIQUE NOT NULL, value text)")
-        cursor.execute("CREATE TABLE menu_cfg(id integer primary key autoincrement, menuname text UNIQUE NOT NULL, url text, privilage text)")
-        cursor.execute("CREATE TABLE olts(number integer primary key autoincrement, hostname text, ip_address text, platform text, pon text)")
-        cursor.execute("CREATE TABLE ponports(number integer primary key autoincrement, hostname text, ip_address text, ponport text, portoid text)")
-        cursor.execute("CREATE TABLE epon(number integer primary key autoincrement, maconu text, portonu text, idonu text, oltip text, oltname text)")
-        cursor.execute("CREATE TABLE gpon(number integer primary key autoincrement, snonu text, portonu text, idonu text, oltip text, oltname text)")
-
-        # Создаём дефолтного пользователя root
-        username = 'root'
-        psw = 'admin'
-        psw_hash = generate_password_hash(psw)
-        privilage = 'Administrator'
-        user = [username, psw_hash, privilage]
-        query_user = "INSERT into users(login, password, privilage) values (?, ?, ?)"
-        cursor.execute(query_user, user)
-        conn.commit()
-
-        # Создаём дефолтные настройки для NetBox (как образец)
-        nb_cfg = [
-                ['API_KEY', 'Token'],
-                ['EPON_TAG', 'epon'],
-                ['GPON_TAG', 'gpon'],
-                ['URLNB', 'https://'],
-                ['PL_H', 'Huawei_OLT'],
-                ['PL_B', 'BDCOM'],
-                ['PL_C', 'C-Data']
-            ]
-        # Создаём дефолтные настройки для SNMP (как образец)
-        snmp_cfg = [
-                ['SNMP_READ_H', 'public'],
-                ['SNMP_READ_B', 'public'],
-                ['SNMP_CONF_H', 'private'],
-                ['SNMP_CONF_B', 'private'],
-                ['SNMP_READ_C', 'public'],
-                ['SNMP_CONF_C', 'private'],
-            ]
-
-        menu_cfg = [
-                ['Профиль', '/settings/profile', 'Operator'],
-                ['Пользователи', '/settings/adduser', 'Administrator'],
-                ['Добавить OLT', '/settings/oltadd', 'Administrator'],
-                ['Настройка NetBox', '/settings/cfgnb', 'Administrator'],
-                ['Настройка SNMP', '/settings/cfgsnmp', 'Administrator'],
-            ]
-        insert_menucfg = "INSERT into menu_cfg(menuname, url, privilage) values (?, ?, ?)"
-        insert_cfg = "INSERT into cfg(key, value) values (?, ?)" 
-        for n in nb_cfg:
-            cursor.execute(insert_cfg, n)
-
-        for s in snmp_cfg:
-            cursor.execute(insert_cfg, s)
-
-        for m in menu_cfg:
-            cursor.execute(insert_menucfg, m)
-
-        conn.commit()
-        conn.close()
+        self.engine = create_engine(
+            url = "sqlite:///instance/onulist.db",
+            echo=True,
+        )
 
 
     def createnewtableolts(self):
         # Создание таблицы с ОЛТами
-        conn = sqlite3.connect(self.pathdb)
-        cursor = conn.cursor()
-        cursor.execute("DROP TABLE IF EXISTS olts")
-        cursor.execute("CREATE TABLE olts(number integer primary key autoincrement, hostname text, ip_address text, platform text, pon text)")
-        conn.close()
+        OLTs.__table__.drop(self.engine)
+        OLTs.__table__.create(self.engine)
 
 
     def createnewtableponports(self):
         # Создание таблицы с pon портами
-        conn = sqlite3.connect(self.pathdb)
-        cursor = conn.cursor()
-        cursor.execute("DROP TABLE IF EXISTS ponports")
-        cursor.execute("CREATE TABLE ponports(number integer primary key autoincrement, hostname text, ip_address text, ponport text, portoid text)")
-        conn.close()
+        PonPorts.__table__.drop(self.engine)
+        PonPorts.__table__.create(self.engine)
 
 
     def createnewtableepon(self):
@@ -181,7 +110,9 @@ class WorkDB:
 
 
 class WorkingDB:
-    ''' Класс для работы с БД, с конкретными ОЛТами '''
+    """
+    Класс для работы с БД, с конкретными ОЛТами
+    """
     def __init__(self, pathdb, ip_address):
         self.pathdb = pathdb
         self.ip_address = ip_address

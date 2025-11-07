@@ -8,49 +8,106 @@
 
 
 <div class="container col-md-7 col-lg-7 order-md-last">
-<header>
+  <header>
     <h4 class="text-center fw-bold">Список ОЛТов</h4>
-</header>
-    <ul class="list-group mb-3">
+  </header>
+ 
+  <ul class="list-group mb-3">
 
-        {% for msg in get_flashed_messages() %}
+  {% for msg in get_flashed_messages() %}
 
-	    {% if "отключён" in msg or "ERROR" in msg or "отключена" in msg %}
-                <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
-            {% else %}
-		<h3 class="text-center"><span class="flash badge text-bg-success">{{msg}}</span></h3>
-	    {% endif %}
+    {% if "отключён" in msg or "ERROR" in msg or "отключена" in msg %}
+      <h3 class="text-center">
+        <span class="flash badge text-bg-danger">
+          {{msg}}
+        </span>
+      </h3>
+    {% else %}
+	  <h3 class="text-center">
+        <span class="flash badge text-bg-success">
+          {{msg}}
+        </span>
+      </h3>
+	{% endif %}
 
-	{% endfor %}
+  {% endfor %}
 
-<table class="table">
-    <thead class="table-dark">
+        
+    <table class="table">
+      <thead class="table-dark">
         <tr>
-        <th scope="row">№</th>
-        <th scope="col">Имя ОЛТа</th>
-        <th scope="col">IP адрес</th>
-        <th scope="col">Действие</th>
+          <th scope="row">№</th>
+          <th scope="col">Имя ОЛТа</th>
+          <th scope="col">IP адрес</th>
+          <th scope="col">Действие</th>
         </tr>
-    </thead>
+      </thead>
 
-    {% for item in olts_list %}
+      <script>
+        let oltupdateButton = []
+        let loadingIndicator = []
+      </script>
+
+      {% for item in olts_list %}
         <tbody class="table-group-divider">
-            <tr>
-            <th scope="row"><h6 class="badge bg-dark text-warning rounded-pill my-0">{{ item.number }}</h6></th>
-            <td>{{ item.hostname }}</td>
-            <td>{{ item.ip_address }}</td>
-            <td>
-            <a href="/oltupdate/{{ item.number }}" class="btn btn-dark text-warning btn-sm" type="submit"><img src="static/images/update_olt.png" title="Опросить ОЛТ" width="20"></a>
-	    <a href="/oltinfo/{{ item.number }}" class="btn btn-dark text-warning btn-sm" type="submit"><img src="static/images/detail_olt.png" title="Подробнее об ОЛТе" width="20"></a>
-            </td>
-            </tr>
+          <tr>
+          <th scope="row">
+            <h6 class="badge bg-dark text-warning rounded-pill my-0">
+              {{ item.number }}
+            </h6>
+          </th>
+          <td>{{ item.hostname }}</td>
+          <td>{{ item.ip_address }}</td>
+          <td>
+            <a 
+              href="/oltupdate/{{ item.number }}" 
+              class="btn btn-dark text-warning btn-sm" 
+              type="click" 
+              id="oltupdate-button{{ item.number }}"
+              >
+              <img 
+                src="static/images/update_olt.png" 
+                title="Опросить ОЛТ" width="20"
+                >
+                <div 
+                  id="loading-indicator{{ item.number }}"
+                  class="spinner-border spinner-border-sm d-none" 
+                  role="status"
+                  >
+                </div>
+            </a>
+            <a 
+              href="/oltinfo/{{ item.number }}" 
+              class="btn btn-dark text-warning btn-sm" 
+              type="submit"
+              >
+              <img 
+                src="static/images/detail_olt.png" 
+                title="Подробнее об ОЛТе" 
+                width="20"
+                >
+            </a>
+          </td>
+          </tr>
         </tbody>
-    {% endfor %}
 
-</table>
+        <script>
+          loadingIndicator[{{ item.number }}] = document.getElementById("loading-indicator{{ item.number }}");
+          oltupdateButton[{{ item.number }}] = document.getElementById("oltupdate-button{{ item.number }}");
 
-</ul>
+          oltupdateButton[{{ item.number }}].addEventListener("click", () => {
+            loadingIndicator[{{ item.number }}].classList.remove("d-none")
+          })
+        </script>
+
+      {% endfor %}
+
+    </table>
+
+  </ul>
 
 </div>
+
+
 {% endblock %}
 

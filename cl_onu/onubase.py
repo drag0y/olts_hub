@@ -13,7 +13,10 @@ class GetOnuInfoBase:
         self.snmp_com = dbonuinfo['snmp_com']
         self.snmp_wr = dbonuinfo['snmp_wr']
         self.portoltid = dbonuinfo['portoltid']
+        self.dbinfo = dbonuinfo
+        print('DBINFO', self.dbinfo)
 
+    
     def getonustatus(self):
         ''' 
         Определение статуса ОНУ (В сети/Не в сети)

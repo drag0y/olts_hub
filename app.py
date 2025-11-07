@@ -1,12 +1,13 @@
-from flask import Flask, render_template, url_for, request, redirect, flash
+from flask import Flask, render_template, request, redirect, flash
 from flask_restful import Api, Resource
 from flask_sqlalchemy import SQLAlchemy
+#from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 import ipaddress
 import os
-import logging
 import logging.handlers
 from dotenv import load_dotenv
+from werkzeug.security import check_password_hash
 
 from cl_int.findonu import FindOnu
 from cl_int.actonu import ActionOnu
@@ -17,7 +18,7 @@ from cl_db.db_cfg import Init_Cfg
 from cl_db.db_menucfg import InitMenuCfg
 from cl_db.db_users import Users_Cfg, UserInfo
 from cl_db.userlogin import UserLogin
-from werkzeug.security import generate_password_hash, check_password_hash
+from models.models import Base, OLTs
 
 
 load_dotenv()
@@ -38,7 +39,7 @@ api = Api()
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{NAMEDB}'
 app.config['SECRET_KEY'] = 'asf09u23rpqdm0123r'
 
-db = SQLAlchemy(app)
+#db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Авторизуйтесь для доступа к сайту'
@@ -53,34 +54,8 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 logfile.setFormatter(formatter)
 logger.addHandler(logfile)
 
-
-@login_manager.user_loader
-def load_user(user_id):
-    return UserLogin().User_Cfg
-
-
-class OLTs(db.Model):
-    __tablename__ = 'olts'
-    number = db.Column(db.Integer, primary_key=True)
-    hostname = db.Column(db.Text)
-    ip_address = db.Column(db.Text)
-    platform = db.Column(db.Text)
-    pon = db.Column(db.Text)
-    
-    def __repr__(self):
-        return '<OLTs %r>' % self.number
-
-
-class AboutOlt(db.Model):
-    __tablename__ = 'ponports'
-    number = db.Column(db.Integer, primary_key=True)
-    hostname = db.Column(db.Text)
-    ip_address = db.Column(db.Text)
-    ponport = db.Column(db.Text)
-    portoid = db.Column(db.Text)
-    
-    def __repr__(self):
-        return '<AboutOlt %r>' % self.number
+db = SQLAlchemy(model_class=Base)
+db.init_app(app)
 
 
 class Main_Api(Resource):
@@ -168,10 +143,10 @@ def profile():
 @app.route("/", methods=['POST', 'GET'])
 @login_required
 def index():
-    ''' 
+    """
     Главная страница, получение через строку поиска мака или серийника ОНУ
     и дальнейшая обработка
-    '''
+    """
     if request.method == "POST":
         try:
             onu = request.form['searchonu']
@@ -189,17 +164,19 @@ def index():
             return render_template("/onunotfound.html", onu=onu)
 
     else:
-        try:
-            olts_list = OLTs.query.all()
-            return render_template("index.html", olts_list=olts_list)
+#        try:
+        olts_list = db.session.execute(db.select(OLTs)).scalars()
+        return render_template("index.html", olts_list=olts_list.all())
 
-        except:
-            return redirect('/settings/cfgdb')
+#        except:
+#            return redirect('/settings/cfgdb')
 
         
 @app.route("/help")
 def help_page():
-    ''' Страница справки '''
+    """
+    Страница справки
+    """
     return render_template("help.html")
 
 
@@ -220,8 +197,8 @@ def olt_info(number):
     ''' 
     Страница просмотра информации об ОЛТе
     '''
-    olts_list = OLTs.query.get(number)
-    port_list = AboutOlt.query.all()
+#    olts_list = OLTs.query.get(number)
+#    port_list = AboutOlt.query.all()
     
     olt_params = {
     "pathdb": PATHDB,
@@ -237,15 +214,21 @@ def olt_info(number):
 @app.route("/oltinfo/<int:number>/<string:port>")
 @login_required
 def olt_port_info(number, port):
-    '''
+    """
     Страница просмотра дерева
-    '''
+    """
     olt_port = port.replace(".", "/")
     try:
         olt_information = FindOlt(PATHDB, number, olt_port)
-        o_info = olt_information.oltinfo()
+        olt_info = olt_information.oltinfo()
         pon_status = olt_information.ponportstatus()
-        return render_template("oltportinfo.html", pon_status=pon_status, olt_port=olt_port, oltip=o_info['ip_address'], hostname=o_info['oltname'])
+        
+        return render_template(
+                            "oltportinfo.html", 
+                            pon_status=pon_status, 
+                            olt_port=olt_port, 
+                            olt_info=olt_info,
+                        )
 
     except KeyError:
         flash("База устарела, опросите ОЛТ")

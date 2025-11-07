@@ -81,6 +81,7 @@ class ActionOnu:
                             "olt_ip":    o['oltip'],
                             "portoid":   o['portid'],
                             "onuid":     o['onuid'],
+                            "idonu":     self.idonu,
                             "snmp_com":  self.cfg['SNMP_READ_B'],
                             "snmp_wr":   self.cfg['SNMP_CONF_B'],
                             "portoltid": portoltid,

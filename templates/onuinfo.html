@@ -22,7 +22,7 @@ ONU info
 	    {% endif %}
 
 	{% endfor %}
-    
+
                     {% for item in onu_info %}
                     <table class="table">
                         <div class="text-center">
@@ -39,9 +39,9 @@ ONU info
                             <img src="{{ url_for('static', filename='images/onu_los.png') }}" width="300">
                     	{% endif %}
                     	</div>
-        
+
                     <tbody class="table-group-divider">
-                    
+
                     <tr>
                        	<td class="fw-bold" width="400">Состояние ONU {{ item['mac/sn'] }}:</td>
                         {% if 'В сети' in item.iface_state %}
@@ -58,6 +58,7 @@ ONU info
                     <tr><td>Статус LAN порта:</td><td>{{ item.lanstate }}</td></tr>
                     <tr><td>Мак адреса с LAN порта:</td>
                         <td>{% for i in item.lan_mac %}{{ i }}<br>{% endfor %}</td></tr>
+
                     <tr><td>Статус CATV порта:</td>
                         {% if 'OFF' in item.catvstate %}
                             <td>
@@ -66,20 +67,20 @@ ONU info
                                 </span>
                                 <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/catvon" class="btn btn-outline-dark">Включить</a>
                             </td>
-    
+
                         {% elif 'ON' in item.catvstate %}
                             <td>
                                 <span class="badge text-bg-success rounded-pill fw-bold">
-                                {{ item.catvstate }}                          
+                                {{ item.catvstate }}
                                 </span>
                                 <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/catvoff" class="btn btn-outline-dark">Выключить</a>
                             </td>
                         {% else %}
                             <td>{{ item.catvstate }}</td>
-                        {% endif %}       
+                        {% endif %}
                     </tr>
                     <tr><td>Уровень сигнала CATV:</td><td>{{ item.catvlevel }}</td></tr>
-                    <tr><td>Время включения:</td><td>{{ item.timeup }}</td></tr>
+                    <tr><td>Uptime / Время включения:</td><td>{{ item.timeup }}</td></tr>
                     <tr><td>Время последнего отключения:</td><td>{{ item.timedown }}</td></tr>
                     <tr><td>Причина последнего отключения:</td><td>{{ item.reason_offline }}</td></tr>
                     <tr><td>Сигнал в сторону ОНУ:</td><td>{{ item.level_onu_rx }}</td></tr>

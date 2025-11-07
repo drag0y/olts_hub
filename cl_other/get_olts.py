@@ -55,50 +55,48 @@ def get_netbox_olt_list():
     if EPON_TAG:
         response = requests.get(URLGETEPON, headers=HEADERS, verify=False)
         olts_list = json.loads(json.dumps(response.json(), indent=4))
+        if 'results' in olts_list:
+            conn = sqlite3.connect(PATHDB)
+            cursor = conn.cursor()
+            query_ports = "INSERT into olts(hostname, ip_address, platform, pon) values (?, ?, ?, ?)"
+            for parse_olts_list in olts_list["results"]:
+                olt_name = parse_olts_list["description"]
+                olt_addr = ipaddress.ip_interface(parse_olts_list["primary_ip4"]["address"])
+                olt_ip = str(olt_addr.ip)
+                platform = parse_olts_list["platform"]["name"]
 
-        conn = sqlite3.connect(PATHDB)
-        cursor = conn.cursor()
-        query_ports = "INSERT into olts(hostname, ip_address, platform, pon) values (?, ?, ?, ?)"
-        for parse_olts_list in olts_list["results"]:
-            olt_name = []
-            olt_addr = []
-            olt_name = parse_olts_list["description"]
-            olt_addr = ipaddress.ip_interface(parse_olts_list["primary_ip4"]["address"])
-            olt_ip = str(olt_addr.ip)
-            platform = parse_olts_list["platform"]["name"]
+                out_epon_olts.append(olt_name + " " + olt_ip)
 
-            out_epon_olts.append(olt_name + " " + olt_ip)
+                oltlist = olt_name, olt_ip, platform, "epon"
+                cursor.execute(query_ports, oltlist)
 
-            oltlist = olt_name, olt_ip, platform, "epon"
-            cursor.execute(query_ports, oltlist)
-
-        conn.commit()
-        conn.close()
+            conn.commit()
+            conn.close()
 
     # --- Получение списка Gpon ОЛТов, если такие есть, то передаём их в функцию snmpgetonu 
     if GPON_TAG:
         response = requests.get(URLGETGPON, headers=HEADERS, verify=False)
         olts2_list = json.loads(json.dumps(response.json(), indent=4))
 
-        conn = sqlite3.connect(PATHDB)
-        cursor = conn.cursor()
-        query_ports = "INSERT into olts(hostname, ip_address, platform, pon) values (?, ?, ?, ?)"
+        if 'results' in olts2_list:
+            conn = sqlite3.connect(PATHDB)
+            cursor = conn.cursor()
+            query_ports = "INSERT into olts(hostname, ip_address, platform, pon) values (?, ?, ?, ?)"
 
-        for parse_olts_list in olts2_list["results"]:
-            olt_name = []
-            olt_addr = []
-            olt_name = parse_olts_list["description"]
-            olt_addr = ipaddress.ip_interface(parse_olts_list["primary_ip4"]["address"])
-            olt_ip = str(olt_addr.ip)
-            platform = parse_olts_list["platform"]["name"]
+            for parse_olts_list in olts2_list["results"]:
+
+                olt_name = parse_olts_list["description"]
+                olt_addr = ipaddress.ip_interface(parse_olts_list["primary_ip4"]["address"])
+                olt_ip = str(olt_addr.ip)
+                platform = parse_olts_list["platform"]["name"]
+
+                out_gpon_olts.append(olt_name + " " + olt_ip)
+
+                oltlist = olt_name, olt_ip, platform, "gpon"
+                cursor.execute(query_ports, oltlist)
             
-            out_gpon_olts.append(olt_name + " " + olt_ip)
-            
-            oltlist = olt_name, olt_ip, platform, "gpon"
-            cursor.execute(query_ports, oltlist)
-            
-        conn.commit()
-        conn.close()
+            conn.commit()
+            conn.close()
 
 
 def olts_update(pathdb):

@@ -22,6 +22,7 @@ class BdcomGetOltInfo:
 
         oidoltports = "1.3.6.1.2.1.31.1.1.1.1"
         parseports = r'(?P<portoid>\d+) = STRING: "(?P<ponport>EPON\S+)"'
+        parseportsgpon = r'(?P<portoid>\d+) = STRING: "(?P<ponport>GPON\S+)"'
 
         conn = sqlite3.connect(self.pathdb)
         cursor = conn.cursor()
@@ -33,8 +34,12 @@ class BdcomGetOltInfo:
 
         for l in portslist:
             match = re.search(parseports, l)
+            match2 = re.search(parseportsgpon, l)
             if match:
                 portlist = self.olt_name, self.olt_ip, match.group('ponport'), match.group('portoid')
+                cursor.execute(query_ports, portlist)
+            elif match2:
+                portlist = self.olt_name, self.olt_ip, match2.group('ponport'), match2.group('portoid')
                 cursor.execute(query_ports, portlist)
 
         conn.commit()
@@ -45,10 +50,10 @@ class BdcomGetOltInfo:
         # --- Функция для запроса списка зареганых ONU и парсинг
 
         oid_epon = "1.3.6.1.4.1.3320.101.10.1.1.3"
-        oid_gpon = ""
+        oid_gpon = "1.3.6.1.4.1.3320.10.3.1.1.4"
 
         parseoutmac = r'(?P<portonu>\d+)=hex-string:(?P<maconu>\S+)'
-        parseoutsn = r'(?P<portonu>\d{10}).(?P<onuid>\d+) = (.+: "|.+: )(?P<snonu>(\S+ ){7}\S+|.+(?="))'
+        parseoutsn = r'(?P<portonu>\d+)=string:(?P<snonu>\S+)'
 
         conn = sqlite3.connect(self.pathdb)
         cursor = conn.cursor()
@@ -60,9 +65,10 @@ class BdcomGetOltInfo:
         if self.pontype == "epon":
             snmpget = SnmpWalk(self.olt_ip, self.snmp_com, oid_epon)
             onulist = snmpget.snmpget()
-        
-        if self.pontype == "gpon":
-            pass
+
+        elif self.pontype == "gpon":
+            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, oid_gpon)
+            onulist = snmpget.snmpget()
 
         # --- Парсинг Мак адресов и добавление в базу
         if self.pontype == "epon":
@@ -72,12 +78,20 @@ class BdcomGetOltInfo:
                     listont = match.group('maconu'), match.group('portonu'), match.group('portonu'), self.olt_ip, self.olt_name
                     cursor.execute(query, listont)
 
-            conn.commit()
-            conn.close()
 
         # --- Парсинг серийников и добавление в базу
-        if self.pontype == "gpon":
-            pass
+        elif self.pontype == "gpon":
+            for l in onulist:               
+                match = re.search(parseoutsn, l.replace(" ", "").replace('"', '').lower())
+                print(re.search(parseoutsn, l.replace(" ", "").lower()))
+
+                if match:
+                    listont = match.group('snonu'), match.group('portonu'), match.group('portonu'), self.olt_ip, self.olt_name
+                    print(listont)
+                    cursor.execute(querygpon, listont)
+
+        conn.commit()
+        conn.close()
 
 
     def ponstatustree(self, port_oid):
@@ -90,8 +104,12 @@ class BdcomGetOltInfo:
             oid_rx_onu = "1.3.6.1.4.1.3320.101.10.5.1.5"
             oid_rx_olt = "1.3.6.1.4.1.3320.101.108.1.3"
         if "gpon" in self.pontype:
-            oid_state = "-"
-            oid_cose = "-"
+            oid_state = "1.3.6.1.2.1.2.2.1.8"
+            oid_down_reason = "1.3.6.1.4.1.3320.10.3.1.1.35"
+            oid_rx_onu = "1.3.6.1.4.1.3320.10.3.4.1.2"
+            oid_rx_olt = "1.3.6.1.4.1.3320.10.2.3.1.3"
+
+            
 
         parse_state = r'INTEGER: (?P<onustate>\d+|-\d+)'
         parse_down = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<downcose>\d+|-\d+)'

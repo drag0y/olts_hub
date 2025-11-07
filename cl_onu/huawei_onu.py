@@ -168,7 +168,7 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
         ''' 
         Метод определяет время включения ОНУ
         '''
-        timelist = "Нет времени отключения"
+        timelist = "Нет времени включения"
         parse_uptime = r'STRING: "(?P<regtime>\S+ \S+)"'
 
         if "epon" in self.pon_type:
@@ -373,3 +373,28 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
                     setreboot_out = "Ошибка"
 
         return setreboot_out
+
+
+    def getethvlandefault(self):
+        '''
+        Получить мак адреса с LAN порта
+        '''
+        if "epon" in self.pon_type:
+            vlan_onu_oid = "1.3.6.1.4.1.2011.6.128.1.1.2.81.1.5"
+
+        if "gpon" in self.pon_type:
+            vlan_onu_oid = "1.3.6.1.4.1.2011.6.128.1.1.2.62.1.7"
+
+        parse_vlan = r'INTEGER: (?P<vlan>.+)'
+        # ---- Получение уровня сигнала с ОНУ
+
+        vlanonuoid = f'{vlan_onu_oid}.{self.portoid}.{self.onuid}.1'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, vlanonuoid)
+        vlanonu = snmpget.snmpget()
+
+        for v in vlanonu:
+            match = re.search(parse_vlan, v)
+            if match:
+                vlan_onu = match.group('vlan')
+
+        return f'VLAN: {vlan_onu}'

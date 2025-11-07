@@ -75,8 +75,12 @@ ONU info
   {% endfor %}
 
 
-	<span class="fw-bold">ОЛТ: {{ hostname }}</span>
-        <span class="fw-bold">ip: {{ oltip }}</span>
+	<span class="fw-bold">ОЛТ:
+    <a href="/oltinfo/{{ olt_info.oltid }}" class="link-primary">
+       {{ olt_info.oltname }}
+    </a>
+    </span>
+        <span class="fw-bold">ip: {{ olt_info.ip_address }}</span>
         <span class="fw-bold">порт: {{ olt_port }}</span>
 
 <h6 class="d-flex justify-content-between align-items-center mb-3">

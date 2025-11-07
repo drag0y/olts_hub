@@ -73,10 +73,12 @@ class FindOnu:
                         "olt_ip":    o['oltip'],
                         "portoid":   o['portid'],
                         "onuid":     o['onuid'],
+                        "idonu":     self.idonu,
                         "snmp_com":  self.cfg['SNMP_READ_B'],
                         "snmp_wr":   self.cfg['SNMP_CONF_B'],
                         "portoltid": portoltid,
                         }
+
                 conn.close()
                 onu_info = BdcomGetOnuInfo(onu_params)
                 onu_state = onu_info.getonustatus()

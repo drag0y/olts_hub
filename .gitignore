@@ -20,7 +20,7 @@ config.py
 config.py.*
 
 #
-onulist.db
+onulist*
 
 #
 pyvenv.cfg
