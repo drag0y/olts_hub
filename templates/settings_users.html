@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block settings %}
-<div class="container col-md-4 col-lg-4 order-md-last">
+<div class="container col-md-4 col-lg-4 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
 <form method="post">
 
     {% for msg in get_flashed_messages() %}
@@ -54,6 +54,7 @@
         <option value="Operator">Operator</option>
 </select>
 <input type="submit" class="btn btn-success" value="Добавить">
+<p></p>
 </form>
 </div>
 {% endblock %}

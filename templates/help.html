@@ -9,34 +9,6 @@ OLTS HUB - Справочная
 
 
 
-<html lang="ru">
-
-<style>
-    .onu-info {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-
-    .tree-info {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-
-    .onu-image {
-        text-align: center;
-    }
-    .tree-image {
-        text-align: left;
-    }
-
-    img {
-        max-width: 75%;
-        height: 65%;
-    }
-</style>
-
 <head>
     <meta charset="UTF-8">
     <title>OLTS HUB</title>
@@ -44,13 +16,13 @@ OLTS HUB - Справочная
 
 
 <body>
-<div class="container">
+<div class="container col-md-7 col-lg-7 order-md-last">
 
-<h1>Добро пожаловать в OLTS HUB</h1>
+<h1 class="text-center fw-bold">Добро пожаловать в OLTS HUB</h1>
 
 <p>Этот инструмент предназначен для получения актуальной информации об ONU на наших OLT.</p>
-
-<h1>Поиск ONU</h1>
+<br>
+<h1 class="text-center fw-bold">Поиск ONU</h1>
 <p>Для поиска нужной ONU, вставьте её серийный номер или MAC-адрес в поле поиска на главной странице.</p>
 <p><strong>Примечание:</strong> Поле поиска пока работает только на главной странице. Поисковый запрос с других страниц вызовет ошибку. </p>
 <p>Перейдите на Главную страницу, чтобы выполнять поисковые запросы </p>
@@ -69,15 +41,15 @@ OLTS HUB - Справочная
     <li><strong>XXXXXXXXXXXX (например, 1c8779135ac0)</strong></li>
 </ul>
 
-
-<h1>Информация о найденной ONU</h1>
+<br>
+<h1 class="text-center fw-bold">Информация о найденной ONU</h1>
 <div class="onu-info">
     <div>
-    <div class="onu-image">
-            <img src="{{ url_for('static', filename='images/onu-info.png') }}" alt="Картинка ONU">
+    <div class="text-center">
+            <img src="{{ url_for('static', filename='images/onu-info.png') }}" alt="Картинка ONU" width="550">
 
 </div>
-
+<br>
         <p>Доступная информация:</p>
         <ul>
             <li><strong>Состояние ONU:</strong> Включена/выключена</li>
@@ -93,8 +65,8 @@ OLTS HUB - Справочная
         </ul>
 
         <p>Также доступна функция вывода сигналов дерева, в котором установлена эта ONU.</p>
-<div class="onu-image">    
-    <img src="{{ url_for('static', filename='images/tree.png') }}" alt="Картинка tree">
+<div class="text-center">    
+    <img src="{{ url_for('static', filename='images/tree.png') }}" alt="Картинка tree" width="550">
 </div>
     </div>
 
@@ -102,8 +74,8 @@ OLTS HUB - Справочная
 
 
 </div>
-
-<h1>Опрос OLT</h1>
+<br>
+<h1 class="text-center fw-bold">Опрос OLT</h1>
 <p>Если выполнялось новое подключение, необходимо опросить OLT для поиска новых ONU.</p>
 
 <p>Для этого на главной странице, в списке OLT, нажмите «Подробнее» на нужном OLT и на открывшейся странице выберите опцию «Опросить OLT».</p>
@@ -111,8 +83,8 @@ OLTS HUB - Справочная
 <p><strong>Опрос может занять некоторое время — от нескольких секунд до 1–3 минут.</strong> </p>
 <p><strong>Оставайтесь на этой странице. После завершения опроса вы будете перенаправлены на главную страницу поиска.</strong></p>
 
-<div>    
-    <img src="{{ url_for('static', filename='images/oprosheno.png') }}" alt="Картинка опроса одного олта">
+<div class="text-center">    
+    <img src="{{ url_for('static', filename='images/oprosheno.png') }}" alt="Картинка опроса одного олта" width="250">
 </div>
 
 </body>

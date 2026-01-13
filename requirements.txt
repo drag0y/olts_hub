@@ -8,3 +8,4 @@ python-dotenv>=1.0.1
 Flask-RESTful>=0.3.10
 ping3>=4.0.8
 logging>=0.4.9.6
+netmiko>=4.6.0

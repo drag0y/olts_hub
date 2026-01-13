@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Конфигурация ОНУ
+{% endblock %}
+
+{% block body %}
+
+
+<div class="container col-md-5 col-lg-5 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px; white-space: pre-wrap;">
+        <h4 class="text-center fw-bold">Конфигурация ОНУ</h4>
+                <ul class="list-group mb-3">
+                    <table class="table">
+                        <div class="text-center">
+                            <img src="{{ url_for('static', filename='images/show_run.png') }}" width="250">
+                            
+                    <tbody class="table-group-divider">
+                    <tbody class="table-group-divider">
+                    <td>ONU найдена на OLTе:</td><td>{{ conf_onu_info.oltname }}<br>{{ conf_onu_info.oltip }}</td>
+                    </tbody>
+                    <tr><td>Конфигурация ОНУ: </td><td>{{ conf_onu_info.outconf }}</td></tr>
+                    <tr><td>FDB : </td><td>{{ conf_onu_info.outfdb }}</td></tr>
+                    </tbody>
+                </ul>
+            </table>
+</div>
+<br>
+<br>
+{% endblock %}
+                    

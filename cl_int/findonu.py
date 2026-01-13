@@ -112,6 +112,7 @@ class FindOnu:
 
             # ---- Если ONU в сети, то для опроса вызываем следующие методы
             state_lan = '-'
+            speed_lan = '-'
             catv_state = '-'
             catv_level = -0.0
             time_up = '-'
@@ -125,6 +126,7 @@ class FindOnu:
                 onustate = "В сети"
 
                 state_lan = onu_info.getlanstatus()
+                speed_lan = onu_info.getlanspeed()
                 reason_down = onu_info.getlastdown()
                 time_up = onu_info.getonuuptime()
                 time_down = onu_info.gettimedown()
@@ -157,6 +159,7 @@ class FindOnu:
                 "iface_name": self.portonu_out,
                 "onuid": self.onuid,
                 "lanstate": state_lan,
+                "lanspeed": speed_lan,
                 "lan_mac": lan_mac,
                 "catvstate": catv_state,
                 "catvlevel": catv_level,

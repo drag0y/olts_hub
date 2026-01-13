@@ -18,6 +18,8 @@ from cl_db.db_cfg import Init_Cfg
 from cl_db.db_menucfg import InitMenuCfg
 from cl_db.db_users import Users_Cfg, UserInfo
 from cl_db.userlogin import UserLogin
+from cl_other.conn_olt import ConnOLT
+from cl_other.show_logs import ShowLogs
 from models.models import Base, OLTs
 
 
@@ -147,6 +149,7 @@ def index():
     Главная страница, получение через строку поиска мака или серийника ОНУ
     и дальнейшая обработка
     """
+    
     if request.method == "POST":
         try:
             onu = request.form['searchonu']
@@ -164,12 +167,20 @@ def index():
             return render_template("/onunotfound.html", onu=onu)
 
     else:
-#        try:
-        olts_list = db.session.execute(db.select(OLTs)).scalars()
-        return render_template("index.html", olts_list=olts_list.all())
-
-#        except:
-#            return redirect('/settings/cfgdb')
+        olts = db.session.execute(db.select(OLTs)).scalars()
+        olts_list = olts.all()
+        
+        oltslist = []
+        for i in olts_list:       
+            oltslist.append(
+                {
+                    'id': i.number,
+                    'hostname': i.hostname,
+                    'ip_address': i.ip_address,
+                }
+            )
+        
+        return render_template("index.html", oltslist=oltslist)
 
         
 @app.route("/help")
@@ -224,11 +235,11 @@ def olt_port_info(number, port):
         pon_status = olt_information.ponportstatus()
         
         return render_template(
-                            "oltportinfo.html", 
-                            pon_status=pon_status, 
-                            olt_port=olt_port, 
-                            olt_info=olt_info,
-                        )
+                        "oltportinfo.html", 
+                        pon_status=pon_status, 
+                        olt_port=olt_port, 
+                        olt_info=olt_info,
+                    )
 
     except KeyError:
         flash("База устарела, опросите ОЛТ")
@@ -551,6 +562,67 @@ def olthub_deluser(username):
         return redirect('/settings/adduser')
     else:
         return redirect('/forbidden')
+
+
+@app.route('/onuconfinfo/<int:number>/<string:onu>')
+@login_required
+def onuconfinfo(number, onu):
+    '''
+    Просмотр конфигурации ОНУ 
+    '''
+    userid = current_user.get_id()
+    userinfo = UserInfo(PATHDB).getUser(userid)
+
+    olt_params = {
+        "pathdb": PATHDB,
+        "olt_id": number,
+        } 
+    
+    olt_find = FindOlt(**olt_params) 
+    olt_information = olt_find.oltinfo()
+    
+    try:
+        onurequest = ConnOLT(olt_information, onu, PATHDB)
+        conf_onu_info = onurequest.confonuinfo()
+    except:
+        logger.info(f"User {userinfo['username']} unsuccessful show ONU config {onu}")
+        flash("Ошибка. Не получилось подключиться к ОЛТу по Telnet/SSH")
+
+        return redirect(f"/onuinfo/{onu}")
+
+    logger.info(f"User {userinfo['username']} show ONU config {onu}")
+
+    return render_template('/onuconfinfo.html', conf_onu_info=conf_onu_info)
+
+
+@app.route('/oltshowlogs/<int:number>')
+@login_required
+def oltlogs(number):
+    '''
+    Просмотр логов ОЛТа
+    '''
+    userid = current_user.get_id()
+    userinfo = UserInfo(PATHDB).getUser(userid)
+
+    olt_params = {
+    "pathdb": PATHDB,
+    "olt_id": number,
+    }   
+
+    olt_find = FindOlt(**olt_params) 
+    olt_information = olt_find.oltinfo()
+    try:
+        logsrequest = ShowLogs(olt_information)
+        logs_info = logsrequest.showlogs()
+    except:
+        logger.info(f"User {userinfo['username']} unsuccessful show logs {olt_information['ip_address']}")
+        flash("Ошибка. Не получилось подключиться к ОЛТу по Telnet/SSH")
+
+        return redirect(f"/oltinfo/{number}")
+
+    logger.info(f"User {userinfo['username']} show logs {olt_information['ip_address']}")
+
+    return render_template('/oltshowlogs.html', logs_info=logs_info)
 
 
 if __name__ == "__main__":

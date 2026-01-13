@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block settings %}
-<div class="container col-md-6 col-lg-6 order-md-last">
+<div class="container col-md-6 col-lg-6 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
 {% for msg in get_flashed_messages() %}
         {% if "Ошибка" in msg %}
             <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
@@ -58,6 +58,7 @@
     </table>
 
     <input type="submit" class="btn btn-success" value="Сохранить изменения">
+    <p></p>
     </form>
 </div>
 {% endblock %}

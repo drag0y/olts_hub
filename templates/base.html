@@ -11,27 +11,28 @@
 	<title>{% block title %}{% endblock %}</title>
     <script src="{{ url_for('static', filename='js/main.js') }}" type="module" defer></script>
 </head>
-<body>
+
+<body style="background-color: #FFFFFF;">
 	<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" aria-label="Main navigation">
 	    <div class="container-fluid">
-        <div class="collapse navbar-collapse d-lg-flex">
-	        <a class="navbar-brand col-lg-0 me-0" href="/"><img src="{{ url_for('static', filename='images/ontmonitoring_logo.jpg') }}" width="100"></a>
+        <div class="collapse navbar-collapse ">
+	        <a class="navbar-brand" href="/"><img src="{{ url_for('static', filename='images/ontmonitoring_logo.png') }}" width="85"></a>
     	    <button class="navbar-toggler p-0 border-0" type="button" id="navbarSideCollapse" aria-label="Toggle navigation">
 	        <span class="navbar-toggler-icon"></span>
     	    </button>
 
-	    <ul class="navbar-nav col-lg-4 mb-lg-0">
+	    <ul class="nav col-lg-4 mb-lg-0">
 	        <li class="nav-item">
-	            <a class="nav-link active" aria-current="page" href="/">Главная</a>
+	            <a class="nav-link" aria-current="page" href="/">Главная</a>
 	        </li>
         <li class="nav-item">
-	        <a class="nav-link active" href="/doubleonu">Поиск дубликатов</a>
+	        <a class="nav-link" href="/doubleonu">Поиск дубликатов</a>
 	    </li>
         <li class="nav-item">
-            <a class="nav-link active" href="/settings/profile">Настройки</a>
+            <a class="nav-link" href="/settings/profile">Настройки</a>
         </li>
         <li class="nav-item">
-	        <a class="nav-link active" href="/help">Справка</a>
+	        <a class="nav-link" href="/help">Справка</a>
 	    </li>
     </ul>
 	      <form class="navbar-nav col-lg-3 me-auto mb-lg-0" role="search" method="post" action="/">
@@ -50,6 +51,7 @@
 <br>
 <br>
 <br>
+
 {% block body %}{% endblock %}
 
 
@@ -60,13 +62,14 @@
   <div class="container-fluid">
 
     <div class="collapse navbar-collapse" id="navbarCollapse">
-      <ul class="navbar-nav">
+      <ul class="nav">
      	  <li class="nav-item">
           <a 
             class="nav-link active text-warning fw-bold" 
             onclick="alert('После нажатия кноки ОК, начнётся процесс опроса ОЛТов. Дождитесь сообщение о завершении')"       
             href="/oltsupdate"
             id="oltsupdate-button"
+            onclick="showSpinnerAll()"
             >
             Опросить ОЛТы
             <div 
@@ -78,24 +81,18 @@
           </a>
         </li>
 
-        <script>
-          loadingIndicatorOltsUpdate = document.getElementById("loading-indicator-oltsupdate");
-          oltsUpdateButton = document.getElementById("oltsupdate-button");
 
-          oltsUpdateButton.addEventListener("click", () => {
-            loadingIndicatorOltsUpdate.classList.remove("d-none")
-          })
-        </script>
 
    </ul>
     </div>
  	 <li class="nav-item">
-		 <a class="nav-link text-white"><small>OLTs HUB v2.4 © 2025 by Drag0y</small></a>
+		 <a class="nav-link text-white"><small>OLTs HUB v2.5 © 2025 by Drag0y</small></a>
         </li>
    </div> 
 
 </nav>
 </footer>
+
 </body>
+
 </html>
-	

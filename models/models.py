@@ -1,3 +1,4 @@
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -11,8 +12,18 @@ class OLTs(Base):
     platform:   Mapped[str]
     pon:        Mapped[str]
 
-    def __repr__(self):
-        return '<OLTs %r>' % self.number
+#    def __repr__(self):
+#        return '<OLTs %r>' % self.number
+
+
+class PonPorts(Base):
+    __tablename__ = 'ponports'
+    number:     Mapped[int] = mapped_column(primary_key=True)
+    hostname:   Mapped[str]
+    ip_address: Mapped[str]
+    ponport:    Mapped[str]
+    portoid:    Mapped[str]
+#    olt_id:     Mapped[int] = mapped_column(ForeignKey("olts.id"))
 
 
 class Users(Base):
@@ -45,18 +56,6 @@ class MenuCfg(Base):
 
     def __repr__(self):
         return '<MenuCfg %r>' % self.id
-
-
-class PonPorts(Base):
-    __tablename__ = 'ponports'
-    number:     Mapped[int] = mapped_column(primary_key=True)
-    hostname:   Mapped[str]
-    ip_address: Mapped[str]
-    ponport:    Mapped[str]
-    portoid:    Mapped[str]
-
-    def __repr__(self):
-        return '<PonPorts %r>' % self.number
 
 
 class Epon(Base):

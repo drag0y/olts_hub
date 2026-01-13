@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block settings %}
-<div class="container col-md-4 col-lg-4 order-md-last">
+<div class="container col-md-4 col-lg-4 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
 <form method="post">
 
     {% for msg in get_flashed_messages() %}
@@ -43,6 +43,7 @@
     <input type="password" name="psw" id="psw" class="form-control" placeholder="Введите пароль (не менее 8-и символов)"><br>
     <input type="password" name="psw_repeat" id="psw_repeat" class="form-control" placeholder="Повторите пароль"><br>
 <input type="submit" class="btn btn-success" value="Сменить пароль">
+<p></p>
 </form>
 </div>
 {% endblock %}

@@ -1,17 +1,18 @@
 {% extends 'base.html' %}
 
 {% block title %}
-ONU info
+Информация об ОНУ
 {% endblock %}
 
 {% block body %}
 
 
+{% for item in onu_info %}
 
-<div class="container col-md-5 col-lg-5 order-md-last">
-    <h4 class="d-flex justify-content-between align-items-center mb-3">
-        <span class="fw-bold">ONU information</span>
-            </h4>
+<div class="container col-md-5 col-lg-5 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
+    
+        <h4 class="text-center fw-bold">Информация об ОНУ</h4>
+            
                 <ul class="list-group mb-3">
         {% for msg in get_flashed_messages() %}
 
@@ -23,20 +24,20 @@ ONU info
 
 	{% endfor %}
 
-                    {% for item in onu_info %}
+                    
                     <table class="table">
                         <div class="text-center">
                     	{% if 'UP' in item.lanstate %}
-                    		<img src="{{ url_for('static', filename='images/onu_on.png') }}" width="300">
+                    		<img src="{{ url_for('static', filename='images/onu_on.png') }}" width="250">
 
                         	{% elif 'DOWN' in item.lanstate %}
-                    		<img src="{{ url_for('static', filename='images/onu_lan_off.png') }}" width="300">
+                    		<img src="{{ url_for('static', filename='images/onu_lan_off.png') }}" width="250">
                     	    {% elif 'Не удалось определить' in item.lanstate %}
-                            <img src="{{ url_for('static', filename='images/onu_lan_unknown.png') }}" width="300">
+                            <img src="{{ url_for('static', filename='images/onu_lan_unknown.png') }}" width="250">
                             {% elif 'Power-Off' in item.reason_offline %}
-                            <img src="{{ url_for('static', filename='images/onu_power_off.png') }}" width="300">
+                            <img src="{{ url_for('static', filename='images/onu_power_off.png') }}" width="250">
                             {% elif 'LOS' in item.reason_offline %}
-                            <img src="{{ url_for('static', filename='images/onu_los.png') }}" width="300">
+                            <img src="{{ url_for('static', filename='images/onu_los.png') }}" width="250">
                     	{% endif %}
                     	</div>
 
@@ -52,10 +53,38 @@ ONU info
 
                     </tr>
                     <tbody class="table-group-divider">
-                    <td>ONU найдена на OLTе:</td><td>{{ item.oltname }}<br>{{ item.oltip }}</td>
+                    <td>ONU найдена на OLTе:</td><td>{{ item.oltname }}<br>{{ item.oltip }}
+                    <a 
+              href="/oltshowlogs/{{ item.olt_id }}" 
+              class="btn btn-info text-warning btn-sm" 
+              type="submit"
+              
+              >
+            <img 
+                src="{{ url_for('static', filename='images/show_log.png') }}"
+                title="Посмотреть логи ОЛТа" 
+                width="20"
+                >
+            </a>
+                    
+                    </td>
                     </tbody>
-                    <tr><td>Порт: {{ item.iface_name }}</td><td>id: {{ item.onuid }}</td></tr>
-                    <tr><td>Статус LAN порта:</td><td>{{ item.lanstate }}</td></tr>
+                    <tr><td>Порт: {{ item.iface_name }}</td><td>id: {{ item.onuid }}
+                        
+                        <a 
+              href="/onuconfinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}" 
+              class="btn btn-info text-warning btn-sm me-1" 
+              type="submit"
+              
+              >
+              <img 
+                src="{{ url_for('static', filename='images/settings_ico.png') }}"
+                title="Посмотреть конфигурацию ОНУ" 
+                width="20"
+                >
+                                                    
+                    </td></tr>
+                    <tr><td>Статус LAN порта:</td><td>{{ item.lanstate }} {{ item.lanspeed }}</td></tr>
                     <tr><td>Мак адреса с LAN порта:</td>
                         <td>{% for i in item.lan_mac %}{{ i }}<br>{% endfor %}</td></tr>
 
@@ -88,28 +117,27 @@ ONU info
                     </tbody>
                 </ul>
             </table>
-</div>
 
 
-<div class="container col-md-5 col-lg-5 order-md-last">
+
+            
     <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-4" style="text-align: center;">
         	<a href="/oltinfo/{{ item.olt_id }}/{{ item.iface_name|replace("/", ".") }}" class="btn btn-success ml-auto">Уровень дерева</a>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-4" style="text-align: center;">
             <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/reboot" class="btn btn-warning ml-auto">Перезагрузить ОНУ</a>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-4" style="text-align: center;">
          <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/deleteonu" class="btn btn-danger text-right">Удалить ОНУ</a>
+         
         </div>
+       <p></p>
     </div>
-<br>
-<br>
-<br>
+</div>
 <br>
 {% endfor %}
 
-</div>
-
+<br>
 {% endblock %}
                     

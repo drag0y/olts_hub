@@ -73,6 +73,38 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
         return lan_out
 
 
+    def getlanspeed(self):
+        ''' 
+        Метод определяет скорость LAN порта
+        '''
+        lan_speed_out = ""
+        if "epon" in self.pon_type:
+            ethspeedoid = "1.3.6.1.4.1.2011.6.128.1.1.2.81.1.4"
+        elif "gpon" in self.pon_type:
+            ethspeedoid = "1.3.6.1.4.1.2011.6.128.1.1.2.62.1.4"
+
+        parse_lanspeed = r'INTEGER: (?P<lanspeed>\d)'
+
+        lanspeedoid = f'{ethspeedoid}.{self.portoid}.{self.onuid}.1'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, lanspeedoid)
+        lanspeed = snmpget.snmpget()
+
+        for l in lanspeed:
+            match = re.search(parse_lanspeed, l)
+            if match:
+                speed = match.group('lanspeed')
+                if speed == '5':
+                    lan_speed_out = " - 10M"
+                elif speed == '6':
+                    lan_speed_out = " - 100M"
+                elif speed == '7':
+                    lan_speed_out = " - 1000M"
+                else:
+                    lan_speed_out = ""
+
+        return lan_speed_out
+
+
     def getcatvstate(self):
         ''' 
         Метод определяет статус CATV порта

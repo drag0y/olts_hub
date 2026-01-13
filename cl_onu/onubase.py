@@ -14,7 +14,6 @@ class GetOnuInfoBase:
         self.snmp_wr = dbonuinfo['snmp_wr']
         self.portoltid = dbonuinfo['portoltid']
         self.dbinfo = dbonuinfo
-        print('DBINFO', self.dbinfo)
 
     
     def getonustatus(self):
@@ -31,6 +30,14 @@ class GetOnuInfoBase:
         '''
         lan_out = 'Не поддерживается'
         return lan_out
+
+
+    def getlanspeed(self):
+        ''' 
+        Метод определяет скорость подключения LAN порта
+        '''
+        lan_speed_out = ''
+        return lan_speed_out
 
 
     def getcatvstate(self):

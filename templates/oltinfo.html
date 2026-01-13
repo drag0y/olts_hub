@@ -5,7 +5,15 @@
 {% endblock %}
 
 {% block body %}
-<div class="container container col-md-5 col-lg-4 order-md-last">
+
+<div id="spinner-overlay">
+    <div class="spinner-wrapper">
+        <div class="spinner"></div>
+        <p>Опрос ОЛТа...</p>
+    </div>
+</div>
+
+<div class="container container col-md-5 col-lg-6 order-md-last">
   <header>
     <h1 class="text-center fw-bold">
       Информация об ОЛТе
@@ -31,9 +39,9 @@
       <img src="{{ url_for('static', filename='images/olt_offline.jpg') }}" width="200">
     {% endif %}
   </div>
-</div>
 
-<div class="container col-md-5 col-lg-5 order-md-last">
+
+<div class="">
   <ul class="list-group mb-3">
     <li class="list-group-item d-flex justify-content-between lh-sm">
       <div>
@@ -95,7 +103,6 @@
         {% set ns2.counter = 0 %}
 
       <script>
-        let oltupdateButton = []
         let portButton = []
         let loadingIndicator = []
       </script>
@@ -106,7 +113,7 @@
           {% if ns.counter <= 16 %}
             <a 
               href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace("/", ".") }}" 
-              class="p-1 btn btn-outline-dark btn-sm" 
+              class="p-1 mb-1 btn btn-outline-dark btn-sm" 
               type="click"
               id="port-button{{ ns2.counter }}"
               >
@@ -209,41 +216,53 @@
     </div>
   </div>
 
-  <div class="btn-toolbar justify-content-between" role="toolbar" aria-label="Toolbar with button groups">
-    <div class="btn-group" role="group" aria-label="First group">
+  <div class="row">
+    
       {% if 'В сети' in olt_information.olt_state %}
+      <div class="col-md-4" style="text-align: center;">
         <a 
           href="/oltinfo/{{ olt_information.oltid }}/update" 
           class="btn btn-warning"
           id="update-button"
+          onclick="showSpinner()"
           >
             Опросить ОЛТ
-        <div 
-                  id="loading-indicator-update"
-                  class="spinner-border spinner-border-sm d-none" 
-                  role="status"
-                  >
-                </div>
         </a>
-        <script>
-              loadingIndicatorUpdate = document.getElementById("loading-indicator-update");
-              updateButton = document.getElementById("update-button")
-
-              updateButton.addEventListener("click", () => {
-                loadingIndicatorUpdate.classList.remove("d-none")
-              })
-            </script>
+        </div>
+        <div class="col-md-4" style="text-align: center;">
+        <a 
+          href="/oltshowlogs/{{ olt_information.oltid }}" 
+          class="btn btn-info"
+          id="update-button"
+          onclick="showSpinner()"
+          >
+            Посмотреть логи ОЛТа
+        </a>
+        
       {% else %}
+      <div class="col-md-4" style="text-align: center;">
         <a href="/oltinfo/{{ olt_information.oltid }}/update" class="btn btn-warning disabled">Опросить ОЛТ</a>
+        </div>
+        <div class="col-md-4" style="text-align: center;">
+        <a href="/oltshowlogs/{{ olt_information.oltid }}" class="btn btn-info disabled">Посмотреть логи ОЛТа</a>
+        
       {% endif %}
     </div>
-    <div class="input-group">
+    <div class="col-md-4" style="text-align: center;">
       <a href="/oltinfo/{{ olt_information.oltid }}/delete" class="btn btn-danger">
         Удалить ОЛТ
 	  </a>
 	</div>
   </div>
-
+  
 </div>
-
+</div>
+</div>
+</div>
+<script>
+function showSpinner() {
+    const overlay = document.getElementById('spinner-overlay');
+    overlay.classList.add('active');
+}
+</script>
 {% endblock %}

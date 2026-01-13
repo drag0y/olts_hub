@@ -101,7 +101,7 @@ class HuaweiGetOltInfo:
         '''
         parse_state = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<onustate>\d+|-\d+)'
         parse_down = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<downcose>\d+|-\d+)'
-        parse_tree = r'(\d+){10}.(?P<onuid>\S+) .+(?P<treelevel>-\S+)'
+        parse_tree =  r'(\d+){10}.(?P<onuid>\S+) = INTEGER: (?P<treelevel>\S+)' # r'(\d+){10}.(?P<onuid>\S+) .+(?P<treelevel>-\S+)'
         parse_tree_rx_olt = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<treelevel>\d+)'
 
         if "epon" in self.pontype:
@@ -192,7 +192,7 @@ class HuaweiGetOltInfo:
         
                 rx_onu.setdefault(onuid)
                 rx_onu.update({onuid: {'rxonu': float(level_rx)}})
-                
+                            
         # Смотрим уровни со всего пон порта в сторону ОЛТа (rxolt)
         rx_olt = {}
         rxoltoid = f'{oid_rx_olt}.{port_oid}'

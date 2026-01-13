@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Конфигурация ОНУ
+{% endblock %}
+
+{% block body %}
+
+<div class="container col-md-6 col-lg-6 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px; white-space: pre-wrap;">
+        <h4 class="text-center fw-bold">Логи ОЛТа</h4>
+                <ul class="list-group mb-3">
+                    <table class="table">
+                        <div class="text-center">
+                            <img src="{{ url_for('static', filename='images/show_logs_image.png') }}" width="250">
+                            
+                    <tbody class="table-group-divider">
+                    <tbody class="table-group-divider">
+                    <td>OLT:</td><td>{{ logs_info.oltname }}<br>{{ logs_info.oltip }}</td>
+                    </tbody>
+                    <tr><td>Логи ОЛТа: </td><td>{{ logs_info.outlogs }}</td></tr>
+                    </tbody>
+                </ul>
+            </table>
+</div>
+
+
+<br>
+<br>
+
+{% endblock %}
+                    

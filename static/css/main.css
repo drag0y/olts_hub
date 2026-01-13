@@ -1,0 +1,94 @@
+.container {
+    background: #FFFFFF;
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 15px;
+    border: 1px solid #FFFFFF;
+    box-shadow: 0 0 30px #DCDCDC;
+    transition: transform 1s, box-shadow 1s;
+}
+
+.container:hover {
+    transform: translateY(-0.1px);
+    box-shadow: 0 0 10px #000000;
+}
+
+.nav a {
+    text-decoration: none;
+    color: #ffc107;
+    font-weight: 500;
+    position: relative;
+    --bs-nav-link-hover-color: #FFEFD5
+}
+
+.nav a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #feffc2, #FFC107);
+    transition: width 0.4s;
+}
+
+.nav a:hover::after {
+    width: 100%;
+}
+
+/* ===== SPINNER OVERLAY ===== */
+#spinner-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.062);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 9999;
+}
+
+#spinner-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.spinner-wrapper {
+    text-align: center;
+}
+
+/* ===== SPINNER ===== */
+.spinner {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 4px solid #FFC107;
+    border-top: 4px solid #48ff00;
+    border-right: 4px solid #818cf8;
+    animation: spin 1s linear infinite;
+    margin: auto;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spinner-wrapper p {
+    margin-top: 20px;
+    color: #000000;
+    letter-spacing: 0.05em;
+}
+
+
+
+
+
+
+
+
+

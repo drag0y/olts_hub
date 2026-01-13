@@ -6,12 +6,20 @@
 
 {% block body %}
 
+<div id="spinner-overlay">
+    <div class="spinner-wrapper">
+        <div class="spinner"></div>
+        <p>Опрос ОЛТа...</p>
+    </div>
+</div>
 
-<div class="container col-md-7 col-lg-7 order-md-last">
+
+<div class="container col-md-7 col-lg-7 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
+  
   <header>
     <h4 class="text-center fw-bold">Список ОЛТов</h4>
   </header>
- 
+
   <ul class="list-group mb-3">
 
   {% for msg in get_flashed_messages() %}
@@ -32,12 +40,21 @@
 
   {% endfor %}
 
-        
     <table class="table">
       <thead class="table-dark">
         <tr>
           <th scope="row">№</th>
-          <th scope="col">Имя ОЛТа</th>
+          <th scope="col">
+            <input 
+        type="text" 
+        id="filter"
+        class="form-control me-4"
+        style="width: 200px; height: 30px;"
+        placeholder="Имя ОЛТа"
+        >
+
+          </th>
+          
           <th scope="col">IP адрес</th>
           <th scope="col">Действие</th>
         </tr>
@@ -48,36 +65,76 @@
         let loadingIndicator = []
       </script>
 
-      {% for item in olts_list %}
-        <tbody class="table-group-divider">
-          <tr>
+
+<tbody class="table-group-divider" id="list">
+     
+
+
+<script>
+
+        
+const list = document.querySelector('#list')
+const filter = document.querySelector('#filter')
+let OLTS = []
+
+filter.addEventListener('input', (event) => {
+  const value = event.target.value.toLowerCase()
+  
+  const filteredOlts = OLTS.filter((olt) => 
+      olt.hostname.toLowerCase().includes(value)
+    )
+  render(filteredOlts)
+})
+
+
+
+    function start() {
+      
+      const oltsList = {{ oltslist | tojson }};
+      OLTS = oltsList
+      render(oltsList)
+    }
+    
+    function render(olts = []) {
+      
+      console.log(list)
+      const html = olts.map(toHTML).join('')
+      list.innerHTML = html
+    }
+
+    function toHTML(olt){
+      
+      return `
+      <table class="table">
+      <tr>
           <th scope="row">
             <h6 class="badge bg-dark text-warning rounded-pill my-0">
-              {{ item.number }}
+              ${olt.id}
             </h6>
           </th>
-          <td>{{ item.hostname }}</td>
-          <td>{{ item.ip_address }}</td>
+          <td>${olt.hostname}</td>
+          <td>${olt.ip_address}</td>
           <td>
             <a 
-              href="/oltupdate/{{ item.number }}" 
+              href="/oltupdate/${olt.id}" 
               class="btn btn-dark text-warning btn-sm" 
               type="click" 
-              id="oltupdate-button{{ item.number }}"
+              id="oltupdate-button${olt.id}"
+              onclick="showSpinner()"
               >
               <img 
                 src="static/images/update_olt.png" 
                 title="Опросить ОЛТ" width="20"
                 >
                 <div 
-                  id="loading-indicator{{ item.number }}"
+                  id="loading-indicator${olt.id}"
                   class="spinner-border spinner-border-sm d-none" 
                   role="status"
                   >
                 </div>
             </a>
             <a 
-              href="/oltinfo/{{ item.number }}" 
+              href="/oltinfo/${olt.id}" 
               class="btn btn-dark text-warning btn-sm" 
               type="submit"
               >
@@ -87,20 +144,19 @@
                 width="20"
                 >
             </a>
-          </td>
+          </td></a>
           </tr>
-        </tbody>
+          </table>
+      `
+    }
 
-        <script>
-          loadingIndicator[{{ item.number }}] = document.getElementById("loading-indicator{{ item.number }}");
-          oltupdateButton[{{ item.number }}] = document.getElementById("oltupdate-button{{ item.number }}");
+    start()
 
-          oltupdateButton[{{ item.number }}].addEventListener("click", () => {
-            loadingIndicator[{{ item.number }}].classList.remove("d-none")
-          })
-        </script>
+    </script>
 
-      {% endfor %}
+
+</tbody>
+     
 
     </table>
 
@@ -108,6 +164,13 @@
 
 </div>
 
+<script>
+function showSpinner() {
+    const overlay = document.getElementById('spinner-overlay');
+    overlay.classList.add('active');
+}
+</script>
+
+
 
 {% endblock %}
-

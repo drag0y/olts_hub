@@ -1,5 +1,4 @@
 import sqlite3
-import os
 from ping3 import ping
 
 from cl_db.db_cfg import Init_Cfg
