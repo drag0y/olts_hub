@@ -12,11 +12,12 @@ class ActionOnu:
     """
     Класс для управления ОНУ
     """
-    def __init__(self, pathdb, useronu, oltid):
+    def __init__(self, pathdb, useronu, oltid, confonu=''):
 
         self.useronu = useronu.lower().replace(' ','').replace(':', '').replace('.', '').replace('hwtc', '48575443').replace('-', '')
         self.pathdb = pathdb
         self.oltid = oltid
+        self.confonu = confonu
 
         if len(self.useronu) == 12:
             pon_type = 'epon'
@@ -175,8 +176,9 @@ class ActionOnu:
             onu_delete = BdcomGetOnuInfo(self.onu_params)
             delete_out = onu_delete.setonudelete()
         elif self.PF_HUAWEI in self.platform:
-            delete_out = 'ERROR. Функция пока доступна только для BDCOM'
+            onu_delete = HuaweiGetOnuInfo(self.onu_params)
+            delete_out = onu_delete.setonudelete(self.confonu)
         elif self.PF_CDATA in self.platform:
-            delete_out = 'ERROR. Функция пока доступна только для BDCOM'
+            delete_out = 'ERROR. Функция доступна только для BDCOM и Huawei'
 
         return delete_out

@@ -15,6 +15,9 @@ CDATA_PSW = os.getenv('CDATA_PSW')
 
 
 class ConnOLT:
+    '''
+    Класс для подключения к ОЛТу по SSH к Huawei и Telnet BDCOM
+    '''
     def __init__(self, olt_information, useronu, pathdb):
         self.useronu = useronu.lower().replace(' ','').replace(':', '').replace('.', '').replace('hwtc', '48575443').replace('-', '')
         self.olt_information = olt_information
@@ -43,7 +46,7 @@ class ConnOLT:
 
     def confonuinfo(self):
         '''
-        Connect to OLT
+        Метод подключения к ОЛТу и сбор конфигурации и FDB с ОНУ
         '''   
         if 'BDCOM' in self.olt['platform']:
             with netmiko.ConnectHandler(
@@ -53,8 +56,8 @@ class ConnOLT:
                         password=BDCOM_PSW,
                         ) as telnet:
                 telnet.enable()
-                outconf = telnet.send_command(f'show run interface {self.olt['portonu']}')
-                outfdb = telnet.send_command(f'show mac address-table interface {self.olt['portonu']}')
+                outconf = telnet.send_command(f'show run interface {self.olt["portonu"]}')
+                outfdb = telnet.send_command(f'show mac address-table interface {self.olt["portonu"]}')
                 
                 conf_onu = {
                     'oltip': self.olt['oltip'],
@@ -72,8 +75,8 @@ class ConnOLT:
                         disabled_algorithms=dict(pubkeys=["rsa-sha2-512", "rsa-sha2-256"]),
                         ) as ssh:
                 ssh.enable()
-                outconf = ssh.send_command_timing(f'display current-configuration ont {self.olt['portonu']} {self.olt['onuid']}')
-                outfdb = ssh.send_command_timing(f'display mac-address port {self.olt['portonu']} ont {self.olt['onuid']}')
+                outconf = ssh.send_command_timing(f'display current-configuration ont {self.olt["portonu"]} {self.olt["onuid"]}')
+                outfdb = ssh.send_command_timing(f'display mac-address port {self.olt["portonu"]} ont {self.olt["onuid"]}')
                 
                 conf_onu = {
                     'oltip': self.olt['oltip'],
@@ -81,6 +84,30 @@ class ConnOLT:
                     'outconf': outconf,
                     'outfdb': outfdb,
                 }
+                
+        return conf_onu
+    
+
+    def confonuhuawei(self):
+        '''
+        Метод подключения к ОЛТу Huawei и сбор конфигурации
+        далее эта конфигурация будет парситься для определения сервис порта ОНУ
+        '''   
+        with netmiko.ConnectHandler(
+                    device_type='huawei_olt',
+                    host=self.olt['oltip'],
+                    username=HUAWEI_LOGIN,
+                    password=HUAWEI_PSW,
+                    disabled_algorithms=dict(pubkeys=["rsa-sha2-512", "rsa-sha2-256"]),
+                    ) as ssh:
+            ssh.enable()
+            outconf = ssh.send_command_timing(f'display current-configuration ont {self.olt["portonu"]} {self.olt["onuid"]}')
+                        
+            conf_onu = {
+                'oltip': self.olt['oltip'],
+                'oltname': self.olt['oltname'],
+                'outconf': outconf,
+            }
                 
         return conf_onu
                     

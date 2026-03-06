@@ -430,3 +430,44 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
                 vlan_onu = match.group('vlan')
 
         return f'VLAN: {vlan_onu}'
+
+
+    def setonudelete(self, confonu):
+        '''
+        Метод для удаления ОНУ
+        '''
+        parse_service_port = 'service-port (?P<servport>\d+)'
+        parse_delete = 'INTEGER: (?P<setdelete>.+)'
+
+        if "epon" in self.pon_type:
+            onu_delete_oid = '1.3.6.1.4.1.2011.6.128.1.1.2.53.1.10'
+            srv_port_delete_oid = '1.3.6.1.4.1.2011.5.14.5.2.1.15'
+               
+        if "gpon" in self.pon_type:
+            onu_delete_oid = '1.3.6.1.4.1.2011.6.128.1.1.2.43.1.10'
+            srv_port_delete_oid = '1.3.6.1.4.1.2011.5.14.5.2.1.15'
+
+        match = re.findall(parse_service_port, confonu)            
+        
+        if match:
+            for p in match:
+                sp = int(p) + 1
+                s_port_deleteoid = f'{srv_port_delete_oid}.{sp} i 6'
+                snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, s_port_deleteoid)
+                snmpset.snmpset()           
+
+        onudelete_oid = f'{onu_delete_oid}.{self.portoid}.{self.onuid} i 6'
+        snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, onudelete_oid)
+        onudelete = snmpset.snmpset()
+        
+        setdelete_out = 'Ошибка. OLT не отвечает или не включен SNMP Write'
+        for l in onudelete:
+            match = re.search(parse_delete, l)            
+            if match:
+                setdelete = match.group('setdelete')
+                if setdelete == '6':
+                    setdelete_out = "ОНУ удалена, опросите ОЛТ"
+                else:
+                    setdelete_out = "Ошибка"
+
+        return setdelete_out

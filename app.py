@@ -428,11 +428,12 @@ def onu_reboot(oltid, onu):
     ''' 
     Перезагрузка ОНУ
     '''
+    userid = current_user.get_id()
+    userinfo = dbase.getUser(userid)
     onurequest = ActionOnu(PATHDB, onu, oltid)
     out = onurequest.onureboot()
     flash(out)
-    userid = current_user.get_id()
-    userinfo = dbase.getUser(userid)
+    
     logger.info(f"User {userinfo['username']} rebooted ONU {onu}, out text '{out}'")
                 
     return redirect(f'/onuinfo/{onu}')
@@ -444,14 +445,41 @@ def onu_delete(oltid, onu):
     ''' 
     Удалить ОНУ с ОЛТа
     '''
-    onurequest = ActionOnu(PATHDB, onu, oltid)
-    out = onurequest.onudelete()
-    flash(out)
     userid = current_user.get_id()
     userinfo = dbase.getUser(userid)
+
+    olt_params = {
+        "pathdb": PATHDB,
+        "olt_id": oltid,
+        } 
+    
+    olt_find = FindOlt(**olt_params) 
+    olt_information = olt_find.oltinfo()
+    snmp_cfg = Init_Cfg(PATHDB)
+    cfg = snmp_cfg.getcfg()
+    PF_HUAWEI = cfg['PL_H']
+    try:
+        if PF_HUAWEI in olt_information['platform']:     
+            onurequest = ConnOLT(olt_information, onu, PATHDB)
+            conf_onu_info = onurequest.confonuhuawei()
+            
+            onurequest = ActionOnu(PATHDB, onu, oltid, confonu=conf_onu_info['outconf'])
+            out = onurequest.onudelete()
+            flash(out)
+
+        else:
+            onurequest = ActionOnu(PATHDB, onu, oltid)
+            out = onurequest.onudelete()
+            flash(out)
+    except:
+        logger.info(f"User {userinfo['username']} unsuccessful show ONU config {onu}")
+        flash("Ошибка. Не получилось подключиться к ОЛТу по Telnet/SSH")
+
+        return redirect(f"/onuinfo/{onu}")
+ 
     logger.info(f"User {userinfo['username']} deleted ONU {onu}, out text '{out}'")
                 
-    return redirect(f'/onuinfo/{onu}')
+    return redirect(f'/oltinfo/{oltid}')
 
 
 @app.route('/settings/cfgsnmp', methods=['POST', 'GET'])

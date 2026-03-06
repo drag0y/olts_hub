@@ -6,6 +6,12 @@
 
 {% block body %}
 
+<div id="spinner-overlay">
+    <div class="spinner-wrapper">
+        <div class="spinner"></div>
+        <p>...</p>
+    </div>
+</div>
 
 {% for item in onu_info %}
 
@@ -123,18 +129,42 @@
             
     <div class="row">
         <div class="col-md-4" style="text-align: center;">
-        	<a href="/oltinfo/{{ item.olt_id }}/{{ item.iface_name|replace("/", ".") }}" class="btn btn-success ml-auto">Уровень дерева</a>
+        	<a 
+              href="/oltinfo/{{ item.olt_id }}/{{ item.iface_name|replace("/", ".") }}" 
+              class="btn btn-success ml-auto"
+              onclick="showSpinner()"
+              >
+                Уровень дерева
+            </a>
         </div>
         <div class="col-md-4" style="text-align: center;">
-            <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/reboot" class="btn btn-warning ml-auto">Перезагрузить ОНУ</a>
+            <a 
+              href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/reboot" 
+              class="btn btn-warning ml-auto"
+              onclick="showSpinner()"
+              >
+                Перезагрузить ОНУ
+            </a>
         </div>
         <div class="col-md-4" style="text-align: center;">
-         <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/deleteonu" class="btn btn-danger text-right">Удалить ОНУ</a>
+          <a 
+           href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/deleteonu" 
+           class="btn btn-danger text-right"
+           onclick="showSpinner()"
+           >
+             Удалить ОНУ
+          </a>
          
         </div>
        <p></p>
     </div>
 </div>
+<script>
+function showSpinner() {
+    const overlay = document.getElementById('spinner-overlay');
+    overlay.classList.add('active');
+}
+</script>
 <br>
 {% endfor %}
 
