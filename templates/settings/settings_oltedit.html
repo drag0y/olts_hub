@@ -1,0 +1,238 @@
+{% extends 'settings/settings_base.html' %}
+
+{% block title %}
+Редактирование ОЛТа
+{% endblock %}
+
+{% block settings %}
+
+<div class="container col-md-5 col-lg-5 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
+    <form method="post">
+
+  {% for msg in get_flashed_messages() %}
+    {% if "error" in msg.result %}
+      <h3 class="text-center">
+        <span class="flash badge text-bg-danger">
+          {{msg.message}}
+        </span>
+      </h3>
+    {% else %}
+	  <h3 class="text-center">
+        <span class="flash badge text-bg-success">
+          {{msg.message}}
+        </span>
+      </h3>
+	{% endif %}
+
+  {% endfor %}
+ <header>
+        <h1 class="text-center fw-bold">Редактирование ОЛТа</h1>
+    </header>
+    <table class="table">
+      
+            <tr>
+                <td><b>Hostname</b></td>
+                <td>
+                  <input 
+                    type="text" 
+                    name="hostname" 
+                    id="hostname" 
+                    class="form-control" 
+                    value="{{ olt_information.oltname }}" 
+                    placeholder="Введите имя ОЛТа"
+                  >
+                </td>
+            </tr>
+            <tr>
+              <td><b>Описание ОЛТа</b></td>
+              <td>
+                <input 
+                  type="text" 
+                  name="descr" 
+                  id="descr" 
+                  class="form-control" 
+                  value="{{ olt_information.descr }}"
+                  placeholder="Введите Описание ОЛТа"
+                >
+              </td>
+            </tr>
+            <tr>
+              <td><b>IP адрес</b></td>
+              <td>
+                <input 
+                  type="text" 
+                  name="ip_address" 
+                  id="ip_address" 
+                  class="form-control" 
+                  value="{{ olt_information.ip_address }}"
+                  placeholder="Введите IP адрес ОЛТа"
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <b>
+                  Группа
+                </b>
+                <br>
+                <small style="color: gray;">
+                  {{ olt_information.group }}
+                </small>
+              </td>
+              <td>
+                <select 
+                  class="form-select mb-4" 
+                  name="group" 
+                  id="group"
+                  >
+                    <option selected value="None">
+                      Выберите группу
+                    </option>
+                      {% for g in groups %}
+                    <option value="{{ g.id }}">
+                      {{ g.group_name }}
+                    </option>
+                      {% endfor %}
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <b>
+                  Платформа
+                </b>
+                <br>
+                <small style="color: gray;">
+                  {{ olt_information.platform }}
+                </small>
+              </td>
+              <td>
+                <select 
+                  class="form-select mb-4" 
+                  name="platform" 
+                  id="platform"
+                  >
+                    <option selected value="None">
+                      Выберите платформу
+                    </option>
+                      {% for pf in pf_list %}
+                    <option value="{{ pf }}">
+                      {{ pf }}
+                    </option>
+                      {% endfor %}
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <b>
+                  Тип портов
+                </b>
+                <br>
+                <small style="color: gray;">
+                  {{ olt_information.pontype }}
+                </small>
+              </td>
+              <td>
+                <select 
+                  class="form-select mb-4" 
+                  name="pontype" 
+                  id="pontype"
+                  >
+                    <option selected value="None">
+                      Выберите тип портов
+                    </option>
+                    <option value="epon">EPON</option>
+                    <option value="gpon">GPON</option>
+                </select>
+              </td>
+            </tr>            
+            <tr>
+                <td><b>SNMP community read</b></td>
+                <td>
+                  <input 
+                    type="text"
+                    oninput="this.value = this.value.replace(/[а-яёА-ЯЁ]/g, '')"
+                    name="snmpread" 
+                    id="snmpread" 
+                    class="form-control" 
+                    value="{{ olt_information.snmpread }}"
+                    placeholder="Введите SNMP community read"
+                  >
+                </td>
+            </tr>
+            <tr>
+                <td><b>SNMP community write</b></td>
+                <td>
+                  <input 
+                    type="text"
+                    oninput="this.value = this.value.replace(/[а-яёА-ЯЁ]/g, '')"
+                    name="snmpwrite" 
+                    id="snmpwrite" 
+                    class="form-control" 
+                    value="{{ olt_information.snmpwrite }}"
+                    placeholder="Введите SNMP community write"
+                  >
+                </td>
+            </tr>
+            <tr>
+              <td>
+                <b>
+                  Тип подключения
+                </b>
+                <br>
+                <small style="color: gray;">
+                  {{ olt_information.conntype }}
+                </small>
+              </td>
+              <td>
+                <select 
+                  class="form-select mb-4" 
+                  name="conntype" 
+                  id="conntype"
+                  >
+                    <option selected value="None">
+                      Выберите тип подключения
+                    </option>
+                    <option value="ssh">SSH</option>
+                    <option value="telnet">Telnet</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td><b>Логин</b></td>
+              <td>
+                <input 
+                  type="text" 
+                  oninput="this.value = this.value.replace(/[а-яёА-ЯЁ]/g, '')"
+                  name="connlogin" 
+                  id="connlogin" 
+                  class="form-control" 
+                  value="{{ olt_information.connlogin }}"
+                  placeholder="Введите логин"
+                >
+              </td>
+            </tr>
+            <tr>
+              <td><b>Пароль</b></td>
+              <td>
+                <input 
+                  type="password"
+                  oninput="this.value = this.value.replace(/[а-яёА-ЯЁ]/g, '')"
+                  name="connpsw" 
+                  id="connpsw" 
+                  class="form-control" 
+                  value="{{ olt_information.connpsw }}"
+                  placeholder="Введите пароль"
+                >
+              </td>
+            </tr>
+    </table>
+  <br>
+	<input type="submit" class="btn btn-success" value="Сохранить">
+    </form>
+<br>
+</div>
+</div>
+</div>
+{% endblock %}

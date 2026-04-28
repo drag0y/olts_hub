@@ -1,0 +1,103 @@
+{% extends 'settings/settings_base.html' %}
+
+{% block title %}
+Редактирование пользователя
+{% endblock %}
+
+{% block settings %}
+
+<div class="container col-md-5 col-lg-5 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
+    <form method="post">
+
+  {% for msg in get_flashed_messages() %}
+    {% if "error" in msg.result %}
+      <h3 class="text-center">
+        <span class="flash badge text-bg-danger">
+          {{msg.message}}
+        </span>
+      </h3>
+    {% else %}
+	  <h3 class="text-center">
+        <span class="flash badge text-bg-success">
+          {{msg.message}}
+        </span>
+      </h3>
+	{% endif %}
+
+  {% endfor %}
+ <header>
+        <h1 class="text-center fw-bold">Редактирование пользователя</h1>
+    </header>
+    <table class="table">
+      
+            <tr>
+                <td><b>Имя пользователя</b></td>
+                <td>
+                  <input 
+                    type="text" 
+                    name="username" 
+                    id="username" 
+                    class="form-control" 
+                    value="{{ user.username }}" 
+                    placeholder="Введите имя пользователя"
+                  >
+                </td>
+            </tr>
+            <tr>
+              <td>
+                <b>
+                  Группа
+                </b>
+                <br>
+                <small style="color: gray;">
+                  {{ user.groupname }}
+                </small>
+              </td>
+              <td>
+                <select 
+                  class="form-select mb-4" 
+                  name="group_id" 
+                  id="group_id"
+                  >
+                    <option selected value="None">
+                      Выберите группу
+                    </option>
+                      {% for g in groups %}
+                    <option value="{{ g.id }}">
+                      {{ g.group_name }}
+                    </option>
+                      {% endfor %}
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <b>
+                  Привилегии
+                </b>
+                <br>
+                <small style="color: gray;">
+                  {{ user.privilage }}
+                </small>
+              </td>
+              <td>
+                <select 
+                  class="form-select mb-4" 
+                  name="privilage" 
+                  id="privilage"
+                  >
+                    <option selected value="None">Права пользователя</option>
+                    <option value="Administrator">Administrator</option>
+                    <option value="Operator">Operator</option>
+                </select>
+              </td>
+            </tr>
+    </table>
+  <br>
+	<input type="submit" class="btn btn-success" value="Сохранить">
+    </form>
+<br>
+</div>
+</div>
+</div>
+{% endblock %}

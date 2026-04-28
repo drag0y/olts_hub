@@ -1,0 +1,165 @@
+{% extends 'settings/settings_base.html' %}
+
+{% block title %}
+Логи
+{% endblock %}
+
+{% block settings %}
+
+
+<div class="container col-md-7 col-lg-7 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
+  
+  <header>
+    <h4 class="text-center fw-bold">Логи</h4>
+  </header>
+
+  <ul class="list-group mb-3">
+
+    <table class="table">
+      <thead class="table-dark">
+        <tr>
+          <th scope="col">
+            <input 
+        type="text" 
+        id="filter"
+        class="form-control me-4"
+        style="width: 300px; height: 30px;"
+        placeholder="Поиск по логам"
+        >
+
+      </thead>
+
+<tbody class="table-group-divider" id="list">
+     
+</tbody>
+     
+    </table>
+
+  </ul>
+  <div id="pagination">
+    
+  </div>
+
+</div>
+
+<button id="scrollTopBtn">↑</button>
+
+<script>
+const list = document.querySelector('#list')
+const filter = document.querySelector('#filter')
+const pagination = document.querySelector('#pagination')
+
+let LOGS = []
+let filteredLogs = []
+let currentPage = 1
+const rowsPerPage = 50
+
+filter.addEventListener('input', (event) => {
+  const value = event.target.value.toLowerCase()
+
+  filteredLogs = LOGS.filter((log) =>
+    log.toLowerCase().includes(value)
+  )
+
+  currentPage = 1
+  render()
+})
+
+function start() {
+  const logsList = {{ logs | tojson }};
+  LOGS = logsList
+  filteredLogs = logsList
+  render()
+}
+
+function render() {
+
+  const start = (currentPage - 1) * rowsPerPage
+  const end = start + rowsPerPage
+
+  const pageItems = filteredLogs.slice(start, end)
+
+  const html = pageItems.map(toHTML).join('')
+  list.innerHTML = html
+
+  renderPagination()
+}
+
+function renderPagination() {
+
+  const totalPages = Math.ceil(filteredLogs.length / rowsPerPage)
+  let buttons = ''
+
+  function addButton(page, text = page) {
+    const active = page === currentPage ? 'active' : ''
+    buttons += `<button class="${active}" onclick="goToPage(${page})">${text}</button>`
+  }
+
+  function addDots() {
+    buttons += `<span class="dots">...</span>`
+  }
+
+  if (totalPages <= 7) {
+
+    for (let i = 1; i <= totalPages; i++) {
+      addButton(i)
+    }
+
+  } else {
+
+    addButton(1)
+
+    if (currentPage > 4) addDots()
+
+    const start = Math.max(2, currentPage - 2)
+    const end = Math.min(totalPages - 1, currentPage + 2)
+
+    for (let i = start; i <= end; i++) {
+      addButton(i)
+    }
+
+    if (currentPage < totalPages - 3) addDots()
+
+    addButton(totalPages)
+  }
+
+  pagination.innerHTML = buttons
+}
+
+function goToPage(page) {
+  currentPage = page
+  render()
+}
+
+function toHTML(log){
+  return `<tr><td>${log}</td></tr>`
+}
+
+start()
+    </script>
+
+<script>
+const scrollBtn = document.getElementById("scrollTopBtn")
+
+window.addEventListener("scroll", () => {
+
+  if (document.documentElement.scrollTop > 200) {
+    scrollBtn.style.display = "block"
+  } else {
+    scrollBtn.style.display = "none"
+  }
+
+})
+
+scrollBtn.addEventListener("click", () => {
+
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
+  })
+
+})
+
+</script>
+
+{% endblock %}

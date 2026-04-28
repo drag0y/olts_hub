@@ -1,61 +1,54 @@
 import re
-import os
 import sqlite3
-from dotenv import load_dotenv
 
 from cl_other.snmpwalk import SnmpWalk
+from db_services.db_onu import OnuServiceDb
 
 
 class HuaweiGetOltInfo:
     '''
     Класс для работы с ОЛТами Huawei
     '''
-    def __init__(self, olt_name, olt_ip, snmp_com, pathdb, pontype):
+    def __init__(self, olt_name, olt_ip, snmp_com, pontype):
         self.olt_name = olt_name
         self.olt_ip = olt_ip
         self.snmp_com = snmp_com
-        self.pathdb = pathdb
         self.pontype = pontype
 
 
     def getoltports(self):
-        # Запрос портов с ОЛТа
-
+        '''
+        Метод запрашивает порты с ОЛТа
+        '''
+        ports = []
         snmp_oid = "1.3.6.1.2.1.31.1.1.1.1"
         parseout = r'(?P<portoid>\d{10}).+ (?P<ponport>\d+\/\d+\/\d+)'
-
-        conn = sqlite3.connect(self.pathdb)
-        cursor = conn.cursor()
-        query_ports = "INSERT into ponports(hostname, ip_address, ponport, portoid) values (?, ?, ?, ?)"
 
         snmpget = SnmpWalk(self.olt_ip, self.snmp_com, snmp_oid)
         oltportslist = snmpget.snmpget()
 
         # Парсинг Мак адресов и добавление в базу
-        for l in oltportslist:
-            match = re.search(parseout, l)
+        for p in oltportslist:
+            match = re.search(parseout, p)
 
             if match:
-                portlist = self.olt_name, self.olt_ip, match.group('ponport'), match.group('portoid')
-                cursor.execute(query_ports, portlist)
+                port = {
+                    'pon_port': match.group('ponport'),
+                    'port_oid': match.group('portoid')
+                }
+                ports.append(port)
 
-        conn.commit()
-        conn.close()
-
-
+        return ports
+    
+    
     def getonulist(self):
         # --- Функция для запроса списка зареганых ONU и парсинг
-
+        onu_list = []
         snmp_epon = "1.3.6.1.4.1.2011.6.128.1.1.2.53.1.3"
         snmp_gpon = "1.3.6.1.4.1.2011.6.128.1.1.2.43.1.3"
 
         parseout = r'(?P<portonu>\d{10}).(?P<onuid>\d+)=\S+:(?P<maconu>\S+)'
         parseoutsn = r'(?P<portonu>\d{10}).(?P<onuid>\d+) = (.+: "|.+: )(?P<snonu>(\S+ ){7}\S+|.+(?="))'
-
-        conn = sqlite3.connect(self.pathdb)
-        cursor = conn.cursor()
-        query = "INSERT into epon(maconu, portonu, idonu, oltip, oltname) values (?, ?, ?, ?, ?)"
-        querygpon = "INSERT into gpon(snonu, portonu, idonu, oltip, oltname) values (?, ?, ?, ?, ?)"
 
         # --- Команда опроса OLTа
         if self.pontype == "epon":
@@ -71,11 +64,13 @@ class HuaweiGetOltInfo:
             for l in onulist:
                 match = re.search(parseout, l.replace(" ", "").lower())
                 if match:
-                    listont = match.group('maconu'), match.group('portonu'), match.group('onuid'), self.olt_ip, self.olt_name
-                    cursor.execute(query, listont)
-            conn.commit()
-            conn.close()
-
+                    onu = {
+                        'onu': match.group('maconu'),
+                        'port_oid': match.group('portonu'),
+                        'onu_oid': match.group('onuid'),
+                    }
+                    onu_list.append(onu)
+            
         # --- Парсинг серийников и добавление в базу
         if self.pontype == "gpon":
             try:
@@ -83,19 +78,28 @@ class HuaweiGetOltInfo:
                     match = re.search(parseoutsn, l.replace('\\"', '"').replace("\\\\", "\\"))
                     if match:
                         if len(match.group('snonu')) > 16:
-                            listont = match.group('snonu').lower().replace(" ", ""), match.group('portonu'), match.group('onuid'), self.olt_ip, self.olt_name
-                            cursor.execute(querygpon, listont)
+                            onu = {
+                                'onu': match.group('snonu').lower().replace(" ", ""),
+                                'port_oid': match.group('portonu'),
+                                'onu_oid': match.group('onuid'),
+                            }
+                            onu_list.append(onu)
+                        # Если серийник кривой, то из строки его надо распарсить в hex формат
                         elif len(match.group('snonu')) < 16:
-                            listont = match.group('snonu').encode().hex(), match.group('portonu'), match.group('onuid'), self.olt_ip, self.olt_name
-                            cursor.execute(querygpon, listont)
+                            onu = {
+                                'onu': match.group('snonu').encode().hex(),
+                                'port_oid': match.group('portonu'),
+                                'onu_oid': match.group('onuid'),
+                            }
+                            onu_list.append(onu)
+                            
             except ValueError:
                 print("Кривая ONU")
 
-            conn.commit()
-            conn.close()
+        return onu_list
 
 
-    def ponstatustree(self, port_oid):
+    def ponstatustree(self, olt_id, port_oid):
         '''
         Метод для построение статуса и уровней с дерева Huawei
         '''
@@ -116,30 +120,9 @@ class HuaweiGetOltInfo:
             oid_state = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.15"
             oid_cose = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.24"
 
-        # Ищем порт ОЛТа
-        conn = sqlite3.connect(self.pathdb)
-        cursor = conn.cursor()
-        sqlgetport = f'SELECT * FROM ponports WHERE ip_address="{self.olt_ip}" AND portoid like "{port_oid}";'
-        ponportonu = cursor.execute(sqlgetport)
-
-        portonu_out = "Не удалось определить порт"
-        for portonu in ponportonu:
-            portonu_out = portonu[3]
-
-        conn = sqlite3.connect(self.pathdb)
-        cursor = conn.cursor()
-
-        getonu = cursor.execute(f'SELECT * FROM {self.pontype} WHERE oltip="{self.olt_ip}" AND portonu="{port_oid}";')
-
-        db_onuinfo = []
-        for onu in getonu:
-            db_onuinfo.append(
-                            {
-                            'id': onu[3],
-                            'onu': onu[1],
-                            'portoid': onu[2],
-                            }
-                        )
+        # Собираем список со всеми ОНУ находящимися на порту ОЛТа
+        onuonport = OnuServiceDb()
+        db_onuinfo = onuonport.find_onu_on_port(olt_id, port_oid)
 
         # Определяем причину отключени всех ону на пон порту
         onudownreasonoid = f'{oid_cose}.{port_oid}'
@@ -152,7 +135,13 @@ class HuaweiGetOltInfo:
             if match:
                 onuid = match.group('onuid')
                 downreason = match.group('downcose')
-                downreason = downreason.replace("-1", "Неизвестно").replace("18", "RING").replace("13", "POWER-OFF").replace("2", "LOS").replace("1", "LOS").replace("3", "LOS")
+                downreason = downreason.replace("-1", "Неизвестно") \
+                                       .replace("18", "RING") \
+                                       .replace("13", "POWER-OFF") \
+                                       .replace("2", "LOS") \
+                                       .replace("1", "LOS") \
+                                       .replace("3", "LOS") \
+                                       .replace("9", "ADMIN-RESET")
                 
                 down_reason.setdefault(onuid)
                 down_reason.update({onuid: {'down_reason': downreason}})
@@ -168,7 +157,9 @@ class HuaweiGetOltInfo:
             if match:
                 onuid = match.group('onuid')
                 onustatus = match.group('onustate')
-                onustatus = onustatus.replace("1", "ONLINE").replace("2", "OFFLINE").replace("-1", "OFFLINE")
+                onustatus = onustatus.replace("1", "ONLINE") \
+                                     .replace("2", "OFFLINE") \
+                                     .replace("-1", "OFFLINE")
 
                 status_onu.setdefault(onuid)
                 if onustatus == 'OFFLINE':
@@ -216,36 +207,36 @@ class HuaweiGetOltInfo:
         for onu in db_onuinfo:
             if status_onu[onu['id']]['status'] == 'ONLINE':
                 out_tree.append(
-                            {
-                            'id':         onu['id'],
-                            'onu':        onu['onu'],
-                            'onu_status': status_onu[onu['id']]['status'],
-                            'rx_onu':     rx_onu[onu['id']]['rxonu'],
-                            'rx_olt':     rx_olt[onu['id']]['rxolt'],
-                            }
-                        )
+                    {
+                    'id':         onu['id'],
+                    'onu':        onu['onu'],
+                    'onu_status': status_onu[onu['id']]['status'],
+                    'rx_onu':     rx_onu[onu['id']]['rxonu'],
+                    'rx_olt':     rx_olt[onu['id']]['rxolt'],
+                    }
+                )
             else:
                 out_tree.append(
-                            {
-                            'id':         onu['id'],
-                            'onu':        onu['onu'],
-                            'onu_status': status_onu[onu['id']]['status'],
-                            'rx_onu':     0.00,
-                            'rx_olt':     0.00,
-                            }
-                        )
+                    {
+                    'id':         onu['id'],
+                    'onu':        onu['onu'],
+                    'onu_status': status_onu[onu['id']]['status'],
+                    'rx_onu':     0.00,
+                    'rx_olt':     0.00,
+                    }
+                )
 
         return out_tree
 
 
-    def hwunregonu(self):
+    def unregonu(self):
         '''
         Метод проверяет есть ли на ОЛТе не зарегистрированные ОНУ
         '''
         unregonu_out = []
 
         if 'epon' in self.pontype:
-            unregoid = '1.3.6.1.4.1.2011.6.128.1.1.2.61.1.2'
+            unregoid = '1.3.61.1.4.1.2011.6.128.1.1.2.61.1.2'
 
         elif 'gpon' in self.pontype:
             unregoid = '1.3.6.1.4.1.2011.6.128.1.1.2.48.1.2'
@@ -261,13 +252,13 @@ class HuaweiGetOltInfo:
                 unreg_onu = match.group('onu').replace(' ', '')
                 oltport_oid = match.group('portoid')
 
-                conn = sqlite3.connect(self.pathdb)
+                conn = sqlite3.connect('instance/onulist.db')
                 cursor = conn.cursor()
                 ponport = cursor.execute(f'SELECT * FROM ponports WHERE ip_address="{self.olt_ip}" AND portoid LIKE "{oltport_oid}";')
 
                 for p in ponport:
                     oltport = p[3]
-
+                
                 conn.close()
 
                 onudict = {

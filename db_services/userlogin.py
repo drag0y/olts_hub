@@ -1,9 +1,10 @@
-from cl_db.db_users import UserInfo
+from db_services.db_users import UsersServiceDb
 
 
 class UserLogin():
-    def fromDB(self, user_id, db):
-        self.__user = db.getUser(user_id)
+    def fromDB(self, user_id):
+        getuser = UsersServiceDb()
+        self.__user = getuser.get_user(user_id)
         return self
 
 

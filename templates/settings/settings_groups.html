@@ -1,0 +1,75 @@
+{% extends 'settings/settings_base.html' %}
+
+{% block title %}
+Группы
+{% endblock %}
+
+{% block settings %}
+<div class="container col-md-4 col-lg-4 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
+  {% for msg in get_flashed_messages() %}
+    {% if "error" in msg.result %}
+      <h3 class="text-center">
+        <span class="flash badge text-bg-danger">
+          {{msg.message}}
+        </span>
+      </h3>
+    {% else %}
+	  <h3 class="text-center">
+        <span class="flash badge text-bg-success">
+          {{msg.message}}
+        </span>
+      </h3>
+	{% endif %}
+  {% endfor %}
+
+<header>
+  <h1 class="text-center fw-bold">Группы</h1>
+</header>
+
+<table class="table">
+  <thead class="table-dark">
+    <tr>
+      <th scope="row">Группа</th>
+      <th scope="col">Действие</th>
+    </tr>
+  </thead>
+  {% for g in groups %}
+    <tbody class="table-group-divider">
+      <tr>
+        <td>{{ g.group_name }}</td>
+        <td>
+          <a 
+            href="/settings/groups/{{ g.id }}/del" 
+            class="btn btn-dark text-danger btn-sm" 
+            type="submit"
+          >
+            Удалить
+          </a>
+        </td>
+      </tr>
+    </tbody>
+  {% endfor %}
+</table>
+<br>
+
+<header>
+  <h1 class="text-center fw-bold">Создать группу</h1>
+</header>
+<form method="post">
+  <input 
+    type="text" 
+    name="groupname" 
+    id="groupname" 
+    class="form-control" 
+    placeholder="Введите название группы"
+  >
+  <br>
+  <input 
+    type="submit" 
+    class="btn btn-success" 
+    value="Добавить"
+  >
+  <p></p>
+</form>
+</div>
+{% endblock %}

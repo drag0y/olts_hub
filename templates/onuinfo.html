@@ -20,15 +20,22 @@
         <h4 class="text-center fw-bold">Информация об ОНУ</h4>
             
                 <ul class="list-group mb-3">
-        {% for msg in get_flashed_messages() %}
+  {% for msg in get_flashed_messages() %}
+    {% if "error" in msg.result %}
+      <h3 class="text-center">
+        <span class="flash badge text-bg-danger">
+          {{msg.message}}
+        </span>
+      </h3>
+    {% else %}
+	  <h3 class="text-center">
+        <span class="flash badge text-bg-success">
+          {{msg.message}}
+        </span>
+      </h3>
+	{% endif %}
 
-	    {% if "Ошибка" in msg or "ERROR" in msg or "отключена" in msg %}
-                <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
-            {% else %}
-		<h3 class="text-center"><span class="flash badge text-bg-success">{{msg}}</span></h3>
-	    {% endif %}
-
-	{% endfor %}
+  {% endfor %}
 
                     
                     <table class="table">

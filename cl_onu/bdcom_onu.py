@@ -218,15 +218,15 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
         snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, onudeleteoid)
         onudelete = snmpset.snmpset()
                     
-        setdelete_out = 'Ошибка. OLT не отвечает или не включен SNMP Write'
+        setdelete_out = {'result': 'error', 'message': 'Ошибка. OLT не отвечает или не включен SNMP Write'}
         for l in onudelete:
             match = re.search(parse_delete, l)            
             if match:
                 setdelete = match.group('setdelete')
                 if setdelete == '0' or setdelete == '6':
-                    setdelete_out = "ОНУ удалена, опросите ОЛТ"
+                    setdelete_out = {'result': 'success', 'message': 'ОНУ удалена!'}
                 else:
-                    setdelete_out = "Ошибка"
+                    setdelete_out = {'result': 'error', 'message': 'Ошибка!'}
 
         return setdelete_out
 

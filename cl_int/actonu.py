@@ -1,21 +1,27 @@
-import sqlite3
-import os
-
-from cl_db.db_cfg import Init_Cfg
-from cl_db.db_onu import DBOnuInfo
+from db_services.db_cfg import CfgServiceDb
 from cl_onu.bdcom_onu import BdcomGetOnuInfo
 from cl_onu.huawei_onu import HuaweiGetOnuInfo
 from cl_onu.cdata_onu import CdataGetOnuInfo
+from db_services.db_cfg import CfgServiceDb
+from cl_onu.bdcom_onu import BdcomGetOnuInfo
+from cl_onu.huawei_onu import HuaweiGetOnuInfo
+from cl_onu.cdata_onu import CdataGetOnuInfo
+from db_services.db_onu import OnuServiceDb
+from db_services.db_ports import PortsServiceDb
 
 
 class ActionOnu:
-    """
+    '''
     Класс для управления ОНУ
-    """
-    def __init__(self, pathdb, useronu, oltid, confonu=''):
+    '''
+    def __init__(self, useronu, oltid, userinfo, confonu=''):
 
-        self.useronu = useronu.lower().replace(' ','').replace(':', '').replace('.', '').replace('hwtc', '48575443').replace('-', '')
-        self.pathdb = pathdb
+        self.useronu = useronu.lower().replace(' ','') \
+                                      .replace(':', '') \
+                                      .replace('.', '') \
+                                      .replace('hwtc', '48575443') \
+                                      .replace('-', '')
+
         self.oltid = oltid
         self.confonu = confonu
 
@@ -25,114 +31,131 @@ class ActionOnu:
             pon_type = 'gpon'
         else:
             raise ValueError('Wrong MAC or SN')
-
-        snmp_cfg = Init_Cfg(pathdb)
-        cfg = snmp_cfg.getcfg()
+            
+        snmp_cfg = CfgServiceDb()
+        cfg = snmp_cfg.get_cfg()
 
         self.cfg = cfg
 
         self.PF_HUAWEI = cfg['PL_H']
         self.PF_BDCOM = cfg['PL_B']
         self.PF_CDATA = cfg['PL_C']
-        self.SNMP_READ_H = cfg['SNMP_READ_H']
-        self.SNMP_CONF_H = cfg['SNMP_CONF_H']
-        self.SNMP_READ_B = cfg['SNMP_READ_B']
-        self.SNMP_CONF_B = cfg['SNMP_CONF_B']
-        self.SNMP_READ_C = cfg['SNMP_READ_C']
-        self.SNMP_CONF_C = cfg['SNMP_CONF_C']
-            
-        onuinfo = DBOnuInfo(pathdb, useronu, pon_type)
-        self.onulist = onuinfo.getonufromdb()
+        
+        onuinfo = OnuServiceDb()
+        onuall = onuinfo.get_onu(self.useronu)
+
+        self.onulist = []
+        for o in onuall:
+            #Если пользователь Админ, то разрешаем все ОНУ
+            if userinfo['privilage'] == 'Administrator':
+                self.onulist.append(o)
+            else:
+                #Если не Админ, то запихиваем в список только те ОНУ с которой совпадает группа пользователя
+                if userinfo['groupname'] == o.olt.group.group_name:
+                    self.onulist.append(o)
 
         for o in self.onulist:
-            if self.oltid == o['oltid']:
-                self.platform = o['platform']
-                if self.PF_HUAWEI in o['platform']:        
+            if self.cfg['PL_H'] in o.olt.platform:
+                if o.olt.snmp_read:
+                    self.SNMP_READ = o.olt.snmp_read
+                    self.SNMP_WRITE = o.olt.snmp_write
+                else:
+                    self.SNMP_READ = self.cfg['SNMP_READ_H']
+                    self.SNMP_WRITE = self.cfg['SNMP_WRITE_H']
+            
+            if self.cfg['PL_B'] in o.olt.platform:
+                if o.olt.snmp_read:
+                    self.SNMP_READ = o.olt.snmp_read
+                    self.SNMP_WRITE = o.olt.snmp_write
+                else:
+                    self.SNMP_READ = self.cfg['SNMP_READ_B']
+                    self.SNMP_WRITE = self.cfg['SNMP_WRITE_B']
+            
+            if self.cfg['PL_C'] in o.olt.platform:
+                if o.olt.snmp_read:
+                    self.SNMP_READ = o.olt.snmp_read
+                    self.SNMP_WRITE = o.olt.snmp_write
+                else:
+                    self.SNMP_READ = self.cfg['SNMP_READ_C']
+                    self.SNMP_WRITE = self.cfg['SNMP_WRITE_C']
+
+        for o in self.onulist:
+            if self.oltid == o.olt.id:
+                self.platform = o.olt.platform
+                if self.PF_HUAWEI in o.olt.platform:        
                     self.onu_params = {
-                        "onu":      o['mac/sn'],
-                        "hostname": o['oltname'],
-                        "pon_type": o['pontype'],
-                        "olt_ip":   o['oltip'],
-                        "portoid":  o['portid'],
-                        "onuid":    o['onuid'],
-                        "snmp_com": self.cfg['SNMP_READ_H'],
-                        "snmp_wr":  self.cfg['SNMP_CONF_H'],
+                        "onu":      o.onu,
+                        "hostname": o.olt.hostname,
+                        "pon_type": o.olt.pon_type,
+                        "olt_ip":   o.olt.ip_address,
+                        "portoid":  o.port_oid,
+                        "onuid":    o.onu_oid,
+                        "snmp_com": self.SNMP_READ,
+                        "snmp_wr":  self.SNMP_WRITE,
                         }
-                    self.onuid = o['onuid']
-                    self.portonu_out = o['portonu']
+                    self.onuid = o.port_oid
+                    self.portonu_out = o.pon_port_info.pon_port
 
-                elif self.PF_BDCOM in o['platform']:
-
-                    conn = sqlite3.connect(self.pathdb)
-                    cursor = conn.cursor()
-
-                    onumacdec = self.convert()
-                    self.portonu_out = o['portonu'].split(":")
+                elif self.PF_BDCOM in o.olt.platform:
+                    self.portonu_out = o.pon_port_info.pon_port.split(":")
                     self.portolt = self.portonu_out[0]
                     self.idonu = self.portonu_out[1]
-                    ponportolt2 = cursor.execute(f'''SELECT portoid FROM ponports WHERE ip_address="{o['oltip']}" AND ponport="{self.portolt}";''')
-                    if ponportolt2:
-                        for portolt2 in ponportolt2:
-                            portoltid = portolt2[0]
+
+                    findport = PortsServiceDb()
+                    f_port = findport.find_port(o.olt.id, self.portolt)
+                
+                    if f_port:
+                        for f in f_port:
+                            portoltid = f.port_oid
 
                     self.onu_params = {
-                            "onu":       o['mac/sn'],
-                            "hostname":  o['oltname'],
-                            "pon_type":  o['pontype'],
-                            "olt_ip":    o['oltip'],
-                            "portoid":   o['portid'],
-                            "onuid":     o['onuid'],
+                            "onu":       o.onu,
+                            "hostname":  o.olt.hostname,
+                            "pon_type":  o.olt.pon_type,
+                            "olt_ip":    o.olt.ip_address,
+                            "portoid":   o.port_oid,
+                            "onuid":     o.onu_oid,
                             "idonu":     self.idonu,
-                            "snmp_com":  self.cfg['SNMP_READ_B'],
-                            "snmp_wr":   self.cfg['SNMP_CONF_B'],
+                            "snmp_com":  self.SNMP_READ,
+                            "snmp_wr":   self.SNMP_WRITE,
                             "portoltid": portoltid,
                             }
-               
-                    conn.close()
 
                     self.onuid = self.idonu
                     self.portonu_out = self.portonu_out[0]
 
-                elif self.PF_CDATA in o['platform']:
-                    conn = sqlite3.connect(self.pathdb)
-                    cursor = conn.cursor()
-
-                    onumacdec = self.convert()
-                    self.portonu_out = o['portonu'].split(":")
+                elif self.PF_CDATA in o.olt.platform:
+                    self.portonu_out = o.pon_port_info.pon_port.split(":")
+                    
                     self.portolt = self.portonu_out[0]
                     self.idonu = self.portonu_out[1]
 
-                    self.onu_params = {
-                            "onu":      o['mac/sn'],
-                            "hostname": o['oltname'],
-                            "pon_type": o['pontype'],
-                            "olt_ip":   o['oltip'],
-                            "portoid":  o['portid'],
-                            "onuid":    o['onuid'],
-                            "snmp_com": self.cfg['SNMP_READ_C'],
-                            "snmp_wr":  self.cfg['SNMP_CONF_C'],
-                            }
+                    findport = PortsServiceDb()
+                    f_port = findport.find_port(o.olt.id, self.portolt)
+                
+                    if f_port:
+                        for f in f_port:
+                            portoltid = f.port_oid
 
-                    conn.close()
+                    self.onu_params = {
+                            "onu":      o.onu,
+                            "hostname": o.olt.hostname,
+                            "pon_type": o.olt.pon_type,
+                            "olt_ip":   o.olt.ip_address,
+                            "portoid":  o.port_oid,
+                            "onuid":    o.onu_oid,
+                            "snmp_com": self.SNMP_READ,
+                            "snmp_wr":  self.SNMP_WRITE,
+                            }
 
                     self.onuid = self.idonu
                     self.portonu_out = self.portonu_out[0]
-
-    def convert(self):
-    # Метод конвертирует МАК ОНУ в десятичный формат
-        outmacdec = ""
-        n = 2
-        out = [self.useronu[i:i+n] for i in range(0, len(self.useronu), n)]
-        
-        for i in out:
-            dece = int(i, 16)
-            outmacdec = outmacdec + "." + str(dece)
-
-        return outmacdec
 
 
     def onucatvon(self):
-        # Включить CATV порт
+        '''
+        Включить CATV порт
+        '''
         if self.PF_HUAWEI in self.platform:
             onu_on = HuaweiGetOnuInfo(self.onu_params)
             outinformation = onu_on.setcatvon()
@@ -141,7 +164,9 @@ class ActionOnu:
 
         
     def onucatvoff(self):
-        # Выключить CATV порт
+        '''
+        Выключить CATV порт
+        '''
         if self.PF_HUAWEI in self.platform:
             onu_off = HuaweiGetOnuInfo(self.onu_params)
             outinformation = onu_off.setcatvoff()
@@ -151,9 +176,9 @@ class ActionOnu:
 
     def onureboot(self):
         '''
-        Reboot ONU
+        Метод перезагрузки ОНУ
         '''
-        rebootonu_out = 'ERROR'
+        rebootonu_out = {'result': 'error', 'message': 'Ошибка. OLT не отвечает или не включен SNMP Write'}
         if self.PF_BDCOM in self.platform:    
             onu_reboot = BdcomGetOnuInfo(self.onu_params)
             rebootonu_out = onu_reboot.setonureboot()
@@ -169,16 +194,24 @@ class ActionOnu:
 
     def onudelete(self):
         '''
-        Delete ONU
+        Метод удаления ОНУ с ОЛТа
         '''
-        delete_out = 'ERROR'
+        delete_out = {'result': 'error', 'message': 'Ошибка. OLT не отвечает или не включен SNMP Write'}
         if self.PF_BDCOM in self.platform:
             onu_delete = BdcomGetOnuInfo(self.onu_params)
             delete_out = onu_delete.setonudelete()
+            if delete_out['result'] == 'success':
+                delfrombd = OnuServiceDb().del_one_onu(self.oltid, self.useronu)
+                if delfrombd['result'] == 'error':
+                    delete_out = delfrombd
         elif self.PF_HUAWEI in self.platform:
             onu_delete = HuaweiGetOnuInfo(self.onu_params)
             delete_out = onu_delete.setonudelete(self.confonu)
+            if delete_out['result'] == 'success':
+                delfrombd = OnuServiceDb().del_one_onu(self.oltid, self.useronu)
+                if delfrombd['result'] == 'error':
+                    delete_out = delfrombd
         elif self.PF_CDATA in self.platform:
-            delete_out = 'ERROR. Функция доступна только для BDCOM и Huawei'
+            delete_out = {'result': 'error', 'message': 'Ошибка. Функция доступна только для BDCOM и Huawei'}
 
         return delete_out

@@ -34,11 +34,10 @@ def decode_index(dec_index: int, model: str):
 
 class CdataGetOltInfo:
     ''' Класс для работы с ОЛТами C-Data '''
-    def __init__(self, olt_name, olt_ip, snmp_com, pathdb, pontype):
+    def __init__(self, olt_name, olt_ip, snmp_com, pontype):
         self.olt_name = olt_name
         self.olt_ip = olt_ip
         self.snmp_com = snmp_com
-        self.pathdb = pathdb
         self.pontype = pontype
 
 
@@ -68,7 +67,7 @@ class CdataGetOltInfo:
         if self.pontype == 'gpon':
             oidonulist = '1.3.6.1.4.1.17409.2.8.4.1.1.3'
 
-        parseoutonu = r'(?P<portonu>\d+)=hex-string:(?P<maconu>\S+)'
+        parseoutonu = r'(?P<portonu>\d+)=(string|hex-string):(?P<maconu>\S+)'
 
         # --- Команда опроса OLTа для получения списка зареганых ONU
         snmpget = SnmpWalk(self.olt_ip, self.snmp_com, oidonulist)

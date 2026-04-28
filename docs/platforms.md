@@ -33,6 +33,7 @@
 - P3608B Software, Version 10.1.0F Build 72136
 - P3608B Software, Version 10.1.0F Build 75351
 - P3608B Software, Version 10.1.0F Build 81296
+- P3608B Software, Version 10.1.0F Build 129386
 - P3616-2TE Software, Version 10.1.0E Build 37276
 - P3616-2TE Software, Version 10.1.0E Build 60793
 - P3616-2TE Software, Version 10.1.0F Build 71203
@@ -45,4 +46,4 @@
 
 # C-Data
 ### GPON
-- FD1616SN-R2-DAPNormal version 1.2.4
+~~- FD1616SN-R2-DAPNormal version 1.2.4~~

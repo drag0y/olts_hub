@@ -1,40 +1,49 @@
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import List
 
 from .base import Base
 
 
 class OLTs(Base):
     __tablename__ = 'olts'
-    number:     Mapped[int] = mapped_column(primary_key=True)
-    hostname:   Mapped[str] = mapped_column(unique=True)
-    ip_address: Mapped[str] = mapped_column(unique=True)
-    platform:   Mapped[str]
-    pon:        Mapped[str]
+    id:          Mapped[int] = mapped_column(primary_key=True)
+    hostname:    Mapped[str] = mapped_column(unique=True)
+    descr:       Mapped[str] = mapped_column(nullable=True)
+    group_id:    Mapped[int] = mapped_column(ForeignKey('groups.id'))
+    ip_address:  Mapped[str] = mapped_column(unique=True)
+    platform:    Mapped[str]
+    pon_type:    Mapped[str]
+    snmp_read:   Mapped[str] = mapped_column(nullable=True)
+    snmp_write:  Mapped[str] = mapped_column(nullable=True)
+    conn_type:   Mapped[str] = mapped_column(nullable=True)
+    conn_login:  Mapped[str] = mapped_column(nullable=True)
+    conn_psw:    Mapped[str] = mapped_column(nullable=True)
 
-#    def __repr__(self):
-#        return '<OLTs %r>' % self.number
+    group:       Mapped["Groups"] = relationship()
+    onts:        Mapped[List['Onu']] = relationship(
+        back_populates='olt',
+    )
 
 
 class PonPorts(Base):
     __tablename__ = 'ponports'
-    number:     Mapped[int] = mapped_column(primary_key=True)
-    hostname:   Mapped[str]
-    ip_address: Mapped[str]
-    ponport:    Mapped[str]
-    portoid:    Mapped[str]
-#    olt_id:     Mapped[int] = mapped_column(ForeignKey("olts.id"))
+    id:         Mapped[int] = mapped_column(primary_key=True)
+    pon_port:   Mapped[str]
+    pon_type:   Mapped[str] = mapped_column(nullable=True)
+    port_oid:   Mapped[str]
+    olt_id:     Mapped[str] = mapped_column(ForeignKey('olts.id'))
 
 
 class Users(Base):
     __tablename__ = 'users'
     id:        Mapped[int] = mapped_column(primary_key=True)
-    login:     Mapped[str] = mapped_column(unique=True)
+    username:  Mapped[str] = mapped_column(unique=True)
     password:  Mapped[str] 
     privilage: Mapped[str]
+    group_id:  Mapped[int] = mapped_column(ForeignKey('groups.id'))
 
-    def __repr__(self):
-        return '<Users %r>' % self.id
+    group:     Mapped["Groups"] = relationship()
 
 
 class Cfg(Base):
@@ -42,9 +51,6 @@ class Cfg(Base):
     id:    Mapped[int] = mapped_column(primary_key=True)
     key:   Mapped[str] = mapped_column(unique=True)
     value: Mapped[str]
-
-    def __repr__(self):
-        return '<Cfg %r>' % self.id
 
 
 class MenuCfg(Base):
@@ -54,31 +60,47 @@ class MenuCfg(Base):
     url:       Mapped[str]
     privilage: Mapped[str]
 
-    def __repr__(self):
-        return '<MenuCfg %r>' % self.id
+
+class Onu(Base):
+    __tablename__ = 'onu'
+    id:       Mapped[int] = mapped_column(primary_key=True)
+    onu:      Mapped[str]
+    port_oid: Mapped[int]
+    onu_oid:  Mapped[int]
+    olt_id:   Mapped[int] = mapped_column(ForeignKey('olts.id'))
+
+    olt:      Mapped['OLTs'] = relationship(back_populates='onts')
+    pon_port_info: Mapped['PonPorts'] = relationship(
+        'PonPorts',
+        primaryjoin="and_("
+                    "foreign(Onu.port_oid) == remote(PonPorts.port_oid), "
+                    "foreign(Onu.olt_id) == remote(PonPorts.olt_id)"
+                    ")",
+        viewonly=True,
+        overlaps="olt"
+    )
 
 
-class Epon(Base):
-    __tablename__ = 'epon'
-    number:  Mapped[int] = mapped_column(primary_key=True)
-    maconu:  Mapped[str]
-    portonu: Mapped[str]
-    idonu:   Mapped[str]
-    oltip:   Mapped[str]
-    oltname: Mapped[str]
-
-    def __repr__(self):
-        return '<Epon %r>' % self.number
+class ApiTokens(Base):
+    __tablename__ = 'api_tokens'
+    id:           Mapped[int] = mapped_column(primary_key=True)
+    user_id:      Mapped[int] = mapped_column(ForeignKey('users.id'))
+    created_date: Mapped[str]
 
 
-class Gpon(Base):
-    __tablename__ = 'gpon'
-    number:  Mapped[int] = mapped_column(primary_key=True)
-    snonu:   Mapped[str]
-    portonu: Mapped[str]
-    idonu:   Mapped[str]
-    oltip:   Mapped[str]
-    oltname: Mapped[str]
+class Groups(Base):
+    __tablename__ = 'groups'
+    id:         Mapped[int] = mapped_column(primary_key=True)
+    group_name: Mapped[str] = mapped_column(unique=True)
 
-    def __repr__(self):
-        return '<Gpon %r>' % self.number
+
+class History(Base):
+    __tablename__ = 'history'
+    id:     Mapped[int] = mapped_column(primary_key=True)
+    onu:    Mapped[str]
+    olt_id: Mapped[str] = mapped_column(ForeignKey('olts.id'))
+    date:   Mapped[str]
+    status: Mapped[str]
+    descr:  Mapped[str] = mapped_column(nullable=True)
+    rx_onu: Mapped[str]
+    rx_olt: Mapped[str]

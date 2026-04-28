@@ -1,7 +1,10 @@
 # Конфигурация FLASK сервера
-IP_SRV = "0.0.0.0"
-PORT_SRV = "5000"
-DEBUG = False
+SECRET_KEY=""
+IP_SRV="0.0.0.0"
+PORT_SRV="5000"
+DEBUG=False
+
+DATABASE="sqlite:///onulist.db"
 
 #BDCOM_LOGIN = ""
 #BDCOM_PSW = ""

@@ -1,39 +1,35 @@
-import os
 import netmiko
-from dotenv import load_dotenv
-
-from cl_db.db_onu import DBOnuInfo
-
-load_dotenv()
-
-BDCOM_LOGIN = os.getenv('BDCOM_LOGIN')
-BDCOM_PSW = os.getenv('BDCOM_PSW')
-HUAWEI_LOGIN = os.getenv('HUAWEI_LOGIN')
-HUAWEI_PSW = os.getenv('HUAWEI_PSW')
-CDATA_LOGIN = os.getenv('CDATA_LOGIN')
-CDATA_PSW = os.getenv('CDATA_PSW')
 
 
 class ShowLogs:
-    def __init__(self, oltinfo):
+    def __init__(self, oltinfo, conninfo):
         self.oltinfo = oltinfo
-
+        self.conninfo = conninfo
+               
 
     def showlogs(self):
         '''
-        Docstring for showlogs
-        
-        :param self: Description
+        Метод просмотра логов ОЛТа
         '''
         if 'BDCOM' in self.oltinfo['platform']:
-            print(f"Connect to {self.oltinfo['platform']}")
+            dev_type = 'cisco_ios_telnet'
+            if self.oltinfo['connlogin'] and self.oltinfo['connpsw']:
+                BDCOM_LOGIN = self.oltinfo['connlogin']
+                BDCOM_PSW = self.oltinfo['connpsw']
+            else:
+                BDCOM_LOGIN = self.conninfo['BDCOM_LOGIN']
+                BDCOM_PSW = self.conninfo['BDCOM_PSW']
+
+            if self.oltinfo['conntype'] == 'SSH':
+                dev_type = 'cisco_ios'
+
             with netmiko.ConnectHandler(
-                        device_type='cisco_ios_telnet',
-                        host=self.oltinfo['ip_address'],
-                        username=BDCOM_LOGIN,
-                        password=BDCOM_PSW,
-                        ) as telnet:
-                
+                device_type=dev_type,
+                host=self.oltinfo['ip_address'],
+                username=BDCOM_LOGIN,
+                password=BDCOM_PSW,
+                ) as telnet:
+
                 telnet.enable()
                 telnet.send_command('terminal length 0')
                 logs_olt = telnet.send_command_timing('show logging')
@@ -42,9 +38,15 @@ class ShowLogs:
                     'oltip': self.oltinfo['ip_address'],
                     'oltname': self.oltinfo['oltname'],
                     'outlogs': logs_olt,
-                }         
+                }
 
         elif 'Huawei_OLT' in self.oltinfo['platform']:
+            if self.oltinfo['connlogin'] and self.oltinfo['connpsw']:
+                HUAWEI_LOGIN = self.oltinfo['connlogin']
+                HUAWEI_PSW = self.oltinfo['connpsw']
+            else:
+                HUAWEI_LOGIN = self.conninfo['HUAWEI_LOGIN']
+                HUAWEI_PSW = self.conninfo['HUAWEI_PSW']
             with netmiko.ConnectHandler(
                         device_type='huawei_olt',
                         host=self.oltinfo['ip_address'],

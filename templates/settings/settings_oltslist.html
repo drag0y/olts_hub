@@ -1,21 +1,50 @@
-{% extends 'base.html' %}
+{% extends 'settings/settings_base.html' %}
 
 {% block title %}
-Главная страница
+Список ОЛТов
 {% endblock %}
 
-{% block body %}
+{% block settings %}
 
 <div id="spinner-overlay">
   <div class="spinner-wrapper">
     <div class="spinner"></div>
-    <p>Опрос ОЛТа...</p>
+    <p>Опрос ОЛТов...</p>
   </div>
 </div>
 
-
 <div class="container col-md-7 col-lg-7 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
-  
+ 
+  <div class="row">
+    <div class="col-md-6" style="text-align: left;">
+      <a 
+        href="/doubleonu" 
+        class="btn btn-warning"
+      >
+        Поиск дубликатов ОНУ
+      </a>
+    </div>
+    <div class="col-md-6" style="text-align: right;">
+      <a 
+        href="/settings/oltadd" 
+        class="btn btn-success"
+      >
+        Добавить ОЛТ
+      </a>
+      <a
+        href="/oltsupdate" 
+        class="btn btn-warning" 
+        onclick="if(confirm(
+          'После нажатия кнопки ОК, начнётся процесс опроса ОЛТов. Это может занять много временни если ОЛТов много!')
+          ) 
+          { showSpinner(); return true; } else { return false; }"
+        id="oltsupdate-button"
+      >
+        Опросить все ОЛТы
+      </a>
+    </div>
+  </div>
+
   <header>
     <h4 class="text-center fw-bold">Список ОЛТов</h4>
   </header>
@@ -42,16 +71,17 @@
     <table class="table">
       <thead class="table-dark">
         <tr>
-          <th scope="row">№</th>
+          <th scope="row">ID</th>
           <th scope="col">
             <input 
-        type="text"
+        type="text" 
         id="filter"
         class="form-control me-4"
         style="width: 200px; height: 30px;"
         placeholder="Поиск ОЛТа"
         >
           </th>
+          <th scope="col">Группа</th>
           <th scope="col">IP адрес</th>
           <th scope="col">Действие</th>
         </tr>
@@ -66,7 +96,10 @@
 <tbody class="table-group-divider" id="list">
      
 
-<script>        
+
+<script>
+
+        
 const list = document.querySelector('#list')
 const filter = document.querySelector('#filter')
 let OLTS = []
@@ -75,10 +108,12 @@ filter.addEventListener('input', (event) => {
   const value = event.target.value.toLowerCase()
   
   const filteredOlts = OLTS.filter((olt) => 
-      olt.hostname.toLowerCase().includes(value) || olt.descr.toLowerCase().includes(value) || olt.ip_address.toLowerCase().includes(value)
+      olt.hostname.toLowerCase().includes(value) || olt.descr.toLowerCase().includes(value) || olt.ip_address.toLowerCase().includes(value) || olt.group.toLowerCase().includes(value)
     )
   render(filteredOlts)
 })
+
+
 
     function start() {
       
@@ -88,11 +123,13 @@ filter.addEventListener('input', (event) => {
     }
     
     function render(olts = []) {
+      
       const html = olts.map(toHTML).join('')
       list.innerHTML = html
     }
 
     function toHTML(olt){
+      
       return `
       <table class="table">
       <tr>
@@ -103,40 +140,22 @@ filter.addEventListener('input', (event) => {
           </th>
           <td>
             ${olt.hostname}<br>
-            <small style="color: gray;">${olt.descr}</small> 
+            <small style="color: gray;">(${olt.descr})</small> 
           </td>
+          <td>${olt.group}</td>
           <td>${olt.ip_address}</td>
+          <div class="col-md-10" style="text-align: center;">
           <td>
-            <a 
-              href="/oltupdate/${olt.id}" 
-              class="btn btn-dark text-warning btn-sm" 
-              type="click" 
-              id="oltupdate-button${olt.id}"
-              onclick="showSpinner()"
-              >
-              <img 
-                src="static/images/update_olt.png" 
-                title="Опросить ОЛТ" width="20"
-                >
-                <div 
-                  id="loading-indicator${olt.id}"
-                  class="spinner-border spinner-border-sm d-none" 
-                  role="status"
-                  >
-                </div>
-            </a>
-            <a 
-              href="/oltinfo/${olt.id}" 
-              class="btn btn-dark text-warning btn-sm" 
-              type="submit"
-              >
-              <img 
-                src="static/images/detail_olt.png" 
-                title="Подробнее об ОЛТе" 
-                width="20"
-                >
-            </a>
-          </td></a>
+            
+            <a href="/oltinfo/${olt.id}/edit" class="btn btn-warning">
+        Редактировать ОЛТ
+	  </a>
+      
+            <a href="/oltinfo/${olt.id}/delete" class="btn btn-danger">
+        Удалить ОЛТ
+	  </a>
+     </div>
+          </td>
           </tr>
           </table>
       `
@@ -146,20 +165,24 @@ filter.addEventListener('input', (event) => {
 
     </script>
 
+
 </tbody>
+     
 
     </table>
 
   </ul>
 
 </div>
-<button id="scrollTopBtn">↑</button>
 <script>
 function showSpinner() {
-    const overlay = document.getElementById('spinner-overlay');
-    overlay.classList.add('active');
+  const overlay = document.getElementById('spinner-overlay');
+  overlay.classList.add('active');
 }
 </script>
+
+<button id="scrollTopBtn">↑</button>
+
 <script>
 const scrollBtn = document.getElementById("scrollTopBtn")
 

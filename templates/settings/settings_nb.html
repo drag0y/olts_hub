@@ -1,0 +1,134 @@
+{% extends 'settings/settings_base.html' %}
+
+{% block title %}
+Настройка NetBox
+{% endblock %}
+
+{% block settings %}
+<div class="container col-md-6 col-lg-6 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
+  {% for msg in get_flashed_messages() %}
+    {% if "error" in msg.result %}
+      <h3 class="text-center">
+        <span class="flash badge text-bg-danger">
+          {{msg.message}}
+        </span>
+      </h3>
+    {% else %}
+	  <h3 class="text-center">
+        <span class="flash badge text-bg-success">
+          {{msg.message}}
+        </span>
+      </h3>
+	{% endif %}
+
+  {% endfor %}
+<header>
+  <h1 class="text-center fw-bold">Настройки NetBox</h1>
+</header>
+<form method="post">
+<table class="table">
+  <thead class="table-dark">
+    <tr>
+      <th scope="row">Параметр</th>
+      <th scope="col">Текущее значение</th>
+      <th scope="col">Новое значение</th>
+      </tr>
+  </thead>
+  <tr>
+    <td>API токен</td>
+    <td>{{ cfg.API_KEY }}</td>
+    <td>
+      <input 
+        type="text" 
+        name="api_key" 
+        id="api_key" 
+        class="form-control" 
+        placeholder="Введите API токен для NetBox"
+      >
+    </td>
+  </tr>
+  <tr>
+    <td>URL Netbox</td>
+    <td>{{ cfg.URLNB }}</td>
+    <td>
+      <input 
+        type="text" 
+        name="urlnb" 
+        id="urlnb" 
+        class="form-control" 
+        placeholder="Введите URL NetBox"
+      >
+    </td>
+  </tr>
+  <tr>
+    <td>Tag Epon</td>
+    <td>{{ cfg.EPON_TAG }}</td>
+    <td>
+      <input 
+        type="text" 
+        name="tag_epon" 
+        id="tag_epon" 
+        class="form-control" 
+        placeholder="Введите тег Epon"
+      >
+    </td>
+  </tr>
+  <tr>
+    <td>Tag Gpon</td>
+    <td>{{ cfg.GPON_TAG }}</td>
+    <td>
+      <input 
+        type="text" 
+        name="tag_gpon" 
+        id="tag_gpon" 
+        class="form-control" 
+        placeholder="Введите тег Gpon"
+      >
+    </td>
+  </tr>
+  <tr>
+    <td>Платформа Huawei</td>
+    <td>{{ cfg.PL_H }}</td>
+    <td>
+      <input 
+        type="text" 
+        name="pl_h" 
+        id="pl_h" 
+        class="form-control" 
+        placeholder="Введите платформу Huawei"
+      >
+    </td>
+  </tr>
+  <tr>
+    <td>Платформа BDCOM</td>
+    <td>{{ cfg.PL_B }}</td>
+    <td>
+      <input 
+        type="text" 
+        name="pl_b" 
+        id="pl_b" 
+        class="form-control" 
+        placeholder="Введите платформу BDCOM"
+      >
+    </td>
+  </tr>
+  <tr>
+    <td>Платформа C-DATA</td>
+    <td>{{ cfg.PL_C }}</td>
+    <td>
+      <input 
+        type="text" 
+        name="pl_c" 
+        id="pl_c" 
+        class="form-control" 
+        placeholder="Введите платформу C-Data"
+      >
+    </td>
+  </tr>
+</table>
+
+<input type="submit" class="btn btn-success" value="Сохранить изменения">
+<p></p>
+</form>
+</div>
+{% endblock %}

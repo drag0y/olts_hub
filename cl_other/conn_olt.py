@@ -1,28 +1,22 @@
-import os
 import netmiko
-from dotenv import load_dotenv
 
-from cl_db.db_onu import DBOnuInfo
-
-load_dotenv()
-
-BDCOM_LOGIN = os.getenv('BDCOM_LOGIN')
-BDCOM_PSW = os.getenv('BDCOM_PSW')
-HUAWEI_LOGIN = os.getenv('HUAWEI_LOGIN')
-HUAWEI_PSW = os.getenv('HUAWEI_PSW')
-CDATA_LOGIN = os.getenv('CDATA_LOGIN')
-CDATA_PSW = os.getenv('CDATA_PSW')
+from db_services.db_onu import OnuServiceDb
 
 
 class ConnOLT:
     '''
     Класс для подключения к ОЛТу по SSH к Huawei и Telnet BDCOM
     '''
-    def __init__(self, olt_information, useronu, pathdb):
-        self.useronu = useronu.lower().replace(' ','').replace(':', '').replace('.', '').replace('hwtc', '48575443').replace('-', '')
+    def __init__(self, olt_information, useronu, conninfo):
+        self.useronu = useronu.lower().replace(' ','') \
+                                      .replace(':', '') \
+                                      .replace('.', '') \
+                                      .replace('hwtc', '48575443') \
+                                      .replace('-', '')
+        
         self.olt_information = olt_information
-        self.pathdb = pathdb
-
+        self.conninfo = conninfo
+        
         if len(self.useronu) == 12:
             pon_type = 'epon'
         elif len(self.useronu) == 16:
@@ -30,34 +24,46 @@ class ConnOLT:
 #        else:
 #            raise TypeError('Wrong MAC or SN')
                
-        onuinfo = DBOnuInfo(pathdb, self.useronu, pon_type)
-        self.onulist = onuinfo.getonufromdb()
-    
+        self.onulist = OnuServiceDb().get_onu(useronu)
+
         for o in self.onulist:
-            if olt_information['ip_address'] == o['oltip']:
+            if olt_information['ip_address'] == o.olt.ip_address:
                 self.olt = {
-                    'oltip': olt_information['ip_address'],
-                    'oltname': olt_information['oltname'],
-                    'portonu': o['portonu'],
+                    'oltip': o.olt.ip_address,
+                    'oltname': o.olt.hostname,
+                    'portonu': o.pon_port_info.pon_port,
                     'platform': olt_information['platform'],
-                    'onuid': o['onuid'],
+                    'onuid': o.onu_oid,
+                    'conntype': olt_information['conntype'],
+                    'connlogin': olt_information['connlogin'],
+                    'connpsw': olt_information['connpsw'],
                 }
         
 
     def confonuinfo(self):
         '''
         Метод подключения к ОЛТу и сбор конфигурации и FDB с ОНУ
-        '''   
+        '''
         if 'BDCOM' in self.olt['platform']:
+            dev_type = 'cisco_ios_telnet'
+            if self.olt['connlogin'] and self.olt['connpsw']:
+                BDCOM_LOGIN = self.olt['connlogin']
+                BDCOM_PSW = self.olt['connpsw']
+            else:
+                BDCOM_LOGIN = self.conninfo['BDCOM_LOGIN']
+                BDCOM_PSW = self.conninfo['BDCOM_PSW']
+
+            if self.olt['conntype'] == 'SSH':
+                dev_type = 'cisco_ios'
             with netmiko.ConnectHandler(
-                        device_type='cisco_ios_telnet',
+                        device_type=dev_type,
                         host=self.olt['oltip'],
                         username=BDCOM_LOGIN,
                         password=BDCOM_PSW,
-                        ) as telnet:
-                telnet.enable()
-                outconf = telnet.send_command(f'show run interface {self.olt["portonu"]}')
-                outfdb = telnet.send_command(f'show mac address-table interface {self.olt["portonu"]}')
+                        ) as conn:
+                conn.enable()
+                outconf = conn.send_command(f'show run interface {self.olt["portonu"]}')
+                outfdb = conn.send_command(f'show mac address-table interface {self.olt["portonu"]}')
                 
                 conf_onu = {
                     'oltip': self.olt['oltip'],
@@ -67,6 +73,12 @@ class ConnOLT:
                 }
                 
         elif 'Huawei_OLT' in self.olt['platform']:
+            if self.olt['connlogin'] and self.olt['connpsw']:
+                HUAWEI_LOGIN = self.olt['connlogin']
+                HUAWEI_PSW = self.olt['connpsw']
+            else:
+                HUAWEI_LOGIN = self.conninfo['HUAWEI_LOGIN']
+                HUAWEI_PSW = self.conninfo['HUAWEI_PSW']
             with netmiko.ConnectHandler(
                         device_type='huawei_olt',
                         host=self.olt['oltip'],
@@ -92,7 +104,14 @@ class ConnOLT:
         '''
         Метод подключения к ОЛТу Huawei и сбор конфигурации
         далее эта конфигурация будет парситься для определения сервис порта ОНУ
-        '''   
+        '''
+        if self.olt['connlogin'] and self.olt['connpsw']:
+            HUAWEI_LOGIN = self.olt['connlogin']
+            HUAWEI_PSW = self.olt['connpsw']
+        else:
+            HUAWEI_LOGIN = self.conninfo['HUAWEI_LOGIN']
+            HUAWEI_PSW = self.conninfo['HUAWEI_PSW']
+            
         with netmiko.ConnectHandler(
                     device_type='huawei_olt',
                     host=self.olt['oltip'],

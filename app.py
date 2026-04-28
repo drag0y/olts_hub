@@ -1,9 +1,6 @@
 from flask import Flask, render_template, request, redirect, flash
 from flask_restful import Api, Resource
-from flask_sqlalchemy import SQLAlchemy
-#from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-import ipaddress
 import os
 import logging.handlers
 from dotenv import load_dotenv
@@ -11,59 +8,68 @@ from werkzeug.security import check_password_hash
 
 from cl_int.findonu import FindOnu
 from cl_int.actonu import ActionOnu
-from cl_other.get_olts import get_netbox_olt_list, olts_update, update_olt, delete_olt
-from cl_db.work_db import WorkDB
+from funcs.get_olts import get_netbox_olt_list
+from models.base import db
 from cl_int.findolt import FindOlt
-from cl_db.db_cfg import Init_Cfg
-from cl_db.db_menucfg import InitMenuCfg
-from cl_db.db_users import Users_Cfg, UserInfo
-from cl_db.userlogin import UserLogin
+from db_services.db_cfg import CfgServiceDb
+from db_services.userlogin import UserLogin
 from cl_other.conn_olt import ConnOLT
 from cl_other.show_logs import ShowLogs
-from models.models import Base, OLTs
+from funcs.showlogs import showlogs
+from db_services.db_olt import OltServiceDb
+from db_services.db_onu import OnuServiceDb
+from db_services.db_groups import GroupsServiceDb
+from db_services.db_users import UsersServiceDb
+from db_services.db_menucfg import MenuServiceDb
 
 
 load_dotenv()
 
-# Имя базы и путь до неё, папка должна быть instance, иначе не будет работать
-NAMEDB = "onulist.db"
-PATHDB = f"instance/{NAMEDB}"
-
 IP_SRV = os.getenv('IP_SRV')
 PORT_SRV = os.getenv('PORT_SRV')
-DEBUG = os.getenv('DEBUG')
+DEBUG = os.getenv('DEBUG', "False").lower() in ("true", "1", "t")
+
+DATABASE = os.getenv('DATABASE')
 
 LOGDIR = './'
 LOGFILE = 'logging_oltshub.log'
 
+#Доступы к ОЛТам по SSH/Telnet
+CONN = {
+    'BDCOM_LOGIN':  os.getenv('BDCOM_LOGIN'),
+    'BDCOM_PSW':    os.getenv('BDCOM_PSW'),
+    'HUAWEI_LOGIN': os.getenv('HUAWEI_LOGIN'),
+    'HUAWEI_PSW':   os.getenv('HUAWEI_PSW'),
+    'CDATA_LOGIN':  os.getenv('CDATA_LOGIN'),
+    'CDATA_PSW':    os.getenv('CDATA_PSW'),
+}
+
 app = Flask(__name__)
 api = Api()
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{NAMEDB}'
-app.config['SECRET_KEY'] = 'asf09u23rpqdm0123r'
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
-#db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
-login_manager.login_message = 'Авторизуйтесь для доступа к сайту'
+login_manager.login_message = {'result': 'error', 'message': 'Авторизуйтесь для доступа к сайту'}
 
 
 logger = logging.getLogger('OLTsHUB')
 logger.setLevel(logging.DEBUG)
 logfile = logging.handlers.RotatingFileHandler(
-    f'{LOGDIR}{LOGFILE}', maxBytes=10000000, backupCount=3)
+    f'{LOGDIR}{LOGFILE}', maxBytes=500000, backupCount=3)
 logfile.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 logfile.setFormatter(formatter)
 logger.addHandler(logfile)
 
-db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 
 
 class Main_Api(Resource):
     def get(self, onu):
         if current_user.is_authenticated:
-            onurequest = FindOnu(onu, PATHDB)
+            onurequest = FindOnu(onu)
             onu_info = onurequest.onuinfo()
 
             return onu_info
@@ -79,13 +85,13 @@ menucfg = None
 def before_request():
     global dbase
     global menucfg
-    dbase = UserInfo(PATHDB)
-    menucfg = InitMenuCfg(PATHDB)
+    dbase = UsersServiceDb()
+    menucfg = MenuServiceDb()
 
 
 @login_manager.user_loader
 def load_user(user_id):
-    return UserLogin().fromDB(user_id, dbase)
+    return UserLogin().fromDB(user_id)
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -98,15 +104,17 @@ def login():
         return redirect('/settings/profile')
     # Если не авторизован, то открывается страница входа
     if request.method == 'POST':
-        user = dbase.getUserByName(request.form['username'])
+        user = dbase.get_user_by_name(request.form['username'])
         if user and check_password_hash(user['psw'], request.form['psw']):
             userlogin = UserLogin().create(user)
             rm = True if request.form.get('remember-me') else False
             login_user(userlogin, remember=rm)
-            flash('Успешный вход в систему')
+            flash({'result': 'success', 'message': 'Успешный вход в систему',})
+            logger.info(f"User: {request.form['username']}; Action: LOGIN; Message: Успешный вход в систему")
             return redirect(request.args.get('next') or '/')
         else:
-            flash('Неправильный логин/пароль')
+            logger.info(f"User: {request.form['username']}; Action: LOGIN; Message: Неправильный логин/пароль")
+            flash({'result': 'error', 'message': 'Неправильный логин/пароль',})
             return redirect('/login')
     else:    
         return render_template('/login.html')
@@ -115,8 +123,11 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
     logout_user()
-    flash('Вы вышли из аккаунта')
+    logger.info(f"User: {userinfo['username']}; Action: LOGOUT; Message: Выход из системы")
+    flash({'result': 'success', 'message': 'Вы вышли из аккаунта',})
     return redirect('/login')
 
 
@@ -127,33 +138,34 @@ def profile():
     Профиль пользователя
     '''
     userid = current_user.get_id()
-    user_profile = UserInfo(PATHDB).getUser(userid)
+    user_profile = UsersServiceDb().get_user(userid)
     if request.method == 'POST':
         if request.form['psw'] == request.form['psw_repeat']:
-            change_psw = Users_Cfg(PATHDB)
-            out = change_psw.changepsw(userid, request.form['psw'])
-            flash(out)
+            change_psw = UsersServiceDb()
+            result = change_psw.changepsw(userid, request.form['psw'])
+            flash(result)
             return redirect('/settings/profile')
         else:
-            flash('Ошибка. Пароли не совпадают.')
+            flash({'result': 'error', 'message': 'Ошибка. Пароли не совпадают!',})
             return redirect('/settings/profile')
     else:
         menu = menucfg.getmenucfg(user_profile['privilage'])
-        return render_template('/settings_profile.html', user_profile=user_profile, menu=menu)
+        return render_template('settings/settings_profile.html', user_profile=user_profile, menu=menu)
 
 
 @app.route("/", methods=['POST', 'GET'])
 @login_required
 def index():
-    """
+    '''
     Главная страница, получение через строку поиска мака или серийника ОНУ
     и дальнейшая обработка
-    """
-    
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
     if request.method == "POST":
         try:
             onu = request.form['searchonu']
-            onurequest = FindOnu(onu, PATHDB)
+            onurequest = FindOnu(onu, userinfo)
             onu_info = onurequest.onuinfo()
 
             return render_template("/onuinfo.html", onu_info=onu_info)
@@ -167,27 +179,29 @@ def index():
             return render_template("/onunotfound.html", onu=onu)
 
     else:
-        olts = db.session.execute(db.select(OLTs)).scalars()
-        olts_list = olts.all()
-        
-        oltslist = []
-        for i in olts_list:       
-            oltslist.append(
-                {
-                    'id': i.number,
-                    'hostname': i.hostname,
-                    'ip_address': i.ip_address,
-                }
-            )
-        
-        return render_template("index.html", oltslist=oltslist)
+        olts_list = OltServiceDb.get_olts()
+        if userinfo['privilage'] == 'Administrator':    
+            return render_template("index.html", oltslist=olts_list)
+        else:
+            oltslist = []
+            for i in olts_list:
+                if i['group'] == userinfo['groupname']:
+                    oltslist.append(
+                        {
+                            'id': i['id'],
+                            'hostname': i['hostname'],
+                            'descr': i['descr'],
+                            'ip_address': i['ip_address'],
+                        }
+                    )
+            return render_template("index.html", oltslist=oltslist)
 
-        
+
 @app.route("/help")
 def help_page():
-    """
+    '''
     Страница справки
-    """
+    '''
     return render_template("help.html")
 
 
@@ -197,40 +211,50 @@ def onuinfo(onu):
     '''
     Информация об ОНУ 
     '''
-    onurequest = FindOnu(onu, PATHDB)
-    onu_info = onurequest.onuinfo()
-    return render_template('/onuinfo.html', onu_info=onu_info)
+    try:
+        userid = current_user.get_id()
+        userinfo = UsersServiceDb().get_user(userid)
+        onurequest = FindOnu(onu, userinfo)
+        onu_info = onurequest.onuinfo()
+        return render_template('/onuinfo.html', onu_info=onu_info)
+    
+    except TypeError:
+        onu = f"Неправильный мак или серийный номер: {onu}"
+        return render_template("/onunotfound.html", onu=onu)
+
+    except ValueError:
+        onu = f"Ону {onu} не найдена"
+        return render_template("/onunotfound.html", onu=onu)
 
 
-@app.route("/oltinfo/<int:number>")
+@app.route("/oltinfo/<int:id>")
 @login_required
-def olt_info(number):
+def olt_info(id):
     ''' 
     Страница просмотра информации об ОЛТе
     '''
-#    olts_list = OLTs.query.get(number)
-#    port_list = AboutOlt.query.all()
-    
-    olt_params = {
-    "pathdb": PATHDB,
-    "olt_id": number,
-    }   
-
-    olt_find = FindOlt(**olt_params) 
-    olt_information = olt_find.oltinfo()
-
-    return render_template("oltinfo.html", olt_information=olt_information)
-
-
-@app.route("/oltinfo/<int:number>/<string:port>")
-@login_required
-def olt_port_info(number, port):
-    """
-    Страница просмотра дерева
-    """
-    olt_port = port.replace(".", "/")
     try:
-        olt_information = FindOlt(PATHDB, number, olt_port)
+        userid = current_user.get_id()
+        userinfo = UsersServiceDb().get_user(userid)
+        olt_find = FindOlt(userinfo, olt_id=id)
+        olt_information = olt_find.oltinfo()
+
+        return render_template("oltinfo.html", olt_information=olt_information)
+    except ValueError:
+        return redirect('/forbidden')
+
+
+@app.route("/oltinfo/<int:id>/<string:port>")
+@login_required
+def olt_port_info(id, port):
+    '''
+    Страница просмотра дерева
+    '''
+    olt_port = port.replace(".", "/")
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    try:
+        olt_information = FindOlt(userinfo, id, olt_port)
         olt_info = olt_information.oltinfo()
         pon_status = olt_information.ponportstatus()
         
@@ -243,29 +267,43 @@ def olt_port_info(number, port):
 
     except KeyError:
         flash("База устарела, опросите ОЛТ")
-        return redirect(f"/oltinfo/{number}")
+        return redirect(f"/oltinfo/{id}")
+    except ValueError:
+        return redirect('/forbidden')
 
 
-@app.route("/oltinfo/<int:number>/update")
+@app.route("/oltinfo/<int:id>/update")
 @login_required
-def olt_update(number):
+def olt_update(id):
     ''' 
     Опрос конкретного ОЛТа
     '''
-    update_olt(PATHDB, number)
-    flash("ОЛТ опрошен")
-    return redirect(f'/oltinfo/{number}')
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    try:
+        olt_find = FindOlt(userinfo, id)
+        olt_find.update_olt()
+        flash({'result': 'success', 'message': 'ОЛТ опрошен',})
+        return redirect(f'/oltinfo/{id}')
+    except ValueError:
+        return redirect('/forbidden')
 
 
-@app.route("/oltupdate/<int:number>")
+@app.route("/oltupdate/<int:id>")
 @login_required
-def updateolt(number):
+def updateolt(id):
     ''' 
     Опрос конкретного ОЛТа с главной страницы
     '''
-    update_olt(PATHDB, number)
-    flash("ОЛТ опрошен")
-    return redirect('/')
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    try:
+        olt_find = FindOlt(userinfo, id)
+        olt_find.update_olt()
+        flash({'result': 'success', 'message': 'ОЛТ опрошен',})
+        return redirect('/')
+    except ValueError:
+        return redirect('/forbidden')
 
 
 @app.route("/oltslistupdate")
@@ -274,14 +312,29 @@ def oltslistupdate():
     '''
     Получить список ОЛТов из НетБокса
     '''
-    try:
-        get_netbox_olt_list()
-        flash('Получен список ОЛТов из NetBox')
-        return redirect('/')
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        try:
+            get_netbox_olt_list()
+            flash({'result': 'success', 'message': 'Получен список ОЛТов из NetBox',})
+            logger.info(f"User: {userinfo['username']}; Action: GET_OLTS_FROM_NB; Message: Получен список ОЛТов из NetBox!")
+            return redirect('/')
 
-    except:
-        flash('Ошибка. Убедитесь, что настройки для NetBox правильные.')
-        return redirect('/settings/cfgnb')
+        except:
+            logger.info(f" \
+                User: {userinfo['username']}; \
+                Action: GET_OLTS_FRON_NB; \
+                Message: Ошибка. Убедитесь, что настройки для NetBox правильные!" \
+            )
+            flash({
+                'result': 'error', 
+                'message': 'Ошибка. Убедитесь, что настройки для NetBox правильные!',
+                }
+            )
+            return redirect('/settings/cfgnb')
+    else:
+        return redirect('/forbidden')
 
 
 @app.route("/oltsupdate")
@@ -290,9 +343,19 @@ def oltsupdate():
     '''
     Опросить ВСЕ ОЛТы
     '''
-    olts_update(PATHDB)
-    flash('Опрос ОЛТов завершён')
-    return redirect('/')
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        olts_list = OltServiceDb.get_olts()
+        for o in olts_list:
+            olt_find = FindOlt(userinfo, o['id'])
+            olt_find.update_olt()
+
+        flash({'result': 'success', 'message': 'Опрос ОЛТов завершён'})
+        logger.info(f"User: {userinfo['username']}; Action: UPDATE_ALL_OLTS; Message: Опрошены все ОЛТы из базы")
+        return redirect('/settings/oltslist')
+    else:
+        return redirect('/forbidden')
    
 
 @app.route("/doubleonu")
@@ -301,10 +364,14 @@ def doubleonu():
     '''
     Поиск дубликатов ОНУ
     '''
-    db = WorkDB(PATHDB)
-    maconu = db.finddoublemac();
-    snonu = db.finddoublesn();
-    return render_template('/doubleonu.html', maconu=maconu, snonu=snonu)
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        doublemac, doublesn = OnuServiceDb().get_double_onu(userinfo)
+    
+        return render_template('/doubleonu.html', doublemac=doublemac, doublesn=doublesn)
+    else:
+        return redirect('/forbidden')
 
 
 @app.errorhandler(404)
@@ -329,11 +396,12 @@ def onu_catvon(oltid, onu):
     '''
     Включить CATV порт
     '''
-    onurequest = ActionOnu(PATHDB, onu, oltid)
-    out = onurequest.onucatvon()
     userid = current_user.get_id()
-    userinfo = dbase.getUser(userid)
-    logger.info(f"User {userinfo['username']} changed ONU {onu} CATV port state to ON")
+    userinfo = UsersServiceDb().get_user(userid)
+    onurequest = ActionOnu(onu, oltid, userinfo)
+    onurequest.onucatvon()
+    
+    logger.info(f"User: {userinfo['username']}; Action: CATV_ON; Message: CATV порт на ОНУ {onu} включен")
     return redirect(f'/onuinfo/{onu}')
 
 
@@ -343,11 +411,12 @@ def onu_catvoff(oltid, onu):
     '''
     Выключить CATV порт
     '''
-    onurequest = ActionOnu(PATHDB, onu, oltid)
-    out = onurequest.onucatvoff()
     userid = current_user.get_id()
-    userinfo = dbase.getUser(userid)
-    logger.info(f"User {userinfo['username']} changed ONU {onu} CATV port state to OFF") 
+    userinfo = UsersServiceDb().get_user(userid)
+    onurequest = ActionOnu(onu, oltid, userinfo)
+    onurequest.onucatvoff()
+    
+    logger.info(f"User: {userinfo['username']}; Action: CATV_OFF; Message: CATV порт на ОНУ {onu} выключен")
     return redirect(f'/onuinfo/{onu}')
 
 
@@ -358,68 +427,109 @@ def olt_add():
     Добавление нового ОЛТа (Если нет НетБокса) 
     '''
     userid = current_user.get_id()
-    userinfo = UserInfo(PATHDB).getUser(userid)
+    userinfo = UsersServiceDb().get_user(userid)
     if userinfo['privilage'] == 'Administrator':
-        getcfg = Init_Cfg(PATHDB)
-        cfg = getcfg.getcfg()
+        getcfg = CfgServiceDb()
+        getgroups = GroupsServiceDb()
+        groups = getgroups.get_groups()
+        cfg = getcfg.get_cfg()
         PF_LIST = [cfg['PL_H'], cfg['PL_B'], cfg['PL_C']]
         menu = menucfg.getmenucfg(userinfo['privilage'])
         if request.method == "POST":
-            hostname = request.form['hostname']
-            oltip = request.form['ip_address']
-            platform = request.form['platform']
-            pontype = request.form['pontype']
-       
-            try:
-                ipv4 = ipaddress.ip_address(oltip)
+            olt = {
+                'hostname': request.form['hostname'],
+                'descr': request.form['descr'],
+                'group_id': request.form['group'],
+                'ip_address': request.form['ip_address'],
+                'platform': request.form['platform'],
+                'pon_type': request.form['pontype'],
+                'snmp_read': request.form['snmpread'],
+                'snmp_write': request.form['snmpwrite'],
+                'conn_type': request.form['conntype'],
+                'conn_login': request.form['connlogin'],
+                'conn_psw': request.form['connpsw'],
+            }
 
-                if "Выберите" in platform or "Выберите" in pontype:
-                    flash("Не выбрана платформа или тип портов")
-
-                    return render_template("oltadd.html", pf_list=PF_LIST, menu=menu)
-
-                else:
-                    oltadd = OLTs(hostname=hostname, ip_address=oltip, platform=platform, pon=pontype)
-
-                    try:
-                        db.session.add(oltadd)
-                        db.session.commit()
-                        flash("OLT добавлен в базу")
-
-                        return redirect('/')
-            
-                    except:
-                        return "При добавлении ОЛТа произошла ошибка"
-
-            except:
-                flash("Некорректный IP адресс")
-
-                return render_template("oltadd.html", pf_list=PF_LIST, menu=menu)
+            olt_add = OltServiceDb()
+            result = olt_add.create_olt(olt)
+            flash(result)
+            logger.info(f"User: {userinfo['username']}; Action: OLT_ADD; Message: {result['message']}")
+            return render_template("/settings/settings_oltadd.html", pf_list=PF_LIST, groups=groups, menu=menu)
 
         else:
-            return render_template("oltadd.html", pf_list=PF_LIST, menu=menu)
+            return render_template("/settings/settings_oltadd.html", pf_list=PF_LIST, groups=groups, menu=menu)
 
     else:
-        return redirect('forbidden')
+        return redirect('/forbidden')
 
 
-@app.route("/oltinfo/<int:number>/delete")
+@app.route("/oltinfo/<int:id>/delete")
 @login_required
-def olt_delete(number):
+def olt_delete(id):
     '''
-    Удаление ОЛТа (Если нет НетБокса)
+    Удаление ОЛТа
     '''
     userid = current_user.get_id()
-    userinfo = UserInfo(PATHDB).getUser(userid)
+    userinfo = UsersServiceDb().get_user(userid)
     if userinfo['privilage'] == 'Administrator':    
-        delete_olt(PATHDB, number)
-        flash("ОЛТ удалён из базы")
-        logger.info(f"User {userinfo['username']} deleted OLT id {number}")
-        return redirect("/")
+        olt_del = OltServiceDb()
+        result = olt_del.delete_olt(id)
+        flash(result)
+        logger.info(f"User: {userinfo['username']}; Action: OLT_DELETE; Message: {result['message']}")
+        return redirect("/settings/oltslist")
     else:
-        flash('Ошибка! У вас недостаточно прав для удаления ОЛТа.')
-        logger.warning(f"User {userinfo['username']} tried delete OLT id {number}")
-        return redirect(f'/oltinfo/{number}')
+        flash({'result': 'error', 'message': 'Ошибка! У вас недостаточно прав для удаления ОЛТа!'})
+        logger.info(f"User: {userinfo['username']}; Action: OLT_DELETE; Message: Недостаточно прав для удаления ОЛТа.")
+        return redirect(f'/oltinfo/{id}')
+    
+
+@app.route("/oltinfo/<int:id>/edit", methods=['POST', 'GET'])
+@login_required
+def olt_edit(id):
+    '''
+    Редактирование ОЛТа
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        olt_find = FindOlt(userinfo, id) 
+        olt_information = olt_find.oltinfo()
+        olt_information['connpsw'] = '*1*1*' if olt_information['connpsw'] else ''
+
+        getcfg = CfgServiceDb()
+        getgroups = GroupsServiceDb()
+        groups = getgroups.get_groups()
+        cfg = getcfg.get_cfg()
+        PF_LIST = [cfg['PL_H'], cfg['PL_B'], cfg['PL_C']]
+        menu = menucfg.getmenucfg(userinfo['privilage'])
+        if request.method == "POST":
+            olt = {
+                'id': id,
+                'hostname': request.form['hostname'],
+                'descr': request.form['descr'],
+                'group_id': request.form['group'],
+                'ip_address': request.form['ip_address'],
+                'platform': request.form['platform'],
+                'pon_type': request.form['pontype'],
+                'snmp_read': request.form['snmpread'],
+                'snmp_write': request.form['snmpwrite'],
+                'conn_type': request.form['conntype'],
+                'conn_login': request.form['connlogin'],
+                'conn_psw': 'None' if request.form['connpsw'] == '*1*1*' else request.form['connpsw'],
+            }
+
+            olt_add = OltServiceDb()
+            result = olt_add.edit_olt(olt)
+            flash(result)
+            logger.info(f"User: {userinfo['username']}; Action: OLT_EDITED; Message: {result['message']}")
+            return redirect(f"/oltinfo/{id}/edit")
+
+        else:
+            return render_template("/settings/settings_oltedit.html", pf_list=PF_LIST, groups=groups, menu=menu, olt_information=olt_information)
+
+    else:
+        return redirect('/forbidden')
+        
 
 
 @app.route("/onuinfo/<int:oltid>/<string:onu>/reboot")
@@ -429,55 +539,55 @@ def onu_reboot(oltid, onu):
     Перезагрузка ОНУ
     '''
     userid = current_user.get_id()
-    userinfo = dbase.getUser(userid)
-    onurequest = ActionOnu(PATHDB, onu, oltid)
-    out = onurequest.onureboot()
-    flash(out)
+    userinfo = UsersServiceDb().get_user(userid)
     
-    logger.info(f"User {userinfo['username']} rebooted ONU {onu}, out text '{out}'")
+    onurequest = ActionOnu(onu, oltid, userinfo)
+    result = onurequest.onureboot()
+    flash(result)
+    
+    logger.info(f"User: {userinfo['username']}; Action: REBOOTED_ONU; Message: ОНУ {onu} перезагаружена")
                 
     return redirect(f'/onuinfo/{onu}')
 
 
 @app.route("/onuinfo/<int:oltid>/<string:onu>/deleteonu")
 @login_required
-def onu_delete(oltid, onu):    
+def onu_delete(oltid, onu):
     ''' 
     Удалить ОНУ с ОЛТа
     '''
     userid = current_user.get_id()
-    userinfo = dbase.getUser(userid)
-
-    olt_params = {
-        "pathdb": PATHDB,
-        "olt_id": oltid,
-        } 
+    userinfo = UsersServiceDb().get_user(userid)
+    try:
+        olt_find = FindOlt(userinfo, oltid) 
+        olt_information = olt_find.oltinfo()
+    except ValueError:
+        return redirect('/forbidden')
     
-    olt_find = FindOlt(**olt_params) 
-    olt_information = olt_find.oltinfo()
-    snmp_cfg = Init_Cfg(PATHDB)
-    cfg = snmp_cfg.getcfg()
+    snmp_cfg = CfgServiceDb()
+    cfg = snmp_cfg.get_cfg()
     PF_HUAWEI = cfg['PL_H']
     try:
         if PF_HUAWEI in olt_information['platform']:     
-            onurequest = ConnOLT(olt_information, onu, PATHDB)
+            onurequest = ConnOLT(olt_information, onu, CONN)
             conf_onu_info = onurequest.confonuhuawei()
             
-            onurequest = ActionOnu(PATHDB, onu, oltid, confonu=conf_onu_info['outconf'])
-            out = onurequest.onudelete()
-            flash(out)
+            onurequest = ActionOnu(onu, oltid, userinfo, confonu=conf_onu_info['outconf'])
+            result = onurequest.onudelete()
+            flash(result)
 
         else:
-            onurequest = ActionOnu(PATHDB, onu, oltid)
-            out = onurequest.onudelete()
-            flash(out)
+            onurequest = ActionOnu(onu, oltid, userinfo)
+            result = onurequest.onudelete()
+            flash(result)
+
     except:
-        logger.info(f"User {userinfo['username']} unsuccessful show ONU config {onu}")
-        flash("Ошибка. Не получилось подключиться к ОЛТу по Telnet/SSH")
+        logger.info(f"User: {userinfo['username']}; Action: DELETE_ONU; Message: Ошибка. Не получилось подключиться к ОЛТу по Telnet/SSH")
+        flash({'result': 'error', 'message': 'Ошибка. Не получилось подключиться к ОЛТу по Telnet/SSH'})
 
         return redirect(f"/onuinfo/{onu}")
  
-    logger.info(f"User {userinfo['username']} deleted ONU {onu}, out text '{out}'")
+    logger.info(f"User: {userinfo['username']}; Action: DELETE_ONU; Message: {result['message']}'")
                 
     return redirect(f'/oltinfo/{oltid}')
 
@@ -489,26 +599,28 @@ def olthub_settings_snmp():
     Конфигурация SNMP
     '''
     userid = current_user.get_id()
-    userinfo = UserInfo(PATHDB).getUser(userid)
+    userinfo = UsersServiceDb().get_user(userid)
     if userinfo['privilage'] == 'Administrator':
         if request.method == "POST":
             snmp_cfg = {
                 'snmp_read_h': request.form['snmp_read_h'],
-                'snmp_conf_h': request.form['snmp_conf_h'],
+                'snmp_write_h': request.form['snmp_write_h'],
                 'snmp_read_b': request.form['snmp_read_b'],
-                'snmp_conf_b': request.form['snmp_conf_b'],
+                'snmp_write_b': request.form['snmp_write_b'],
                 'snmp_read_c': request.form['snmp_read_c'],
-                'snmp_conf_c': request.form['snmp_conf_c'],
+                'snmp_write_c': request.form['snmp_write_c'],
             }
-            setsnmpcfg = Init_Cfg(PATHDB)
-            out = setsnmpcfg.insercfgsnmp(**snmp_cfg)
-            flash(out)
+            setsnmpcfg = CfgServiceDb()
+            result = setsnmpcfg.insert_cfg_snmp(snmp_cfg)
+            flash(result)
+            logger.info(f"User: {userinfo['username']}; Action: CHANGE_SNMP_CONF; Message: {result['message']}")
+
             return redirect('/settings/cfgsnmp')
         else:
             menu = menucfg.getmenucfg(userinfo['privilage'])
-            nbcfg = Init_Cfg(PATHDB)
-            cfg = nbcfg.getcfg()
-            return render_template('/settings_snmp.html', cfg=cfg, menu=menu)
+            nbcfg = CfgServiceDb()
+            cfg = nbcfg.get_cfg()
+            return render_template('/settings/settings_snmp.html', cfg=cfg, menu=menu)
     else:   
         return redirect('/forbidden')
 
@@ -520,7 +632,7 @@ def olthub_settings_nb():
     Конфигурация NetBox
     '''
     userid = current_user.get_id()
-    userinfo = UserInfo(PATHDB).getUser(userid)
+    userinfo = UsersServiceDb().get_user(userid)
     if userinfo['privilage'] == 'Administrator':
         if request.method == "POST":
             nb_cfg = {
@@ -532,19 +644,66 @@ def olthub_settings_nb():
                 'pl_b': request.form['pl_b'],
                 'pl_c': request.form['pl_c'],
             }
-            setnbcfg = Init_Cfg(PATHDB)
-            out = setnbcfg.insertcfgnb(**nb_cfg)
-            flash(out)
+            setnbcfg = CfgServiceDb()
+            result = setnbcfg.insertcfgnb(nb_cfg)
+            flash(result)
+            logger.info(f"User: {userinfo['username']}; Action: CHANGE_NB_CONF; Message: {result['message']}")
+
             return redirect('/settings/cfgnb')
         else:
             menu = menucfg.getmenucfg(userinfo['privilage'])
-            nbcfg = Init_Cfg(PATHDB)
-            cfg = nbcfg.getcfg()
+            nbcfg = CfgServiceDb()
+            cfg = nbcfg.get_cfg()
             key = cfg['API_KEY']
             cfg['API_KEY'] = 15*'*' + key[-5:]
-            return render_template('/settings_nb.html', cfg=cfg, menu=menu)
+            return render_template('/settings/settings_nb.html', cfg=cfg, menu=menu)
     else:
         return redirect('/forbidden')
+
+
+@app.route('/settings/groups', methods=['POST', 'GET'])
+@login_required
+def olthub_addgroup():
+    '''
+    Добавить группу
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        if request.method == "POST":
+            groupname = request.form['groupname']
+            add_group = GroupsServiceDb()
+            result = add_group.add_group(groupname)
+            flash(result)
+            logger.info(f"User: {userinfo['username']}; Action: ADD_GROUP; Message: {result}")
+            
+            return redirect('/settings/groups')
+        else:
+            menu = menucfg.getmenucfg(userinfo['privilage'])
+            getgroups = GroupsServiceDb()
+            groups = getgroups.get_groups()
+            
+            return render_template('settings/settings_groups.html', groups=groups, menu=menu)
+    else:
+        return redirect('/forbidden')
+    
+
+@app.route('/settings/groups/<int:group_id>/del')
+@login_required
+def olthub_delgroup(group_id):
+    '''
+    Удалить группу
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        delgroup = GroupsServiceDb()
+        result = delgroup.del_group(group_id)
+        flash(result)
+        logger.info(f"User {userinfo['username']} deleted group {result['group']}")
+        return redirect('/settings/groups')
+    else:
+        return redirect('/forbidden')   
 
 
 @app.route('/settings/adduser', methods=['POST', 'GET'])
@@ -554,103 +713,191 @@ def olthub_adduser():
     Добавить пользователя
     '''
     userid = current_user.get_id()
-    userinfo = UserInfo(PATHDB).getUser(userid)
+    userinfo = UsersServiceDb().get_user(userid)
     if userinfo['privilage'] == 'Administrator':
         if request.method == "POST":
-            username = request.form['username']
-            psw = request.form['psw']
-            privilage = request.form['privilage']
-            add_user = Users_Cfg(PATHDB)
-            user_out = add_user.adduser(username, psw, privilage)
-            flash(user_out)
-            logger.info(f"User {userinfo['username']} created user {username}")
+            useradd = {
+                'username':  request.form['username'],
+                'psw':       request.form['psw'],
+                'group_id':  request.form['group_id'],
+                'privilage': request.form['privilage'],
+            }
+            
+            add_user = UsersServiceDb()
+            result = add_user.add_user(useradd)
+            flash(result)
+            logger.info(f"User: {userinfo['username']}; Action: ADD_USER; Message: {result['message']}")
             return redirect('/settings/adduser')
         else:
             menu = menucfg.getmenucfg(userinfo['privilage'])
-            getusers = Users_Cfg(PATHDB)
-            users = getusers.getusers()
-            return render_template('/settings_users.html', users=users, menu=menu)
+            getusers = UsersServiceDb()
+            users = getusers.get_users()
+            getgroups = GroupsServiceDb()
+            groups = getgroups.get_groups()
+            return render_template('/settings/settings_users.html', users=users, menu=menu, groups=groups)
     else:
         return redirect('/forbidden')
 
 
-@app.route('/settings/deluser/<string:username>')
+@app.route('/settings/user/<int:user_id>/edit', methods=['POST', 'GET'])
 @login_required
-def olthub_deluser(username):
+def olthub_edituser(user_id):
+    '''
+    Редактировать пользователя
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        if request.method == "POST":
+            edituser = {
+                'id':        user_id,
+                'username':  request.form['username'],
+                'group_id':  request.form['group_id'],
+                'privilage': request.form['privilage'],
+            }
+            
+            edit_user = UsersServiceDb()
+            result = edit_user.edit_user(edituser)
+            flash(result)
+            logger.info(f"User: {userinfo['username']}; Action: EDIT_USER; Message: {result['message']}")
+            return redirect('/settings/adduser')
+        else:
+            menu = menucfg.getmenucfg(userinfo['privilage'])
+            getuser = UsersServiceDb()
+            user = getuser.get_user(user_id)
+            getgroups = GroupsServiceDb()
+            groups = getgroups.get_groups()
+            return render_template('/settings/settings_useredit.html', user=user, menu=menu, groups=groups)
+
+    else:
+        return redirect('/forbidden')
+
+
+@app.route('/settings/deluser/<int:user_id>')
+@login_required
+def olthub_deluser(user_id):
     '''
     Удалить пользователя
     '''
     userid = current_user.get_id()
-    userinfo = UserInfo(PATHDB).getUser(userid)
+    userinfo = UsersServiceDb().get_user(userid)
     if userinfo['privilage'] == 'Administrator':
-        deluser = Users_Cfg(PATHDB)
-        deluser.deluser(username)
-        flash('Пользователь удалён')
-        logger.info(f"User {userinfo['username']} deleted user {username}")
+        deluser = UsersServiceDb()
+        result = deluser.del_user(user_id)
+        flash(result)
+        logger.info(f"User: {userinfo['username']}; Action: DEL_USER; Message: {result['message']} ")
         return redirect('/settings/adduser')
     else:
         return redirect('/forbidden')
 
 
-@app.route('/onuconfinfo/<int:number>/<string:onu>')
+@app.route('/onuconfinfo/<int:oltid>/<string:onu>')
 @login_required
-def onuconfinfo(number, onu):
+def onuconfinfo(oltid, onu):
     '''
-    Просмотр конфигурации ОНУ 
+    Просмотр конфигурации ОНУ
     '''
     userid = current_user.get_id()
-    userinfo = UserInfo(PATHDB).getUser(userid)
-
-    olt_params = {
-        "pathdb": PATHDB,
-        "olt_id": number,
-        } 
-    
-    olt_find = FindOlt(**olt_params) 
-    olt_information = olt_find.oltinfo()
+    userinfo = UsersServiceDb().get_user(userid)
+    try:
+        olt_find = FindOlt(userinfo, oltid) 
+        olt_information = olt_find.oltinfo()
+    except ValueError:
+        return redirect('/forbidden')
     
     try:
-        onurequest = ConnOLT(olt_information, onu, PATHDB)
+        onurequest = ConnOLT(olt_information, onu, CONN)
         conf_onu_info = onurequest.confonuinfo()
     except:
-        logger.info(f"User {userinfo['username']} unsuccessful show ONU config {onu}")
-        flash("Ошибка. Не получилось подключиться к ОЛТу по Telnet/SSH")
+        logger.info(f"User: {userinfo['username']}; Action: SHOW_ONU_CONF; Message: Не получилось посмотреть конфигурацию ОНУ {onu}")
+        flash({'result': 'error', 'message': 'Ошибка. Не получилось подключиться к ОЛТу по Telnet/SSH'})
 
         return redirect(f"/onuinfo/{onu}")
 
-    logger.info(f"User {userinfo['username']} show ONU config {onu}")
+    logger.info(f"User: {userinfo['username']}; Action: SHOW_ONU_CONF; Message: Просмотр конфигурации ОНУ {onu}")
 
     return render_template('/onuconfinfo.html', conf_onu_info=conf_onu_info)
 
 
-@app.route('/oltshowlogs/<int:number>')
+@app.route('/oltshowlogs/<int:id>')
 @login_required
-def oltlogs(number):
+def oltlogs(id):
     '''
     Просмотр логов ОЛТа
     '''
     userid = current_user.get_id()
-    userinfo = UserInfo(PATHDB).getUser(userid)
-
-    olt_params = {
-    "pathdb": PATHDB,
-    "olt_id": number,
-    }   
-
-    olt_find = FindOlt(**olt_params) 
-    olt_information = olt_find.oltinfo()
+    userinfo = UsersServiceDb().get_user(userid)
     try:
-        logsrequest = ShowLogs(olt_information)
+        olt_find = FindOlt(userinfo, id) 
+        olt_information = olt_find.oltinfo()
+    except ValueError:
+        return redirect('/forbidden')
+    
+    try:
+        logsrequest = ShowLogs(olt_information, CONN)
         logs_info = logsrequest.showlogs()
     except:
-        logger.info(f"User {userinfo['username']} unsuccessful show logs {olt_information['ip_address']}")
-        flash("Ошибка. Не получилось подключиться к ОЛТу по Telnet/SSH")
+        logger.info(f"User: {userinfo['username']}; \
+                Action: SHOWLOGS; Message: Ошибка. \
+                Не получилось подключиться к ОЛТу {olt_information['ip_address']} по Telnet/SSH")
+        flash({'result': 'error', 'message': 'Ошибка. Не получилось подключиться к ОЛТу по Telnet/SSH'})
 
-        return redirect(f"/oltinfo/{number}")
+        return redirect(f"/oltinfo/{id}")
 
-    logger.info(f"User {userinfo['username']} show logs {olt_information['ip_address']}")
+    logger.info(f"User: {userinfo['username']}; Action: SHOWLOGS; Message: Просмотр логов ОЛТа {olt_information['ip_address']}")
 
     return render_template('/oltshowlogs.html', logs_info=logs_info)
+
+
+@app.route('/settings/showlogs')
+@login_required
+def show_logs():
+    '''
+    Просмотр логов
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        logs = showlogs(f'{LOGDIR}{LOGFILE}')
+        menu = menucfg.getmenucfg(userinfo['privilage'])
+        return render_template('/settings/showlogs.html', logs=logs, menu=menu)
+    else:   
+        return redirect('/forbidden')
+    
+
+@app.route('/settings/oltslist')
+@login_required
+def oltslist():
+    '''
+    Получение списка ОЛТов для редактирования
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        oltslist = OltServiceDb.get_olts()
+        menu = menucfg.getmenucfg(userinfo['privilage'])
+
+        return render_template("settings/settings_oltslist.html", menu=menu, oltslist=oltslist)
+    
+    else:   
+        return redirect('/forbidden')
+    
+
+@app.route('/settings/tokens')
+@login_required
+def settingsapi():
+    '''
+    Работа с API
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        menu = menucfg.getmenucfg(userinfo['privilage'])
+
+        return render_template("settings/settings_tokens.html", menu=menu)
+    
+    else:   
+        return redirect('/forbidden')
 
 
 if __name__ == "__main__":

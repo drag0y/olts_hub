@@ -19,17 +19,22 @@
       Информация об ОЛТе
     </h1>
 
-{% for msg in get_flashed_messages() %}
-  {% if "Ошибка" in msg or "ERROR" in msg or "отключена" in msg %}
-    <h3 class="text-center">
-      <span class="flash badge text-bg-danger">
-        {{msg}}
-      </span>
-    </h3>
-  {% else %}
-    <h3 class="text-center"><span class="flash badge text-bg-success">{{msg}}</span></h3>
-  {% endif %}
-{% endfor %}
+  {% for msg in get_flashed_messages() %}
+    {% if "error" in msg.result %}
+      <h3 class="text-center">
+        <span class="flash badge text-bg-danger">
+          {{msg.message}}
+        </span>
+      </h3>
+    {% else %}
+	  <h3 class="text-center">
+        <span class="flash badge text-bg-success">
+          {{msg.message}}
+        </span>
+      </h3>
+	{% endif %}
+
+  {% endfor %}
 
 </header>
   <div class="text-center">
@@ -64,6 +69,26 @@
 
       <span class="text-body-secondary">
         {{ olt_information.oltname }}
+      </span>
+    </li>
+
+    <li class="list-group-item d-flex justify-content-between lh-sm">
+      <div>
+        <h6 class="my-0 text-black">Описание ОЛТа:</h6>
+	  </div>
+
+      <span class="text-body-secondary">
+        {{ olt_information.descr }}
+      </span>
+    </li>
+
+    <li class="list-group-item d-flex justify-content-between lh-sm">
+      <div>
+        <h6 class="my-0 text-black">Группа:</h6>
+	  </div>
+
+      <span class="text-body-secondary">
+        {{ olt_information.group }}
       </span>
     </li>
 
@@ -112,7 +137,7 @@
         {% if 'В сети' in olt_information.olt_state %}
           {% if ns.counter <= 16 %}
             <a 
-              href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace("/", ".") }}" 
+              href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace('/', '.') }}" 
               class="p-1 mb-1 btn btn-outline-dark btn-sm" 
               type="click"
               id="port-button{{ ns2.counter }}"
@@ -199,7 +224,7 @@
               ; Порт ОЛТа: 
             <b class="text-danger">
               {{ u.oltport }}
-              </p>
+            </b>
           </span><br>
 
         {% endfor %}
@@ -219,7 +244,7 @@
   <div class="row">
     
       {% if 'В сети' in olt_information.olt_state %}
-      <div class="col-md-4" style="text-align: center;">
+      <div class="col-md-6" style="text-align: center;">
         <a 
           href="/oltinfo/{{ olt_information.oltid }}/update" 
           class="btn btn-warning"
@@ -229,7 +254,7 @@
             Опросить ОЛТ
         </a>
         </div>
-        <div class="col-md-4" style="text-align: center;">
+        <div class="col-md-6" style="text-align: center;">
         <a 
           href="/oltshowlogs/{{ olt_information.oltid }}" 
           class="btn btn-info"
@@ -240,19 +265,15 @@
         </a>
         
       {% else %}
-      <div class="col-md-4" style="text-align: center;">
+      <div class="col-md-6" style="text-align: center;">
         <a href="/oltinfo/{{ olt_information.oltid }}/update" class="btn btn-warning disabled">Опросить ОЛТ</a>
         </div>
-        <div class="col-md-4" style="text-align: center;">
+        <div class="col-md-6" style="text-align: center;">
         <a href="/oltshowlogs/{{ olt_information.oltid }}" class="btn btn-info disabled">Посмотреть логи ОЛТа</a>
         
       {% endif %}
     </div>
-    <div class="col-md-4" style="text-align: center;">
-      <a href="/oltinfo/{{ olt_information.oltid }}/delete" class="btn btn-danger">
-        Удалить ОЛТ
-	  </a>
-	</div>
+    
   </div>
   
 </div>

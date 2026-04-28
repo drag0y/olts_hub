@@ -12,13 +12,22 @@
 </head>
 <body class="d-flex align-items-center py-4 bg-body-tertiary">
 <main class="form-signin w-10 m-auto">
-{% for msg in get_flashed_messages() %}
-    {% if "Неправильный" in msg %}
-        <h3 class="text-center"><span class="flash badge text-bg-danger">{{msg}}</span></h3>
+  {% for msg in get_flashed_messages() %}
+    {% if "error" in msg.result %}
+      <h3 class="text-center">
+        <span class="flash badge text-bg-danger">
+          {{msg.message}}
+        </span>
+      </h3>
     {% else %}
-        <h3 class="text-center"><span class="flash badge text-bg-success">{{msg}}</span></h3>
-    {% endif %}
-{% endfor %}
+	  <h3 class="text-center">
+        <span class="flash badge text-bg-success">
+          {{msg.message}}
+        </span>
+      </h3>
+	{% endif %}
+
+  {% endfor %}
 <form method="post">
 <p align="center">
 <img class="mb-0" src="{{ url_for('static', filename='images/oltshub_login_logo.png') }}" alt="" width="150"> 
@@ -43,7 +52,7 @@
 </div> 
 
 <input class="btn btn-warning w-100 py-2" type="submit" value="Войти">
-<p align="center" class="mt-5 mb-3 text-body-secondary">OLTs HUB v2.6 © 2025 by Drag0y</p> 
+<p align="center" class="mt-5 mb-3 text-body-secondary">OLTs HUB v3.0 © 2026 by Drag0y</p> 
 
 </form> 
 

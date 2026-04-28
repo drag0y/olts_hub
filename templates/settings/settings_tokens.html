@@ -1,0 +1,32 @@
+{% extends 'settings/settings_base.html' %}
+
+{% block title %}
+Настройки API
+{% endblock %}
+
+{% block settings %}
+<div class="container col-md-6 col-lg-6 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
+  {% for msg in get_flashed_messages() %}
+    {% if "error" in msg.result %}
+      <h3 class="text-center">
+        <span class="flash badge text-bg-danger">
+          {{msg.message}}
+        </span>
+      </h3>
+    {% else %}
+	  <h3 class="text-center">
+        <span class="flash badge text-bg-success">
+          {{msg.message}}
+        </span>
+      </h3>
+	{% endif %}
+
+  {% endfor %}
+  <header>
+    <h1 class="text-center fw-bold">Настройки API</h1>
+  </header>
+  <header>
+    <h3 class="text-center fw-bold">Функция в разработке</h1>
+  </header>
+  
+{% endblock %}

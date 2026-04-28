@@ -3,12 +3,8 @@ from sqlalchemy.orm import Session
 from werkzeug.security import generate_password_hash
 
 from models.base import Base
-from models.models import Users, Cfg, MenuCfg
+from models.models import Users, Cfg, MenuCfg, Groups
 
-
-# Имя базы и путь до неё, папка должна быть instance, иначе не будет работать
-NAMEDB = "onulist.db"
-PATHDB = f"instance/{NAMEDB}"
 
 engine = create_engine(
                     "sqlite:///instance/onulist.db",
@@ -17,9 +13,15 @@ engine = create_engine(
 
 if __name__ == "__main__":
     Base.metadata.create_all(engine)
-    print(f"Создана новая база данных: {PATHDB}")
+    print(f"Создана новая база данных: instance/onulist.db")
 
     with Session(engine) as session:
+        # Создаём дефолтную группу
+        default_group = Groups(
+            group_name  = 'default',
+            )
+        session.add(default_group)
+
         # Создаём дефолтного пользователя root
         username  = 'root'
         psw       = 'admin'
@@ -27,9 +29,10 @@ if __name__ == "__main__":
         privilage = 'Administrator'
 
         default_user = Users(
-            login     = username,
+            username  = username,
             password  = psw_hash,
             privilage = privilage,
+            group_id  = 1,
             )
 
         session.add(default_user)
@@ -56,10 +59,10 @@ if __name__ == "__main__":
         snmp_cfg = [
             ['SNMP_READ_H', 'public'],
             ['SNMP_READ_B', 'public'],
-            ['SNMP_CONF_H', 'private'],
-            ['SNMP_CONF_B', 'private'],
             ['SNMP_READ_C', 'public'],
-            ['SNMP_CONF_C', 'private'],
+            ['SNMP_WRITE_H', 'private'],
+            ['SNMP_WRITE_B', 'private'],
+            ['SNMP_WRITE_C', 'private'],
         ]
         for sn in snmp_cfg:
             tmp_sn = Cfg(
@@ -71,9 +74,12 @@ if __name__ == "__main__":
         menu_cfg = [
             ['Профиль', '/settings/profile', 'Operator'],
             ['Пользователи', '/settings/adduser', 'Administrator'],
-            ['Добавить OLT', '/settings/oltadd', 'Administrator'],
+            ['Группы', '/settings/groups', 'Administrator'],
+            ['OLTы', '/settings/oltslist', 'Administrator'],
             ['Настройка NetBox', '/settings/cfgnb', 'Administrator'],
             ['Настройка SNMP', '/settings/cfgsnmp', 'Administrator'],
+            ['Токены API', '/settings/tokens', 'Administrator'],
+            ['Просмотр логов', '/settings/showlogs', 'Administrator'],
         ]
         for mn in menu_cfg:
             tmp_mn = MenuCfg(
