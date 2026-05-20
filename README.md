@@ -1,4 +1,9 @@
-## OLTs HUB v3.0
+<div align="center">
+  <img src="/static/images/oltshub_login_logo.png" width="250" alt="OLTsHUB logo" />
+  <p><strong>OLTs HUB</strong></p>
+</div>
+
+##  v3.1
 WEB приложение для просмотра состояния абонентских оптических терминалов, фирмы Huawei и BDCOM\
 Приложение работает с ОЛТами:\
 Huawei MA5600, MA5800 (EPON, GPON).\

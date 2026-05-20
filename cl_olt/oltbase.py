@@ -29,7 +29,18 @@ class GetOltInfoBase:
         status_tree = {}
         return status_tree
 
-    def unregonu(self):
+
+    def unregonu(self, oltid):
         '''
         Метод проверяет есть ли на ОЛТе не зарегистрированные ОНУ
         '''
+        unregonu_out = []
+        return unregonu_out
+
+
+    def oltuptime(self):
+        '''
+        Метод определяет UpTime ОЛТа
+        '''
+        uptime = ''
+        return uptime

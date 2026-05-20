@@ -2,6 +2,7 @@ import re
 import sqlite3
 
 from cl_other.snmpwalk import SnmpWalk
+from cl_olt.oltbase import GetOltInfoBase
 
 
 OFFSETS = {
@@ -32,7 +33,7 @@ def decode_index(dec_index: int, model: str):
     return tree, b0
 
 
-class CdataGetOltInfo:
+class CdataGetOltInfo(GetOltInfoBase):
     ''' Класс для работы с ОЛТами C-Data '''
     def __init__(self, olt_name, olt_ip, snmp_com, pontype):
         self.olt_name = olt_name

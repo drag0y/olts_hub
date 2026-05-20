@@ -68,6 +68,7 @@ class FindOlt:
     def oltinfo(self):     
         olt_state = ''
         unregonu = []
+        oltuptime = ''
         
         # Сбор списка портов
         ports = PortsServiceDb()
@@ -94,23 +95,29 @@ class FindOlt:
         if p == None or p == False:
             olt_state = 'Не в сети'
         else:
+            olt_params = {
+                'olt_name': self.olt_info.hostname, 
+                'olt_ip':   self.olt_info.ip_address, 
+                'snmp_com': self.SNMP_READ,
+                'pontype' : self.olt_info.pon_type,
+            }
             olt_state = 'В сети'
             # Ищем незарегистрированные ОНУ (только Huawei)
             if self.PF_HUAWEI in self.olt_info.platform:
-                oltinfo = HuaweiGetOltInfo(
-                    self.olt_info.hostname, 
-                    self.olt_info.ip_address, 
-                    self.SNMP_READ,
-                    self.olt_info.pon_type
-                )
-                unregonu = oltinfo.unregonu()
-            else:
-                unregonu = []
+                oltinfo = HuaweiGetOltInfo(**olt_params)
+            elif self.PF_BDCOM in self.olt_info.platform:
+                oltinfo = BdcomGetOltInfo(**olt_params)
+            elif self.PF_CDATA in self.olt_info.platform:
+                oltinfo = CdataGetOltInfo(**olt_params)
+            
+            unregonu = oltinfo.unregonu(self.olt_info.id)
+            oltuptime = oltinfo.oltuptime()
         
         olt_information = {
                     "oltid":      self.olt_info.id,
                     "oltname":    self.olt_info.hostname,
                     "olt_state":  olt_state,
+                    "olt_uptime": oltuptime,
                     "ip_address": self.olt_info.ip_address,
                     "platform":   self.olt_info.platform,
                     "countonu":   self.countonu,

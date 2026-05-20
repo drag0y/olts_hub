@@ -10,7 +10,9 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
     Класс для работы с ОНУ BDCOM
     '''
     def getonustatus(self):
-        # Определение статуса ОНУ (В сети/Не в сети)
+        '''
+        Определение статуса ОНУ (В сети/Не в сети)
+        '''
         onu_state_out = 'Не удалось определить статус ОНУ, ОЛТ не отвечает'
         if "epon" in self.pon_type:
             portstateoid = "1.3.6.1.2.1.2.2.1.8"
@@ -33,7 +35,9 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
 
 
     def getlanstatus(self):
-        # Метод определяет статус LAN порта
+        '''
+        Метод определяет статус LAN порта
+        '''
         parse_lan_state = "INTEGER: (?P<lanstate>.+)"
         lan_out = "Не удалось определить"
         try:
@@ -64,7 +68,9 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
 
 
     def getlastdown(self):
-        # Метод определяет причину последнего отключения ОНУ
+        '''
+        Метод определяет причину последнего отключения ОНУ
+        '''
         lastdownonu = "Неизвестно"
         parse_reason = "INTEGER: (?P<downreason>.+)"
         onumacdec = convert(self.onu)
@@ -97,49 +103,106 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
 
 
     def getonuuptime(self):
-        # Метод определяет время включения ОНУ
-        out_uptime = 'Не удалось получить время включения'
-        parse_uptime = r'INTEGER: (?P<uptime>\S+)'
+        '''
+        Метод определяет время включения ОНУ
+        '''
+        result = 'Не удалось получить время включения'
+        onumacdec = convert(self.onu)
 
         if "epon" in self.pon_type:
+            regtimeoid = '1.3.6.1.4.1.3320.101.11.1.1.9'
             datatimeoid = "1.3.6.1.4.1.3320.101.10.1.1.80"
             parse_uptime = r'INTEGER: (?P<uptime>\S+)'
-
-        if "gpon" in self.pon_type:
+        
+        elif "gpon" in self.pon_type:
+            regtimeoid = '1.3.6.1.4.1.3320.22.2.1.1.2.1.20'
             datatimeoid = "1.3.6.1.4.1.3320.10.3.1.1.48"
             parse_uptime = r'= Timeticks: \(\d+\) (?P<uptime>.+)\.'
 
-        uptimeoid = f'{datatimeoid}.{self.portoid}'
-        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, uptimeoid)
-        uptime = snmpget.snmpget()
-        
-        for l in uptime:
-            match = re.search(parse_uptime, l)
+        onuregtimeoid = f'{regtimeoid}.{self.portoltid}{onumacdec}'
+        parse_regtime = r'STRING: (?P<regtime>.+)'
 
-            if "epon" in self.pon_type:              
-                if match:
-                    onu_up_time = match.group('uptime')
-                    if int(onu_up_time) < 60:
-                        out_uptime = f"{onu_up_time} секунд(ы)"
-                    elif int(onu_up_time) > 60 and int(onu_up_time) < 3600:
-                        onu_up_time = int(onu_up_time)/60
-                        out_uptime = f"{int(onu_up_time)} минут(а)"
-                    else:
-                        onu_up_time = int(onu_up_time)/60/60
-                        out_uptime = f"{int(onu_up_time)} часа(ов)"
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onuregtimeoid)
+        downtimeonu = snmpget.snmpget()
 
-            elif "gpon" in self.pon_type:
-                if match:
-                    out_uptime = match.group('uptime')
+        for r in downtimeonu:
+            match = re.search(parse_regtime, r)
+            if match:
+                regtime = match.group('regtime')
+                b = [int(x, 16) for x in regtime.split()]
+                year = (b[0] << 8) | b[1]
 
-        return out_uptime
+                result = (
+                    f"{year:04d}-{b[2]:02d}-{b[3]:02d} "
+                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d} "
+                )
+            else:
+                uptimeoid = f'{datatimeoid}.{self.portoid}'
+                snmpget = SnmpWalk(self.olt_ip, self.snmp_com, uptimeoid)
+                uptime = snmpget.snmpget()
+                
+                for l in uptime:
+                    match = re.search(parse_uptime, l)
+
+                    if "epon" in self.pon_type:              
+                        if match:
+                            onu_up_time = match.group('uptime')
+                            if int(onu_up_time) < 60:
+                                result = f"{onu_up_time} секунд(ы)"
+                            elif int(onu_up_time) > 60 and int(onu_up_time) < 3600:
+                                onu_up_time = int(onu_up_time)/60
+                                result = f"{int(onu_up_time)} минут(а)"
+                            else:
+                                onu_up_time = int(onu_up_time)/60/60
+                                result = f"{int(onu_up_time)} часа(ов)"
+
+                    elif "gpon" in self.pon_type:
+                        if match:
+                            result = match.group('uptime')
+
+        return result
+
+
+    def gettimedown(self):
+        ''' 
+        Метод определяет время последнего отключения
+        '''
+        out_downtime = 'Не поддерживается'
+        parse_downtime = r'STRING: (?P<downtime>.+)'
+        onumacdec = convert(self.onu)
+
+        if "epon" in self.pon_type:
+            datatimeoid = "1.3.6.1.4.1.3320.101.11.1.1.10"
+            
+        if "gpon" in self.pon_type:
+            datatimeoid = "1.3.6.1.4.1.3320.22.2.1.1.2.1.21"
+            
+        onudowntimeoid = f'{datatimeoid}.{self.portoltid}{onumacdec}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onudowntimeoid)
+        downtimeonu = snmpget.snmpget()
+
+        for d in downtimeonu:
+            match = re.search(parse_downtime, d)
+            if match:
+                downtime = match.group('downtime')
+                b = [int(x, 16) for x in downtime.split()]
+                year = (b[0] << 8) | b[1]
+
+                out_downtime = (
+                    f"{year:04d}-{b[2]:02d}-{b[3]:02d} "
+                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d} "
+                )
+
+        return out_downtime
 
 
     def getonulevel(self):
-        # Метод определяет уровни сигнала ОНУ
+        '''
+        Метод определяет уровни сигнала ОНУ
+        '''
         parse_level = r'INTEGER: (?P<level>.+)'
-        level_onu = "0"
-        level_olt = "0"
+        level_onu = 0.0
+        level_olt = 0.0
 
         if "epon" in self.pon_type:
             rx_onu_oid = "1.3.6.1.4.1.3320.101.10.5.1.5"
@@ -188,15 +251,15 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
         snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, onurebootoid)
         onureboot = snmpset.snmpset()
                     
-        setreboot_out = 'Ошибка. OLT не отвечает или не включен SNMP Write'
+        setreboot_out = {'result': 'error', 'message':'Ошибка. OLT не отвечает или не включен SNMP Write'}
         for l in onureboot:
             match = re.search(parse_reboot, l)            
             if match:
                 setreboot = match.group('setreboot')
                 if setreboot == '0' or setreboot == '1':
-                    setreboot_out = "ОНУ перезагаружена"
+                    setreboot_out = {'result': 'success', 'message': 'ОНУ перезагаружена'}
                 else:
-                    setreboot_out = "Ошибка"
+                    setreboot_out = {'result': 'error', 'message': 'Ошибка'}
 
         return setreboot_out
 
@@ -229,6 +292,7 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
                     setdelete_out = {'result': 'error', 'message': 'Ошибка!'}
 
         return setdelete_out
+
 
     def getllidmacsearch(self):
         '''

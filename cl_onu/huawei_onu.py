@@ -241,7 +241,9 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
 
 
     def gettimedown(self):
-        # Метод определяет время последнего отключения
+        '''
+        Метод определяет время последнего отключения
+        '''
         timelist = "Нет времени отключения"
         parse_downtime = r'STRING: "(?P<downtime>\S+ \S+)"'
 
@@ -260,7 +262,7 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
                         timelist = match.group('downtime')
 
                 i = i - 1
-                if timelist != "Нет времени отключения":
+                if timelist != "Не удалось получить время отключения":
                     break
 
             datatime = timelist.replace("Z", "+03:00")
@@ -319,7 +321,7 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
                 rx_olt = match.group('level')
                 level_olt = int(rx_olt)/100-100
 
-        return level_onu, format(level_olt, '.2f')
+        return level_onu, float(format(level_olt, '.2f'))
 
 
     def setcatvon(self):
@@ -394,15 +396,15 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
         snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, onurebootoid)
         onureboot = snmpset.snmpset()
 
-        setreboot_out = 'Ошибка'
+        setreboot_out = {'result': 'error', 'message':'Ошибка. OLT не отвечает или не включен SNMP Write'}
         for l in onureboot:
             match = re.search(parse_reboot, l)
             if match:
                 setreboot = match.group('setreboot')
                 if setreboot == '1':
-                    setreboot_out = "ОНУ перезагаружена"
+                    setreboot_out = {'result': 'success', 'message': 'ОНУ перезагаружена'}
                 else:
-                    setreboot_out = "Ошибка"
+                    setreboot_out = {'result': 'error', 'message': 'Ошибка'}
 
         return setreboot_out
 

@@ -1,10 +1,10 @@
-{% extends 'base.html' %}
+{% extends 'settings/settings_base.html' %}
 
 {% block title %}
 Дубликаты ОНУ
 {% endblock %}
 
-{% block body %}
+{% block settings %}
 
 <div class="container col-md-7 col-lg-7 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
   <h4 class="d-flex justify-content-between align-items-center mb-3">
@@ -39,9 +39,9 @@
       {% endfor %}
     </table>
   </ul>
-</div>
+
 <br>
-<div class="container col-md-7 col-lg-7 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
+
   <h4 class="d-flex justify-content-between align-items-center mb-3">
     <span class="fw-bold">Повторяющиеся ОНУ</span>
     <span class="badge bg-black rounded-pill text-warning">GPON</span>
@@ -75,5 +75,29 @@
     </table>
   </ul>
 </div>
+<button id="scrollTopBtn">↑</button>
+<script>
+const scrollBtn = document.getElementById("scrollTopBtn")
+
+window.addEventListener("scroll", () => {
+
+  if (document.documentElement.scrollTop > 200) {
+    scrollBtn.style.display = "block"
+  } else {
+    scrollBtn.style.display = "none"
+  }
+
+})
+
+scrollBtn.addEventListener("click", () => {
+
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
+  })
+
+})
+
+</script>
 {% endblock %}
                     

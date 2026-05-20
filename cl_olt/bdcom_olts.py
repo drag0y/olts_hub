@@ -5,9 +5,10 @@ from cl_other.snmpwalk import SnmpWalk
 from funcs.hextodec import convert
 from db_services.db_ports import PortsServiceDb
 from db_services.db_onu import OnuServiceDb
+from cl_olt.oltbase import GetOltInfoBase
 
 
-class BdcomGetOltInfo:
+class BdcomGetOltInfo(GetOltInfoBase):
     '''
     Класс для работы с ОЛТами BDCOM
     '''
@@ -43,8 +44,8 @@ class BdcomGetOltInfo:
                 
             elif match2:
                 port = {
-                    'pon_port': match.group('ponport'),
-                    'port_oid': match.group('portoid'),
+                    'pon_port': match2.group('ponport'),
+                    'port_oid': match2.group('portoid'),
                 }
                 ports.append(port)
         
@@ -91,7 +92,7 @@ class BdcomGetOltInfo:
                 match = re.search(parseoutsn, l.replace(" ", "").replace('"', '').lower())
                 if match:
                     onu = {
-                        'onu': match.group('snconu'),
+                        'onu': match.group('snonu'),
                         'port_oid': match.group('portonu'),
                         'onu_oid': match.group('portonu'),
                     }
@@ -230,3 +231,22 @@ class BdcomGetOltInfo:
                         )
             
         return out_tree
+
+
+    def oltuptime(self):
+        '''
+        Метод определяет UpTime ОЛТа
+        '''
+        uptime = ''
+        parse_uptime = r'\) (?P<uptime>\d+ days, \d+:\d+:\d+)'
+        oid_uptime = '1.3.6.1.2.1.1.3.0'
+
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, oid_uptime)
+        onulist = snmpget.snmpget()
+
+        for u in onulist:
+            match = re.search(parse_uptime, u)
+            if match:
+                uptime = match.group('uptime')
+
+        return uptime

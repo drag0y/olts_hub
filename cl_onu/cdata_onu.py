@@ -272,15 +272,15 @@ class CdataGetOnuInfo(GetOnuInfoBase):
         snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, onurebootoid)
         onureboot = snmpset.snmpset()
 
-        setreboot_out = 'Ошибка. OLT не отвечает или не включен SNMP Write'
+        setreboot_out = {'result': 'error', 'message':'Ошибка. OLT не отвечает или не включен SNMP Write'}
         for l in onureboot:
             match = re.search(parse_reboot, l)
             if match:
                 setreboot = match.group('setreboot')
                 if setreboot == '1':
-                    setreboot_out = "ОНУ перезагружена"
+                    setreboot_out = {'result': 'success', 'message': 'ОНУ перезагаружена'}
                 else:
-                    setreboot_out = "Ошибка"
+                    setreboot_out = {'result': 'error', 'message': 'Ошибка'}
 
         return setreboot_out
 

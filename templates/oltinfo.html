@@ -61,7 +61,14 @@
         <span class="badge text-bg-danger rounded-pill fw-bold">{{ olt_information.olt_state }}</span>
       {% endif %}
     </li>
-
+    <li class="list-group-item d-flex justify-content-between lh-sm">
+      <div>
+        <h6 class="my-0 text-black">Uptime:</h6>
+	    </div>
+      <span class="text-body-secondary">
+        {{ olt_information.olt_uptime }}
+      </span>
+    </li>
     <li class="list-group-item d-flex justify-content-between lh-sm">
       <div>
         <h6 class="my-0 text-black">Имя ОЛТа:</h6>

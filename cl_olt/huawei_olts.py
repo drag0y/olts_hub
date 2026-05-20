@@ -3,9 +3,11 @@ import sqlite3
 
 from cl_other.snmpwalk import SnmpWalk
 from db_services.db_onu import OnuServiceDb
+from db_services.db_ports import PortsServiceDb
+from cl_olt.oltbase import GetOltInfoBase
 
 
-class HuaweiGetOltInfo:
+class HuaweiGetOltInfo(GetOltInfoBase):
     '''
     Класс для работы с ОЛТами Huawei
     '''
@@ -229,7 +231,7 @@ class HuaweiGetOltInfo:
         return out_tree
 
 
-    def unregonu(self):
+    def unregonu(self, oltid):
         '''
         Метод проверяет есть ли на ОЛТе не зарегистрированные ОНУ
         '''
@@ -252,14 +254,9 @@ class HuaweiGetOltInfo:
                 unreg_onu = match.group('onu').replace(' ', '')
                 oltport_oid = match.group('portoid')
 
-                conn = sqlite3.connect('instance/onulist.db')
-                cursor = conn.cursor()
-                ponport = cursor.execute(f'SELECT * FROM ponports WHERE ip_address="{self.olt_ip}" AND portoid LIKE "{oltport_oid}";')
-
+                ponport = PortsServiceDb().find_port_by_oid(oltid, oltport_oid)
                 for p in ponport:
-                    oltport = p[3]
-                
-                conn.close()
+                    oltport = p.pon_port
 
                 onudict = {
                 'mac': unreg_onu,
@@ -268,3 +265,22 @@ class HuaweiGetOltInfo:
                 unregonu_out.append(onudict)
 
         return unregonu_out
+    
+
+    def oltuptime(self):
+        '''
+        Метод определяет UpTime ОЛТа
+        '''
+        uptime = ''
+        parse_uptime = r'\) (?P<uptime>\d+ days, \d+:\d+:\d+)'
+        oid_uptime = '1.3.6.1.2.1.1.3.0'
+
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, oid_uptime)
+        onulist = snmpget.snmpget()
+
+        for u in onulist:
+            match = re.search(parse_uptime, u)
+            if match:
+                uptime = match.group('uptime')
+
+        return uptime

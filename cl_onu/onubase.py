@@ -73,7 +73,9 @@ class GetOnuInfoBase:
 
 
     def gettimedown(self):
-        # Метод определяет время последнего отключения
+        ''' 
+        Метод определяет время последнего отключения
+        '''
         onu_downtime = 'Не поддерживается'
         return onu_downtime
 

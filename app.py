@@ -48,6 +48,7 @@ app = Flask(__name__)
 api = Api()
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['APP_VERSION'] = 'v3.1'
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -87,6 +88,11 @@ def before_request():
     global menucfg
     dbase = UsersServiceDb()
     menucfg = MenuServiceDb()
+
+
+@app.context_processor
+def inject_version():
+    return dict(version=app.config['APP_VERSION'])
 
 
 @login_manager.user_loader
@@ -358,7 +364,7 @@ def oltsupdate():
         return redirect('/forbidden')
    
 
-@app.route("/doubleonu")
+@app.route("/settings/doubleonu")
 @login_required
 def doubleonu():
     '''
@@ -368,8 +374,9 @@ def doubleonu():
     userinfo = UsersServiceDb().get_user(userid)
     if userinfo['privilage'] == 'Administrator':
         doublemac, doublesn = OnuServiceDb().get_double_onu(userinfo)
+        menu = menucfg.getmenucfg(userinfo['privilage'])
     
-        return render_template('/doubleonu.html', doublemac=doublemac, doublesn=doublesn)
+        return render_template('/settings/doubleonu.html', doublemac=doublemac, doublesn=doublesn, menu=menu)
     else:
         return redirect('/forbidden')
 
@@ -534,7 +541,7 @@ def olt_edit(id):
 
 @app.route("/onuinfo/<int:oltid>/<string:onu>/reboot")
 @login_required
-def onu_reboot(oltid, onu):    
+def onu_reboot(oltid, onu):
     ''' 
     Перезагрузка ОНУ
     '''
@@ -545,7 +552,7 @@ def onu_reboot(oltid, onu):
     result = onurequest.onureboot()
     flash(result)
     
-    logger.info(f"User: {userinfo['username']}; Action: REBOOTED_ONU; Message: ОНУ {onu} перезагаружена")
+    logger.info(f"User: {userinfo['username']}; Action: REBOOTED_ONU; Message: {result['message']}")
                 
     return redirect(f'/onuinfo/{onu}')
 
