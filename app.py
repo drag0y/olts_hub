@@ -21,6 +21,7 @@ from db_services.db_onu import OnuServiceDb
 from db_services.db_groups import GroupsServiceDb
 from db_services.db_users import UsersServiceDb
 from db_services.db_menucfg import MenuServiceDb
+from db_services.db_history import HistoryServiceDb
 
 
 load_dotenv()
@@ -48,7 +49,7 @@ app = Flask(__name__)
 api = Api()
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['APP_VERSION'] = 'v3.1'
+app.config['APP_VERSION'] = 'v3.2'
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -186,7 +187,7 @@ def index():
 
     else:
         olts_list = OltServiceDb.get_olts()
-        if userinfo['privilage'] == 'Administrator':    
+        if userinfo['privilage'] == 'Administrator' or userinfo['groupname'] == 'default':    
             return render_template("index.html", oltslist=olts_list)
         else:
             oltslist = []
@@ -288,8 +289,8 @@ def olt_update(id):
     userinfo = UsersServiceDb().get_user(userid)
     try:
         olt_find = FindOlt(userinfo, id)
-        olt_find.update_olt()
-        flash({'result': 'success', 'message': 'ОЛТ опрошен',})
+        result = olt_find.update_olt()
+        flash(result)
         return redirect(f'/oltinfo/{id}')
     except ValueError:
         return redirect('/forbidden')
@@ -305,8 +306,8 @@ def updateolt(id):
     userinfo = UsersServiceDb().get_user(userid)
     try:
         olt_find = FindOlt(userinfo, id)
-        olt_find.update_olt()
-        flash({'result': 'success', 'message': 'ОЛТ опрошен',})
+        result = olt_find.update_olt()
+        flash(result)
         return redirect('/')
     except ValueError:
         return redirect('/forbidden')
@@ -594,9 +595,83 @@ def onu_delete(oltid, onu):
 
         return redirect(f"/onuinfo/{onu}")
  
-    logger.info(f"User: {userinfo['username']}; Action: DELETE_ONU; Message: {result['message']}'")
-                
+    logger.info(f"User: {userinfo['username']}; Action: DELETE_ONU; Message: {result['message']}")        
     return redirect(f'/oltinfo/{oltid}')
+
+
+@app.route("/onuinfo/<int:oltid>/<string:onu>/history")
+@login_required
+def show_onu_history(oltid, onu):
+    '''
+    Получить историю сигналов из базы
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+
+    oltinfo = OltServiceDb().get_olt(oltid)
+    if any(userinfo['groupname'] == n for n in ['Administrator', 'default', oltinfo.group.group_name]):
+        pass
+    else:
+        return redirect('/forbidden')
+
+    history = HistoryServiceDb().get_history(oltid, onu)
+    
+    return render_template('onuhistory.html', history=history, onu=onu, oltid=oltid)
+
+
+@app.route("/onuinfo/<int:oltid>/<string:onu>/history/delete")
+@login_required
+def delete_onu_history(oltid, onu):
+    '''
+    Удалить историю сигналов из базы
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+
+    oltinfo = OltServiceDb().get_olt(oltid)
+    if any(userinfo['groupname'] == n for n in ['Administrator', 'default', oltinfo.group.group_name]):
+        pass
+    else:
+        return redirect('/forbidden')
+
+    result = HistoryServiceDb().delete_history(oltid, onu)
+    flash(result)
+    logger.info(f"User: {userinfo['username']}; Action: CLEAR_ONU_HISTORY; Message: {result['message']}")
+
+    return redirect(f'/onuinfo/{oltid}/{onu}/history')
+
+
+@app.route("/settings/allhistory")
+@login_required
+def show_all_history():
+    '''
+    Просмотр всей истории сигналов
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        menu = menucfg.getmenucfg(userinfo['privilage'])
+        history = HistoryServiceDb().get_all_history()
+        return render_template('/settings/onuhistory_all.html', menu=menu, history=history)
+    else:
+        return redirect('/forbidden')
+
+
+@app.route("/settings/allhistory/delete")
+@login_required
+def delete_all_history():
+    '''
+    Очистить всю таблицу с иторией сигналов
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        result = HistoryServiceDb().delete_all_history()
+        flash(result)
+        logger.info(f"User: {userinfo['username']}; Action: CLEAR_ALL_HISTORY; Message: {result['message']}")
+        return redirect('/settings/allhistory')
+    else:
+        return redirect('/forbidden')
 
 
 @app.route('/settings/cfgsnmp', methods=['POST', 'GET'])

@@ -166,6 +166,17 @@
             width="20"
           >
           </a>
+          <a 
+            href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/history" 
+            class="btn btn-info btn-sm" 
+            type="submit"
+            >
+          <img 
+            src="{{ url_for('static', filename='images/history_ico.png') }}"
+            title="Посмотреть историю сигналов" 
+            width="20"
+          >
+          </a>
         </td>  
         <td>
           <small style="color: gray;">Причина последнего отключения:</small><br><b><small>{{ item.reason_offline }}</small></b>

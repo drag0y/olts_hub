@@ -29,8 +29,8 @@ class FindOlt:
         olt_info = getolt.get_olt(olt_id)
 
         #Проверяем принадлежность пользователя к группе
-        if userinfo['privilage'] == 'Administrator':
-            #Если пользователь Админ, то разрешаем просмотр ОЛТа
+        if userinfo['privilage'] == 'Administrator' or userinfo['groupname'] == 'default':
+            #Если пользователь Админ или дефолтная группа, то разрешаем просмотр ОЛТа
             self.olt_info = olt_info
         elif userinfo['groupname'] == olt_info.group.group_name:
             #Если не Админ, то то сверяем группу
@@ -184,11 +184,19 @@ class FindOlt:
                     )
                 
             ports_list = olt.getoltports()
-            ports = PortsServiceDb()
-            ports.del_port(self.olt_info.id)
-            ports.add_port(self.olt_info.id, ports_list)
+            if len(ports_list) > 0:
+                ports = PortsServiceDb()
+                ports.del_port(self.olt_info.id)
+                ports.add_port(self.olt_info.id, ports_list)
+            else:
+                return {'result': 'error', 'message': 'ОЛТ не в сети или не отвечает',}
 
             onu_list = olt.getonulist()
-            onu = OnuServiceDb()
-            onu.del_onu(self.olt_info.id)
-            onu.add_onu(self.olt_info.id, onu_list)
+            if len(onu_list) > 0:
+                onu = OnuServiceDb()
+                onu.del_onu(self.olt_info.id)
+                onu.add_onu(self.olt_info.id, onu_list)
+            else:
+                return {'result': 'error', 'message': 'ОЛТ не в сети или не отвечает',}
+            
+            return {'result': 'success', 'message': 'ОЛТ опрошен',}

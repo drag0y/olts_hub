@@ -251,13 +251,13 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
         snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, onurebootoid)
         onureboot = snmpset.snmpset()
                     
-        setreboot_out = {'result': 'error', 'message':'Ошибка. OLT не отвечает или не включен SNMP Write'}
+        setreboot_out = {'result': 'error', 'message':f'Ошибка. OLT {self.olt_ip} не отвечает или не включен SNMP Write (ONU {self.onu})'}
         for l in onureboot:
             match = re.search(parse_reboot, l)            
             if match:
                 setreboot = match.group('setreboot')
                 if setreboot == '0' or setreboot == '1':
-                    setreboot_out = {'result': 'success', 'message': 'ОНУ перезагаружена'}
+                    setreboot_out = {'result': 'success', 'message': f'ОНУ {self.onu}  перезагружена, OLT {self.olt_ip}.'}
                 else:
                     setreboot_out = {'result': 'error', 'message': 'Ошибка'}
 
@@ -281,13 +281,13 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
         snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, onudeleteoid)
         onudelete = snmpset.snmpset()
                     
-        setdelete_out = {'result': 'error', 'message': 'Ошибка. OLT не отвечает или не включен SNMP Write'}
+        setdelete_out = {'result': 'error', 'message': f'Ошибка. OLT {self.olt_ip} не отвечает или не включен SNMP Write (ONU {self.onu})'}
         for l in onudelete:
             match = re.search(parse_delete, l)            
             if match:
                 setdelete = match.group('setdelete')
                 if setdelete == '0' or setdelete == '6':
-                    setdelete_out = {'result': 'success', 'message': 'ОНУ удалена!'}
+                    setdelete_out = {'result': 'success', 'message': f'ОНУ {self.onu} удалена! OLT {self.olt_ip}.'}
                 else:
                     setdelete_out = {'result': 'error', 'message': 'Ошибка!'}
 

@@ -4,6 +4,7 @@ from cl_onu.huawei_onu import HuaweiGetOnuInfo
 from cl_onu.cdata_onu import CdataGetOnuInfo
 from db_services.db_onu import OnuServiceDb
 from db_services.db_ports import PortsServiceDb
+from db_services.db_history import HistoryServiceDb
 
 
 class FindOnu:
@@ -26,7 +27,7 @@ class FindOnu:
 
         snmp_cfg = CfgServiceDb()
         self.cfg = snmp_cfg.get_cfg()
-               
+        
         onuinfo = OnuServiceDb()
         onuall = onuinfo.get_onu(self.useronu)
 
@@ -36,8 +37,8 @@ class FindOnu:
         и создание нового списка только с теми ОНУ с короторыми совпадает Группа пользователя
         '''
         for o in onuall:
-            #Если пользователь Админ, то разрешаем все ОНУ
-            if userinfo['privilage'] == 'Administrator':
+            #Если пользователь Админ или дефолтная группа, то разрешаем все ОНУ
+            if userinfo['privilage'] == 'Administrator' or userinfo['groupname'] == 'default':
                 self.onulist.append(o)
             else:
                 #Если не Админ, то запихиваем в список только те ОНУ с которой совпадает группа пользователя
@@ -47,31 +48,6 @@ class FindOnu:
         if not self.onulist:
             raise ValueError('ONU not found')
         
-        for o in self.onulist:
-            if self.cfg['PL_H'] in o.olt.platform:
-                if o.olt.snmp_read:
-                    self.SNMP_READ = o.olt.snmp_read
-                    self.SNMP_WRITE = o.olt.snmp_write
-                else:
-                    self.SNMP_READ = self.cfg['SNMP_READ_H']
-                    self.SNMP_WRITE = self.cfg['SNMP_WRITE_H']
-            
-            if self.cfg['PL_B'] in o.olt.platform:
-                if o.olt.snmp_read:
-                    self.SNMP_READ = o.olt.snmp_read
-                    self.SNMP_WRITE = o.olt.snmp_write
-                else:
-                    self.SNMP_READ = self.cfg['SNMP_READ_B']
-                    self.SNMP_WRITE = self.cfg['SNMP_WRITE_B']
-            
-            if self.cfg['PL_C'] in o.olt.platform:
-                if o.olt.snmp_read:
-                    self.SNMP_READ = o.olt.snmp_read
-                    self.SNMP_WRITE = o.olt.snmp_write
-                else:
-                    self.SNMP_READ = self.cfg['SNMP_READ_C']
-                    self.SNMP_WRITE = self.cfg['SNMP_WRITE_C']
-
         
     def onuinfo(self):
         '''
@@ -87,8 +63,8 @@ class FindOnu:
                         "olt_ip":   o.olt.ip_address,
                         "portoid":  o.port_oid,
                         "onuid":    o.onu_oid,
-                        "snmp_com": self.SNMP_READ,
-                        "snmp_wr":  self.SNMP_WRITE,
+                        "snmp_com": o.olt.snmp_read if o.olt.snmp_read else self.cfg['SNMP_READ_H'],
+                        "snmp_wr":  o.olt.snmp_write if o.olt.snmp_write else self.cfg['SNMP_WRITE_H'],
                         }
 
                 self.onuid = o.onu_oid
@@ -96,7 +72,7 @@ class FindOnu:
                 onu_info = HuaweiGetOnuInfo(onu_params)
                 onu_state = onu_info.getonustatus()
 
-            elif self.cfg['PL_B'] in o.olt.platform:            
+            elif self.cfg['PL_B'] in o.olt.platform:
                 self.portonu_out = o.pon_port_info.pon_port.split(":")
                 self.portolt = self.portonu_out[0]
                 self.idonu = self.portonu_out[1]
@@ -106,6 +82,7 @@ class FindOnu:
                 if f_port:
                     for f in f_port:
                         portoltid = f.port_oid
+
                 onu_params = {
                         "onu":       o.onu,
                         "hostname":  o.olt.hostname,
@@ -114,8 +91,8 @@ class FindOnu:
                         "portoid":   o.port_oid,
                         "onuid":     o.onu_oid,
                         "idonu":     self.idonu,
-                        "snmp_com":  self.SNMP_READ,
-                        "snmp_wr":   self.SNMP_WRITE,
+                        "snmp_com":  o.olt.snmp_read if o.olt.snmp_read else self.cfg['SNMP_READ_B'],
+                        "snmp_wr":   o.olt.snmp_write if o.olt.snmp_write else self.cfg['SNMP_WRITE_B'],
                         "portoltid": portoltid,
                         }
 
@@ -129,6 +106,7 @@ class FindOnu:
                 self.portonu_out = o.pon_port_info.pon_port.split(":")
                 self.portolt = self.portonu_out[0]
                 self.idonu = self.portonu_out[1]
+                
                 onu_params = {
                     "onu":      o.onu,
                     "hostname": o.olt.hostname,
@@ -136,8 +114,8 @@ class FindOnu:
                     "olt_ip":   o.olt.ip_address,
                     "portoid":  o.port_oid,
                     "onuid":    o.onu_oid,
-                    "snmp_com": self.SNMP_READ,
-                    "snmp_wr":  self.SNMP_WRITE,
+                    "snmp_com": o.olt.snmp_read if o.olt.snmp_read else self.cfg['SNMP_READ_C'],
+                    "snmp_wr":  o.olt.snmp_write if o.olt.snmp_write else self.cfg['SNMP_WRITE_C'],
                     }
 
                 onu_info = CdataGetOnuInfo(onu_params)
@@ -182,7 +160,7 @@ class FindOnu:
                 reason_down = onu_info.getlastdown()
                   
             else:
-                onustate = "Не удалось определить состояние ОНУ, возможно ОЛТ не в сети или не отвечает"
+                onustate = "ОЛТ не в сети или не отвечает"
 
             onuinformation = {
                 "mac/sn": o.onu,
@@ -205,5 +183,7 @@ class FindOnu:
                 "level_olt_rx": level_olt,
                 }
             out_onuinfo.append(onuinformation)
+
+            HistoryServiceDb().add_history(o.onu, o.olt.id, onustate, reason_down, level_onu, level_olt)
             
         return out_onuinfo

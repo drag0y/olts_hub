@@ -10,6 +10,7 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
     '''
     def __init__(self, dbonuinfo):
         self.dbonuinfo = isinstance(dbonuinfo, dict)
+        self.onu = dbonuinfo['onu']
         self.hostname = dbonuinfo['hostname']
         self.pon_type = dbonuinfo['pon_type']
         self.olt_ip = dbonuinfo['olt_ip']
@@ -338,7 +339,7 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
         snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, oid_setcatvon)
         catvseton = snmpset.snmpset()
 
-        catv_out = 'Ошибка. OLT не отвечает или не включен SNMP Write'
+        catv_out = {'result': 'error', 'message':f'Ошибка. OLT ({self.olt_ip}) не отвечает или не включен SNMP Write (ONU {self.onu})'}
 
         for c in catvseton:
             match = re.search(parse_catv, c)
@@ -367,7 +368,7 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
         snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, oid_setcatvoff)
         catvsetoff = snmpset.snmpset()
 
-        catv_out = 'Ошибка. OLT не отвечает или не включен SNMP Write'
+        catv_out = {'result': 'error', 'message':f'Ошибка. OLT ({self.olt_ip}) не отвечает или не включен SNMP Write (ONU {self.onu})'}
 
         for c in catvsetoff:
             match = re.search(parse_catv, c)
@@ -396,13 +397,13 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
         snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, onurebootoid)
         onureboot = snmpset.snmpset()
 
-        setreboot_out = {'result': 'error', 'message':'Ошибка. OLT не отвечает или не включен SNMP Write'}
+        setreboot_out = {'result': 'error', 'message':f'Ошибка. OLT {self.olt_ip} не отвечает или не включен SNMP Write (ONU {self.onu})'}
         for l in onureboot:
             match = re.search(parse_reboot, l)
             if match:
                 setreboot = match.group('setreboot')
                 if setreboot == '1':
-                    setreboot_out = {'result': 'success', 'message': 'ОНУ перезагаружена'}
+                    setreboot_out = {'result': 'success', 'message': f'ОНУ {self.onu} перезагружена. OLT {self.olt_ip}'}
                 else:
                     setreboot_out = {'result': 'error', 'message': 'Ошибка'}
 
@@ -462,13 +463,13 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
         snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, onudelete_oid)
         onudelete = snmpset.snmpset()
         
-        setdelete_out = {'result': 'error', 'message': 'Ошибка. OLT не отвечает или не включен SNMP Write'}
+        setdelete_out = {'result': 'error', 'message': f'Ошибка. OLT {self.olt_ip} не отвечает или не включен SNMP Write (ONU {self.onu})'}
         for l in onudelete:
             match = re.search(parse_delete, l)            
             if match:
                 setdelete = match.group('setdelete')
                 if setdelete == '6':
-                    setdelete_out = {'result': 'success', 'message': 'ОНУ удалена!'}
+                    setdelete_out = {'result': 'success', 'message': 'ОНУ {self.onu}  удалена! OLT {self.olt_ip}.'}
                 else:
                     setdelete_out = {'result': 'error', 'message': 'Ошибка!'}
 

@@ -1,3 +1,5 @@
+import time
+
 from db_services.db_cfg import CfgServiceDb
 from cl_onu.bdcom_onu import BdcomGetOnuInfo
 from cl_onu.huawei_onu import HuaweiGetOnuInfo
@@ -8,6 +10,7 @@ from cl_onu.huawei_onu import HuaweiGetOnuInfo
 from cl_onu.cdata_onu import CdataGetOnuInfo
 from db_services.db_onu import OnuServiceDb
 from db_services.db_ports import PortsServiceDb
+from db_services.db_history import HistoryServiceDb
 
 
 class ActionOnu:
@@ -55,31 +58,6 @@ class ActionOnu:
                     self.onulist.append(o)
 
         for o in self.onulist:
-            if self.cfg['PL_H'] in o.olt.platform:
-                if o.olt.snmp_read:
-                    self.SNMP_READ = o.olt.snmp_read
-                    self.SNMP_WRITE = o.olt.snmp_write
-                else:
-                    self.SNMP_READ = self.cfg['SNMP_READ_H']
-                    self.SNMP_WRITE = self.cfg['SNMP_WRITE_H']
-            
-            if self.cfg['PL_B'] in o.olt.platform:
-                if o.olt.snmp_read:
-                    self.SNMP_READ = o.olt.snmp_read
-                    self.SNMP_WRITE = o.olt.snmp_write
-                else:
-                    self.SNMP_READ = self.cfg['SNMP_READ_B']
-                    self.SNMP_WRITE = self.cfg['SNMP_WRITE_B']
-            
-            if self.cfg['PL_C'] in o.olt.platform:
-                if o.olt.snmp_read:
-                    self.SNMP_READ = o.olt.snmp_read
-                    self.SNMP_WRITE = o.olt.snmp_write
-                else:
-                    self.SNMP_READ = self.cfg['SNMP_READ_C']
-                    self.SNMP_WRITE = self.cfg['SNMP_WRITE_C']
-
-        for o in self.onulist:
             if self.oltid == o.olt.id:
                 self.platform = o.olt.platform
                 if self.PF_HUAWEI in o.olt.platform:        
@@ -90,8 +68,8 @@ class ActionOnu:
                         "olt_ip":   o.olt.ip_address,
                         "portoid":  o.port_oid,
                         "onuid":    o.onu_oid,
-                        "snmp_com": self.SNMP_READ,
-                        "snmp_wr":  self.SNMP_WRITE,
+                        "snmp_com": o.olt.snmp_read if o.olt.snmp_read else self.cfg['SNMP_READ_H'],
+                        "snmp_wr":  o.olt.snmp_write if o.olt.snmp_write else self.cfg['SNMP_WRITE_H'],
                         }
                     self.onuid = o.port_oid
                     self.portonu_out = o.pon_port_info.pon_port
@@ -116,8 +94,8 @@ class ActionOnu:
                             "portoid":   o.port_oid,
                             "onuid":     o.onu_oid,
                             "idonu":     self.idonu,
-                            "snmp_com":  self.SNMP_READ,
-                            "snmp_wr":   self.SNMP_WRITE,
+                            "snmp_com":  o.olt.snmp_read if o.olt.snmp_read else self.cfg['SNMP_READ_B'],
+                            "snmp_wr":   o.olt.snmp_write if o.olt.snmp_write else self.cfg['SNMP_WRITE_B'],
                             "portoltid": portoltid,
                             }
 
@@ -144,8 +122,8 @@ class ActionOnu:
                             "olt_ip":   o.olt.ip_address,
                             "portoid":  o.port_oid,
                             "onuid":    o.onu_oid,
-                            "snmp_com": self.SNMP_READ,
-                            "snmp_wr":  self.SNMP_WRITE,
+                            "snmp_com": o.olt.snmp_read if o.olt.snmp_read else self.cfg['SNMP_READ_C'],
+                            "snmp_wr":  o.olt.snmp_write if o.olt.snmp_write else self.cfg['SNMP_WRITE_C'],
                             }
 
                     self.onuid = self.idonu
@@ -188,7 +166,7 @@ class ActionOnu:
         elif self.PF_CDATA in self.platform:
             onu_reboot = CdataGetOnuInfo(self.onu_params)
             rebootonu_out = onu_reboot.setonureboot()
-
+        time.sleep(7)
         return rebootonu_out
 
 
@@ -202,6 +180,7 @@ class ActionOnu:
             delete_out = onu_delete.setonudelete()
             if delete_out['result'] == 'success':
                 delfrombd = OnuServiceDb().del_one_onu(self.oltid, self.useronu)
+                HistoryServiceDb().delete_history(self.oltid, self.useronu)
                 if delfrombd['result'] == 'error':
                     delete_out = delfrombd
         elif self.PF_HUAWEI in self.platform:
@@ -209,6 +188,7 @@ class ActionOnu:
             delete_out = onu_delete.setonudelete(self.confonu)
             if delete_out['result'] == 'success':
                 delfrombd = OnuServiceDb().del_one_onu(self.oltid, self.useronu)
+                HistoryServiceDb().delete_history(self.oltid, self.useronu)
                 if delfrombd['result'] == 'error':
                     delete_out = delfrombd
         elif self.PF_CDATA in self.platform:

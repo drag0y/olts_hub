@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Конфигурация ОНУ
+{% endblock %}
+
+{% block body %}
+
+
+<div class="container col-md-5 col-lg-5 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
+
+  <h4 class="text-center fw-bold">История сигналов ОНУ
+    <a 
+      href="/onuinfo/{{ onu }}" 
+      class="link-dark" 
+      type="submit"
+    >{{ onu }}:</a>
+  </h4>
+
+  {% for msg in get_flashed_messages() %}
+      {% if "error" in msg.result %}
+        <h3 class="text-center">
+          <span class="flash badge text-bg-danger">
+            {{msg.message}}
+          </span>
+        </h3>
+      {% else %}
+	      <h3 class="text-center">
+          <span class="flash badge text-bg-success">
+            {{msg.message}}
+          </span>
+        </h3>
+	  {% endif %}
+    {% endfor %}
+
+  <div class="text-center">
+    <img src="{{ url_for('static', filename='images/onu_history.png') }}"  class="img-fluid">
+  </div>
+  <table class="table">
+    <thead class="table-dark">
+      <tr>
+        <th>Дата/Время</th>
+        <th>Статус</th>
+        <th>RX ONU</th>
+        <th>RX OLT</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in history %}
+        <tr>
+          <td>{{ item.date }}</td>
+          {% if 'В сети' in item.status %}
+            <td><span class="badge text-bg-success rounded-pill fw-bold">{{ item.status }}</span></td>
+          {% else %}
+            <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ item.status }}/{{ item.descr }}</span></td>
+          {% endif %}
+          
+          {% if item.rxonu  <= -1 and item.rxonu >= -25.00 %}
+            <td><span class="badge text-bg-success rounded-pill fw-bold">{{ item.rxonu }}</span></td>
+          {% elif item.rxonu  <= -25.01 and item.rxonu >= -30.00 %}
+            <td><span class="badge text-bg-warning rounded-pill fw-bold">{{ item.rxonu }}</span></td>
+          {% elif item.rxonu  <= -30.01 %}
+            <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ item.rxonu }}</span></td>
+          {% elif item.rxonu  == 0.00 %}
+            <td><span class="badge text-bg-secondary rounded-pill fw-bold">{{ item.rxonu }}</span></td>
+          {% elif item.rxonu  > 0.00 %}
+            <td><span class="badge text-bg-secondary rounded-pill fw-bold">{{ item.rxonu }}</span></td>
+          {% endif %}
+              
+          {% if item.rxolt <= -1 and item.rxolt >= -25.00 %}
+            <td><span class="badge text-bg-success rounded-pill fw-bold">{{ item.rxolt }}</span></td>
+          {% elif item.rxolt <= -25.01 and item.rxolt >= -30.00 %}
+            <td><span class="badge text-bg-warning rounded-pill fw-bold">{{ item.rxolt }}</span></td>
+          {% elif item.rxolt <= -30.01 %}
+            <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ item.rxolt }}</span></td>
+          {% elif item.rxolt == 0.00 %}
+            <td><span class="badge text-bg-secondary rounded-pill fw-bold">{{ item.rxolt }}</span></td>
+          {% elif item.rxolt > 0.00 %}
+            <td><span class="badge text-bg-secondary rounded-pill fw-bold">{{ item.rxolt }}</span></td>
+          {% endif %} 
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="text-end mt-2">
+    <a href="/onuinfo/{{ oltid }}/{{ onu }}/history/delete"
+      class="btn btn-outline-danger btn-sm py-1 px-2">
+        🗑 Очистить
+    </a>
+  </div>
+
+</div>
+
+<button id="scrollTopBtn">↑</button>
+
+<script>
+const scrollBtn = document.getElementById("scrollTopBtn")
+
+window.addEventListener("scroll", () => {
+
+  if (document.documentElement.scrollTop > 200) {
+    scrollBtn.style.display = "block"
+  } else {
+    scrollBtn.style.display = "none"
+  }
+
+})
+
+scrollBtn.addEventListener("click", () => {
+
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
+  })
+
+})
+
+</script>
+
+
+{% endblock %}
+                    
