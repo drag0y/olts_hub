@@ -238,7 +238,7 @@ class BdcomGetOltInfo(GetOltInfoBase):
         Метод определяет UpTime ОЛТа
         '''
         uptime = ''
-        parse_uptime = r'\) (?P<uptime>\d+ days, \d+:\d+:\d+)'
+        parse_uptime = r'\) (?P<uptime>(\d+ days, \d+:\d+:\d+)|\d+:\d+:\d+)'
         oid_uptime = '1.3.6.1.2.1.1.3.0'
 
         snmpget = SnmpWalk(self.olt_ip, self.snmp_com, oid_uptime)
