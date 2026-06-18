@@ -37,99 +37,87 @@
   {% endfor %}
 
 </header>
-  <div class="text-center">
-    {% if 'В сети' in olt_information.olt_state %}
-      <img src="{{ url_for('static', filename='images/olt_online.jpg') }}" width="200">
+<table class="table table-borderless" style="line-height: 1.25;">
+  <tr>
+        <td>
+          <b>Состояние ОЛТа {{ olt_information.oltname }}:</b><br>
+        </td>
+        <td>
+          {% if 'В сети' in olt_information.olt_state %}
+            <span class="badge text-bg-success rounded-pill fw-bold">{{ olt_information.olt_state }}</span>
+          {% else %}
+            <span class="badge text-bg-danger rounded-pill fw-bold">{{ olt_information.olt_state }}</span>
+          {% endif %}
+        </td>  
+      </tr>
+
+
+    
+      <tr>
+        <td rowspan = "5">
+    	    {% if 'В сети' in olt_information.olt_state %}
+      <img src="{{ url_for('static', filename='images/olt_online.png') }}" width="250">
     {% else %}
-      <img src="{{ url_for('static', filename='images/olt_offline.jpg') }}" width="200">
+      <img src="{{ url_for('static', filename='images/olt_offline.png') }}" width="250">
     {% endif %}
-  </div>
+        </td>    
+          <tr>
+            <td>
+              <small style="color: gray;">Uptime</small><br><b><small>{{ olt_information.olt_uptime }}</small></b>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <small style="color: gray;">IP</small><br>
+              <b><small>
+                {{ olt_information.ip_address }}
+              </small></b>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <small style="color: gray;">Группа:</small><br>
+              <b><small>
+                {{ olt_information.group }}
+              </small></b>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <small style="color: gray;">Зарегистрированные ОНУ:</small><br>
+              <b><small>
+                {{ olt_information.countonu }}
+              </small></b>
+            </td>
+          </tr>
+      </tr>
+       <tr>
+            <td>
+              <small style="color: gray;">Описание ОЛТа:</small><br>
+              <b><small>
+                {{ olt_information.descr }}
+              </small></b>
+            </td>
+         
+            <td>
+              <small style="color: gray;">Платформа:</small><br>
+              <b><small>
+                {{ olt_information.platform }}
+              </small></b>
+            </td>
+          </tr>
 
 
-<div class="">
-  <ul class="list-group mb-3">
-    <li class="list-group-item d-flex justify-content-between lh-sm">
-      <div>
-	    <h6 class="my-0 text-black">Статус ОЛТа:</h6>
- 	  </div>
 
-      {% if 'В сети' in olt_information.olt_state %}
-        <span class="badge text-bg-success rounded-pill fw-bold">
-          {{ olt_information.olt_state }}
-        </span>
-      {% else %}
-        <span class="badge text-bg-danger rounded-pill fw-bold">{{ olt_information.olt_state }}</span>
-      {% endif %}
-    </li>
-    <li class="list-group-item d-flex justify-content-between lh-sm">
-      <div>
-        <h6 class="my-0 text-black">Uptime:</h6>
-	    </div>
-      <span class="text-body-secondary">
-        {{ olt_information.olt_uptime }}
-      </span>
-    </li>
-    <li class="list-group-item d-flex justify-content-between lh-sm">
-      <div>
-        <h6 class="my-0 text-black">Имя ОЛТа:</h6>
-	  </div>
 
-      <span class="text-body-secondary">
-        {{ olt_information.oltname }}
-      </span>
-    </li>
+          <tr>
+            <td colspan = "2">
+              <small style="color: gray;">Порты:</small><br>
+              <b><small>
+              <hr>
+                
 
-    <li class="list-group-item d-flex justify-content-between lh-sm">
-      <div>
-        <h6 class="my-0 text-black">Описание ОЛТа:</h6>
-	  </div>
-
-      <span class="text-body-secondary">
-        {{ olt_information.descr }}
-      </span>
-    </li>
-
-    <li class="list-group-item d-flex justify-content-between lh-sm">
-      <div>
-        <h6 class="my-0 text-black">Группа:</h6>
-	  </div>
-
-      <span class="text-body-secondary">
-        {{ olt_information.group }}
-      </span>
-    </li>
-
-    <li class="list-group-item d-flex justify-content-between lh-sm">
-      <div>
-	    <h6 class="my-0 text-black">IP адрес:</h6>
- 	  </div>
-      <span class="text-body-secondary">
-        {{ olt_information.ip_address }}
-      </span>
-    </li>
-
-    <li class="list-group-item d-flex justify-content-between lh-sm">
-      <div>
-        <h6 class="my-0 text-black">Платформа:</h6>
-      </div>
-      <span class="text-body-secondary">
-        {{ olt_information.platform }}
-      </span>
-    </li>
-
-    <li class="list-group-item d-flex justify-content-between lh-sm">
-      <div>
-        <h6 class="my-0 text-black">Зарегистрированные ОНУ:</h6>
-      </div>
-      <span class="text-body-secondary">
-        {{ olt_information.countonu }}
-      </span>
-    </li>
-
-    <li class="list-group-item d-flex justify-content-between lh-sm">
-      <div>
-        <h6 class="my-0 text-black">Порты:</h6><br>
-	    {% set ns = namespace(counter=false) %}
+{% set ns = namespace(counter=false) %}
 		{% set ns.counter = 1 %}
         {% set ns2 = namespace(counter=false) %}
         {% set ns2.counter = 0 %}
@@ -164,7 +152,7 @@
             <br>
 		    <hr>                            
             <a 
-              href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace("/", ".") }}" 
+              href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace('/', '.') }}" 
               class="btn btn-outline-dark btn-sm" 
               type="click"
               id="port-button{{ ns2.counter }}"
@@ -193,7 +181,7 @@
                 {% else %}
                   {% set ns.counter = 1 %}
                     <br>
-                    <hr>
+                    
                     <a 
                       href="/" 
                       class="btn btn-outline-dark btn-sm disabled" 
@@ -216,13 +204,15 @@
             </script>
 
       {% endfor %}
-      </div>
-    </li>
-
-    <li class="list-group-item d-flex justify-content-between lh-sm">
-      <div>
-        <h6 class="my-0 text-black">Незарегистрированные ОНУ:</h6><br>
-        {% for u in olt_information.unregonu %}
+<hr>   
+              </small></b>
+            </td>
+         
+          </tr>
+          <tr>
+            <td>
+              <small style="color: gray;">Незарегистрированные ОНУ:</small><br>
+              {% for u in olt_information.unregonu %}
 
           <span>MAC/SN: 
             <b class="text-danger">
@@ -235,10 +225,17 @@
           </span><br>
 
         {% endfor %}
+            </td>
+          </tr>
 
-      </div>
-    </li>
-  </ul>
+    </table>
+
+ 
+
+
+<div class="">
+ 
+ 
 
   <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
     <div class="btn-group me-2" role="group" aria-label="First group">
