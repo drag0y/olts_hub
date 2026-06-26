@@ -469,7 +469,7 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
             if match:
                 setdelete = match.group('setdelete')
                 if setdelete == '6':
-                    setdelete_out = {'result': 'success', 'message': 'ОНУ {self.onu}  удалена! OLT {self.olt_ip}.'}
+                    setdelete_out = {'result': 'success', 'message': f'ОНУ {self.onu}  удалена! OLT {self.olt_ip}.'}
                 else:
                     setdelete_out = {'result': 'error', 'message': 'Ошибка!'}
 
