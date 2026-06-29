@@ -238,7 +238,7 @@ class HuaweiGetOltInfo(GetOltInfoBase):
         unregonu_out = []
 
         if 'epon' in self.pontype:
-            unregoid = '1.3.61.1.4.1.2011.6.128.1.1.2.61.1.2'
+            unregoid = '1.3.6.1.4.1.2011.6.128.1.1.2.58.1.2'
 
         elif 'gpon' in self.pontype:
             unregoid = '1.3.6.1.4.1.2011.6.128.1.1.2.48.1.2'
