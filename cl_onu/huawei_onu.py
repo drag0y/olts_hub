@@ -474,3 +474,27 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
                     setdelete_out = {'result': 'error', 'message': 'Ошибка!'}
 
         return setdelete_out
+
+
+    def getonudescription(self):
+        ''' 
+        Метод получения дескрипшена ОНУ (с ОЛТа)
+        '''
+        onu_descr_out = ''
+        if "epon" in self.pon_type:
+            onudescroid = "1.3.6.1.4.1.2011.6.128.1.1.2.53.1.9"
+        elif "gpon" in self.pon_type:
+            onudescroid = "1.3.6.1.4.1.2011.6.128.1.1.2.43.1.9"
+
+        parse_descr = r'STRING: "(?P<onudescr>\S+)"'
+
+        onudescriptionoid = f'{onudescroid}.{self.portoid}.{self.onuid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onudescriptionoid)
+        onudescr = snmpget.snmpget()
+        
+        for l in onudescr:
+            match = re.search(parse_descr, l)
+            if match:
+                onu_descr_out = match.group('onudescr')
+
+        return onu_descr_out

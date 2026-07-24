@@ -1,8 +1,7 @@
 import re
-import sqlite3
 
 from cl_other.snmpwalk import SnmpWalk
-from funcs.hextodec import convert
+from services.hextodec import convert
 from db_services.db_ports import PortsServiceDb
 from db_services.db_onu import OnuServiceDb
 from cl_olt.oltbase import GetOltInfoBase
@@ -110,15 +109,19 @@ class BdcomGetOltInfo(GetOltInfoBase):
             oid_down_reason = "1.3.6.1.4.1.3320.101.11.1.1.11"
             oid_rx_onu = "1.3.6.1.4.1.3320.101.10.5.1.5"
             oid_rx_olt = "1.3.6.1.4.1.3320.101.108.1.3"
+            oid_onu_descr = "1.3.6.1.2.1.31.1.1.1.18"
+            
         if "gpon" in self.pontype:
             oid_state = "1.3.6.1.2.1.2.2.1.8"
             oid_down_reason = "1.3.6.1.4.1.3320.10.3.1.1.35"
             oid_rx_onu = "1.3.6.1.4.1.3320.10.3.4.1.2"
             oid_rx_olt = "1.3.6.1.4.1.3320.10.2.3.1.3"
+            oid_onu_descr = "1.3.6.1.2.1.31.1.1.1.18"
 
         parse_state = r'INTEGER: (?P<onustate>\d+|-\d+)'
         parse_down_reason = r'(?P<onudec>\d+.\d+.\d+.\d+.\d+.\d+) = INTEGER: (?P<downreason>\d+)'
         parse_tree = r'INTEGER: (?P<level>.+)'
+        parse_descr = r'STRING: "(?P<onudescr>\S+)"'
 
         # ---- Ищем порт олта
         onuonport = PortsServiceDb()
@@ -158,7 +161,7 @@ class BdcomGetOltInfo(GetOltInfoBase):
                     "portoid": o['portoid'], 
                     }
                 )
-
+        
         # Получаем статус с дерева
         out_tree = []
         for oi in db_onuinfo:
@@ -220,10 +223,22 @@ class BdcomGetOltInfo(GetOltInfoBase):
                     rx_onu = 0.00
                     rx_olt = 0.00
 
+                # Получаем дескрипшен ОНУ (с ОЛТа)
+                onu_descr_out = ''
+                onudescriptionoid = f'{oid_onu_descr}.{oi["portoid"]}' 
+                snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onudescriptionoid)
+                onudescr = snmpget.snmpget()
+                
+                for l in onudescr:
+                    match = re.search(parse_descr, l)
+                    if match:
+                        onu_descr_out = match.group('onudescr')
+
                 out_tree.append(
                             {
                             'id':         oi['id'],
                             'onu':        oi['onu'],
+                            'descr':      onu_descr_out,
                             'onu_status': onustatus,
                             'rx_onu':     rx_onu,
                             'rx_olt':     rx_olt,

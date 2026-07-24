@@ -101,9 +101,9 @@ class UsersServiceDb:
         #Если пользователя с таким же именем нет, то проверяем данные и добавляем в БД
         if not userinfo['username']:
             return {'result': 'error', 'message': 'Ошибка. Имя пользователя не может быть пустым!',}
-        elif userinfo['group_id'] != 'None':
+        if userinfo['group_id'] != 'None':
             user.group_id = userinfo['group_id']
-        elif userinfo['privilage'] != 'None':
+        if userinfo['privilage'] != 'None':
             user.privilage = userinfo['privilage']
 
         user.username = userinfo['username']
@@ -143,7 +143,10 @@ class UsersServiceDb:
         '''
         Метод для смены пароля пользователя
         '''
+        print('START PSW IN')
+        print(user_id, psw)
         if len(psw) < 8:
+            print('START PSW NO CORRECT')
             return {
                 'result': 'error',
                 'message': 'Ошибка. Короткий пароль!',
@@ -154,7 +157,7 @@ class UsersServiceDb:
         user_psw = db.session.get(Users, user_id)
         user_psw.password = psw_hash
         db.session.commit()
-
+        print('START PSW CHANGED')
         return {
                 'result': 'success',
                 'message': 'Пароль успешно изменён!',
@@ -173,7 +176,7 @@ class UsersServiceDb:
         
         user_info = db.session.scalar(stmt)
         result = {
-            'id':        user_info.id,
+            'id':        int(user_info.id),
             'username':  user_info.username,
             'groupname': user_info.group.group_name,
             'privilage': user_info.privilage,

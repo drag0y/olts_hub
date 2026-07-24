@@ -134,6 +134,7 @@ class FindOnu:
             level_onu = -0.0
             level_olt = -0.0
             lan_mac = []
+            onu_descr = ''
 
             if onu_state == '1':
                 onustate = "В сети"
@@ -145,6 +146,7 @@ class FindOnu:
                 time_down = onu_info.gettimedown()
                 level_onu, level_olt = onu_info.getonulevel() # Уровень сигнала
                 lan_mac = onu_info.getllidmacsearch()
+                onu_descr = onu_info.getonudescription()
                 if self.cfg['PL_H'] in o.olt.platform:
                     catv_state, catv_level = onu_info.getcatvstate()
                 elif self.cfg['PL_C'] in o.olt.platform:
@@ -158,6 +160,7 @@ class FindOnu:
                 onustate = "Не в сети"
                 time_down = onu_info.gettimedown()
                 reason_down = onu_info.getlastdown()
+                onu_descr = onu_info.getonudescription()
                   
             else:
                 onustate = "ОЛТ не в сети или не отвечает"
@@ -167,6 +170,7 @@ class FindOnu:
                 "onu_state": int(onu_state),
                 "oltname": o.olt.hostname,
                 "oltip": o.olt.ip_address,
+                "onudescr": onu_descr,
                 "olt_id": o.olt.id,
                 "iface_state": onustate,
                 "iface_name": self.portonu_out,

@@ -39,7 +39,6 @@
     {% endfor %}
                     
     <table class="table table-borderless" style="line-height: 1.25;">
-
       <tr>
         <td>
           <b>Состояние ONU {{ item['mac/sn'] }}:</b><br>
@@ -53,7 +52,7 @@
         </td>  
       </tr>
       <tr>
-        <td rowspan = "4">
+        <td rowspan = "2">
     	    {% if 'UP' in item.lanstate %}
             <img src="{{ url_for('static', filename='images/onu_on.png') }}" width="250">
           {% elif 'DOWN' in item.lanstate %}
@@ -67,37 +66,47 @@
           {% else %}
             <img src="{{ url_for('static', filename='images/onu_unknown.png') }}" width="250">
           {% endif %}
-        </td>    
+        </td>
           <tr>
             <td>
-              <small style="color: gray;">OLT</small><br><b><small>{{ item.oltname }}</small></b>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <small style="color: gray;">IP</small><br><small>
-                {{ item.oltip }}
-              </small>    
-            </td>
-            <tr>
-              <td>
-                <table border="0" width="100%" cellpadding="5" cellspacing="0">
-                  <tr>
-                    <td>
-                      <small style="color: gray;">Порт:</small><br><b><small>{{ item.iface_name }}</small></b>
-                    </td>
-                    <td>
-                      <small style="color: gray;">id:</small><br>
-                        <b><small>
-                          {{ item.onuid }}
-                      </small></b>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <small style="color: gray;">
-                        ONU RX:
-                      </small><br>      
+              <table border="0" width="100%" cellpadding="5" cellspacing="0">
+                <tr>
+                  <td colspan="2">
+                    <small style="color: gray;">Description</small><br>
+                    <b><small>
+                      {{ item.onudescr }}
+                    </small></b>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2">
+                    <small style="color: gray;">OLT</small><br><b><small>{{ item.oltname }}</small></b>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2">
+                    <small style="color: gray;">IP</small><br>
+                      <b><small>
+                        {{ item.oltip }}
+                    </small></b>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <small style="color: gray;">Порт:</small><br><b><small>{{ item.iface_name }}</small></b>
+                  </td>
+                  <td>
+                    <small style="color: gray;">id:</small><br>
+                      <b><small>
+                        {{ item.onuid }}
+                    </small></b>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <small style="color: gray;">
+                      ONU RX:
+                    </small><br>      
                       {% if item.level_onu_rx <= -1 and item.level_onu_rx >= -25.00 %}
                         <span class="badge text-bg-success rounded-pill fw-bold">{{ item.level_onu_rx }}</span>
                       {% elif item.level_onu_rx <= -25.01 and item.level_onu_rx >= -30.00 %}
@@ -107,8 +116,8 @@
                       {% elif item.level_onu_rx == 0.00 %}
                         <span class="badge text-bg-secondary rounded-pill fw-bold">{{ item.level_onu_rx }}</span>
                       {% endif %}
-                    </td>
-                    <td>
+                  </td>
+                  <td>
                       <small style="color: gray;">
                         OLT RX:
                       </small><br>      
@@ -121,11 +130,10 @@
                       {% elif item.level_olt_rx == 0.00 %}
                         <span class="badge text-bg-secondary rounded-pill fw-bold">{{ item.level_olt_rx }}</span>
                       {% endif %}
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
+                  </td>
+                </tr> 
+              </table>
+            </td>
           </tr>
       </tr>
       <tr>
@@ -238,7 +246,7 @@
         class="btn btn-success ml-auto"
         onclick="showSpinner()"
         >
-                Уровень дерева
+          Уровень дерева
       </a>
     </div>
     <div class="col-md-4" style="text-align: center;">

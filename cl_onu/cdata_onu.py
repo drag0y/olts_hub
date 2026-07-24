@@ -5,6 +5,35 @@ from cl_other.snmpwalk import SnmpWalk
 from collections import OrderedDict
 
 
+OFFSETS = {
+    "1204": 6,
+    "1208": 12,
+    "1216": 10,
+    "1616": 1,
+}
+
+def decode_index(dec_index: int, model: str):
+    """
+    Возвращает (tree, onu) из десятичного индекса и модели OLT.
+    model — строка-ключ для OFFSETS (например, '1208').
+    """
+    if model not in OFFSETS:
+        raise ValueError(f"Неизвестная модель '{model}'. Добавь offset в OFFSETS.")
+    dec_index = int(dec_index)
+    offset = OFFSETS[model]
+
+    # В hex всегда как минимум 4 байта
+    hx = f"{dec_index:08X}"  # например '0100131C'
+    # Байты справа налево: b0=ONU, b1=raw_tree, b2=?, b3=?
+    b0 = int(hx[-2:], 16)        # ONU
+    b1 = int(hx[-4], 16)      # RAW tree
+    tree = b1 + offset
+
+    if tree < 0:
+        raise ValueError(f"Получился отрицательный номер дерева ({tree}). Проверь offset для модели {model}.")
+    return tree, b0
+
+
 class CdataGetOnuInfo(GetOnuInfoBase):
     '''
     Класс для работы с ОНУ C-Data
@@ -185,8 +214,8 @@ class CdataGetOnuInfo(GetOnuInfoBase):
     def getonulevel(self):
         # Метод определяет уровни сигнала ОНУ
         parse_level = r'INTEGER: (?P<level>.+)'
-        level_onu = "0"
-        level_olt = "0"
+        level_onu = 0.0
+        level_olt = 0.0
 
         if "epon" in self.pon_type:
             rx_onu_oid = "1.3.6.1.4.1.17409.2.3.4.2.1.4"
@@ -229,10 +258,33 @@ class CdataGetOnuInfo(GetOnuInfoBase):
             catv_out = 'Не поддерживается'
             catv_level = -0.0
         elif self.pon_type == "gpon":
-            catv_out = 'Не поддерживается'
-            catv_level = self.getcatvlevel()
+            catvstatusoid = "1.3.6.1.4.1.34592.1.5.1.1.2.21.1.1.2.1.0"
+            port, onu = decode_index(self.portoid, '1616')
+            parse_catvstate = r'INTEGER: (?P<catvstate>\d)'
+            catvstateoid = f'{catvstatusoid}.{port}.{onu}.1'
+            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, catvstateoid)
+            catvstate = snmpget.snmpget()
+
+            for l in catvstate:
+                match = re.search(parse_catvstate, l)
+                if match:
+                    catv_status = match.group('catvstate')
+
+                    if catv_status == '1':
+                        catv_out = "ON"
+                        catv_level = self.getcatvlevel()
+                    elif catv_status == '2':
+                        catv_out = "OFF"
+                        catv_level = self.getcatvlevel()
+                    else:
+                        catv_out = "Неизвестно"
+                        catv_level = -0.0
+                else:
+                    catv_out = "Неопределено или нет CATV порта"
+                    catv_level = -0.0
+
         return catv_out, catv_level
-            
+
 
     def getcatvlevel(self):
         '''
@@ -311,4 +363,3 @@ class CdataGetOnuInfo(GetOnuInfoBase):
                     setdelete_out = {'result': 'error', 'message': 'Ошибка!'}
 
         return setdelete_out
-

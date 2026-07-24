@@ -6,18 +6,23 @@ ONU info
 
 {% block body %}
 
+<style>
+  /* Класс для скрытия столбца */
+  .col-hidden { display: none; }
+</style>
+
     <div class="container col-md-6 col-lg-6 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
         
  	    <h4 class="fw-bold text-center">Уровень сигнала с дерева</h4>
         
 
         <ul class="list-group mb-3">
-
-            <table class="table">
+            <table id="table-container" class="table">
                 <thead class="table-dark">
                     <tr>
                     <th scope="row">ID</th>
                     <th scope="row">ОНУ</th>
+                    <th class="target-col col-hidden">Description</th>
                     <th scope="col">Статус</th>
                     <th scope="col">RX ONU</th>
                     <th scope="col">RX OLT</th>
@@ -35,13 +40,23 @@ ONU info
 	{% endif %}
 
     <tbody class="table-group-divider">
-       <tr>
-           <td>
-             {{ item['id'] }}
-           </td>
-           <td>
-             <a href="/onuinfo/{{ item['onu'] }}" class="link-dark" type="submit">{{ item['onu'] }}</a></td>
-             {% if 'ONLINE' in item['onu_status'] %}
+      <tr>
+        <td>
+          {{ item['id'] }}
+        </td>
+        <td>
+          <a 
+          href="/onuinfo/{{ item['onu'] }}" 
+          class="link-dark" 
+          type="submit"
+          >
+            {{ item['onu'] }}
+          </a>
+        <td class="target-col col-hidden">
+            {{ item['descr'] }}
+        </td>
+        </td>
+            {% if 'ONLINE' in item['onu_status'] %}
                <td>
                  <span class="badge text-bg-success rounded-pill fw-bold">{{ item['onu_status'] }}</span></td>
              {% else %}
@@ -87,11 +102,46 @@ ONU info
 	<p class="fw-bold">Количество ОНУ на порту {{ ns }} из {{ ln.totalonu }} возможных</p>
         </h6>
 
+        <div class="row">
+    <div class="col-md-1" style="text-align: center;">
+      <button class="btn btn-info" onclick="toggleColumn(2)">Дескрипшены</button>
+    </div>        
+    </div>
+    <p></p>
+  </div>
+
         </ul>
 
 </table>
 </div>
 </div>
+<script>
+  function toggleColumn(index) {
+    // 1. Переключаем видимость ячеек столбца
+    const rows = document.querySelectorAll("tr");
+    rows.forEach(row => {
+      const cell = row.children[index];
+      if (cell) {
+        cell.classList.toggle("col-hidden");
+      }
+    });
 
+    // 2. Меняем ширину контейнера таблицы
+    const container = document.getElementById("table-container");
+    
+    // Проверяем текущее состояние по первому попавшемуся скрытому элементу
+    const isHidden = document.querySelector("th.col-hidden") !== null;
+
+    if (isHidden) {
+      // Столбец скрылся: возвращаем узкую сетку
+      container.classList.replace("col-md-7", "col-md-6");
+      container.classList.replace("col-lg-7", "col-lg-6");
+    } else {
+      // Столбец раскрылся: делаем сетку шире
+      container.classList.replace("col-md-6", "col-md-7");
+      container.classList.replace("col-lg-6", "col-lg-7");
+    }
+  }
+</script>
 {% endblock %}
                     

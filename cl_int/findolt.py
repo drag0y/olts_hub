@@ -7,6 +7,7 @@ from cl_olt.cdata_olts import CdataGetOltInfo
 from db_services.db_olt import OltServiceDb
 from db_services.db_ports import PortsServiceDb
 from db_services.db_onu import OnuServiceDb
+from db_services.db_history import HistoryServiceDb
 
 
 class FindOlt:
@@ -148,8 +149,19 @@ class FindOlt:
 
         elif self.PF_CDATA in self.olt_info.platform:
             olt_info = CdataGetOltInfo(self.olt_info.hostname, self.olt_info.ip_address, self.SNMP_READ, self.olt_info.pon_type)
+            self.port_oid = self.olt_port
             
         out_tree = olt_info.ponstatustree(self.olt_id, self.port_oid)
+
+        for h in out_tree:
+            HistoryServiceDb().add_history(
+                h['onu'], 
+                self.olt_info.id, 
+                h['onu_status'].replace('ONLINE', 'В сети'), 
+                '', 
+                h['rx_onu'], 
+                h['rx_olt']
+                )
 
         return out_tree  
 

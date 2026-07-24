@@ -1,13 +1,24 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from werkzeug.security import generate_password_hash
+import os
+from dotenv import load_dotenv
+#import psycopg
 
 from models.base import Base
 from models.models import Users, Cfg, MenuCfg, Groups
 
 
+load_dotenv()
+
+#SQLITE
+DATABASE = "sqlite:///instance/onulist.db"
+
+#POSTRESQL or MySQL
+#DATABASE = os.getenv('DATABASE')
+
 engine = create_engine(
-                    "sqlite:///instance/onulist.db",
+                    DATABASE,
                     echo=False,
                     )
 

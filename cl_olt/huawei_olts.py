@@ -1,5 +1,4 @@
 import re
-import sqlite3
 
 from cl_other.snmpwalk import SnmpWalk
 from db_services.db_onu import OnuServiceDb
@@ -109,18 +108,21 @@ class HuaweiGetOltInfo(GetOltInfoBase):
         parse_down = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<downcose>\d+|-\d+)'
         parse_tree =  r'(\d+){10}.(?P<onuid>\S+) = INTEGER: (?P<treelevel>\S+)' # r'(\d+){10}.(?P<onuid>\S+) .+(?P<treelevel>-\S+)'
         parse_tree_rx_olt = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<treelevel>\d+)'
+        parse_descr = r'(\d+){10}.(?P<onuid>\S+) = STRING: "(?P<onudescr>\S+)"'
 
         if "epon" in self.pontype:
             oid_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.5"
             oid_rx_olt = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.1"
             oid_state = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.15"
             oid_cose = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.25"
+            oid_onu_descr = "1.3.6.1.4.1.2011.6.128.1.1.2.53.1.9"
 
         if "gpon" in self.pontype:
             oid_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.4"
             oid_rx_olt = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.6"
             oid_state = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.15"
             oid_cose = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.24"
+            oid_onu_descr = "1.3.6.1.4.1.2011.6.128.1.1.2.43.1.9"
 
         # Собираем список со всеми ОНУ находящимися на порту ОЛТа
         onuonport = OnuServiceDb()
@@ -203,6 +205,22 @@ class HuaweiGetOltInfo(GetOltInfoBase):
 
                     rx_olt.setdefault(onuid)
                     rx_olt.update({onuid: {'rxolt': float(level_rx)}})
+
+
+        # Смотрим дескрипшены ОНУ со всего пон порта
+        descr_onu = {}
+        descronuoid = f'{oid_onu_descr}.{port_oid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, descronuoid)
+        descronu = snmpget.snmpget()
+
+        for d in descronu:
+            match = re.search(parse_descr, d)
+            if match:
+                onuid = match.group('onuid')
+                onudescr = match.group('onudescr')
+
+                descr_onu.setdefault(onuid)
+                descr_onu.update({onuid: {'descr': onudescr}})
         
         # Перебираем список ОНУ из БД, и создаем список со словарями с метриками
         out_tree=[]        
@@ -212,6 +230,7 @@ class HuaweiGetOltInfo(GetOltInfoBase):
                     {
                     'id':         onu['id'],
                     'onu':        onu['onu'],
+                    'descr':      descr_onu[onu['id']]['descr'],
                     'onu_status': status_onu[onu['id']]['status'],
                     'rx_onu':     rx_onu[onu['id']]['rxonu'],
                     'rx_olt':     rx_olt[onu['id']]['rxolt'],
@@ -222,12 +241,13 @@ class HuaweiGetOltInfo(GetOltInfoBase):
                     {
                     'id':         onu['id'],
                     'onu':        onu['onu'],
+                    'descr':      descr_onu[onu['id']]['descr'],
                     'onu_status': status_onu[onu['id']]['status'],
                     'rx_onu':     0.00,
                     'rx_olt':     0.00,
                     }
                 )
-
+        print('OUT TREE', out_tree)
         return out_tree
 
 

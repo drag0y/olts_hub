@@ -2,7 +2,7 @@ import re
 
 from cl_onu.onubase import GetOnuInfoBase
 from cl_other.snmpwalk import SnmpWalk
-from funcs.hextodec import convert
+from services.hextodec import convert
 
 
 class BdcomGetOnuInfo(GetOnuInfoBase):
@@ -351,3 +351,27 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
                                     searchmac_out.append(mac.replace(' ', ':'))
 
         return searchmac_out
+
+
+    def getonudescription(self):
+        ''' 
+        Метод получения дескрипшена ОНУ (с ОЛТа)
+        '''
+        onu_descr_out = ''
+        if "epon" in self.pon_type:
+            onudescroid = "1.3.6.1.2.1.31.1.1.1.18"
+        elif "gpon" in self.pon_type:
+            onudescroid = "1.3.6.1.2.1.31.1.1.1.18"
+
+        parse_descr = r'STRING: "(?P<onudescr>\S+)"'
+
+        onudescriptionoid = f'{onudescroid}.{self.onuid}' 
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onudescriptionoid)
+        onudescr = snmpget.snmpget()
+        
+        for l in onudescr:
+            match = re.search(parse_descr, l)
+            if match:
+                onu_descr_out = match.group('onudescr')
+
+        return onu_descr_out

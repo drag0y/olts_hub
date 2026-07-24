@@ -1,7 +1,8 @@
 import re
-import sqlite3
 
 from cl_other.snmpwalk import SnmpWalk
+from db_services.db_ports import PortsServiceDb
+from db_services.db_onu import OnuServiceDb
 from cl_olt.oltbase import GetOltInfoBase
 
 
@@ -9,7 +10,7 @@ OFFSETS = {
     "1204": 6,
     "1208": 12,
     "1216": 10,
-    "1616": 6,
+    "1616": 1,
 }
 
 def decode_index(dec_index: int, model: str):
@@ -24,10 +25,13 @@ def decode_index(dec_index: int, model: str):
 
     # В hex всегда как минимум 4 байта
     hx = f"{dec_index:08X}"  # например '0100131C'
+
     # Байты справа налево: b0=ONU, b1=raw_tree, b2=?, b3=?
     b0 = int(hx[-2:], 16)        # ONU
-    b1 = int(hx[-4:-2], 16)      # RAW tree
-    tree = b1 - offset
+    b1 = int(hx[-4], 16)      # RAW tree
+
+    tree = b1 + offset
+
     if tree < 0:
         raise ValueError(f"Получился отрицательный номер дерева ({tree}). Проверь offset для модели {model}.")
     return tree, b0
@@ -46,23 +50,7 @@ class CdataGetOltInfo(GetOltInfoBase):
         '''
         Метод для запроса портов с ОЛТа
         '''
-        oidoltports = "1.3.6.1.2.1.31.1.1.1.1"
-        parseports = r'(?P<portoid>\d+)\s*=\s*STRING:\s*\"[^\"]*\b(?P<ponport>PON-\d+|pon\S+)\b[^\"]*\"'
-
-        conn = sqlite3.connect(self.pathdb)
-        cursor = conn.cursor()
-        query_ports = "INSERT into ponports(hostname, ip_address, ponport, portoid) values (?, ?, ?, ?)"
-
-        # --- Команда опроса OLTа
-        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, oidoltports)
-        portslist = snmpget.snmpget()
-
-        for l in portslist:
-            match = re.search(parseports, l)
-            if match:
-                portlist = self.olt_name, self.olt_ip, match.group('ponport'), match.group('portoid')
-                cursor.execute(query_ports, portlist)
-
+        ports = []
         if self.pontype == 'epon':
             oidonulist = "1.3.6.1.4.1.17409.2.3.4.1.1.7"
         if self.pontype == 'gpon':
@@ -90,60 +78,70 @@ class CdataGetOltInfo(GetOltInfoBase):
                 tree, onu = decode_index(match.group('portonu'), model)
                 ponport = 'pon0/0/' + str(tree) + ':' + str(onu)
                 listont = self.olt_name, self.olt_ip, ponport, match.group('portonu')
-                cursor.execute(query_ports, listont)
+                port = {
+                    'pon_port': ponport,
+                    'port_oid': match.group('portonu'),
+                }
+                ports.append(port)
+        
+        return ports
 
-        conn.commit()
-        conn.close()
-       
 
     def getonulist(self):
         '''
         Функция для запроса списка зареганых ONU и парсинг
         '''
+        onu_list = []
+
         if self.pontype == 'epon':
             oidonuist = '1.3.6.1.4.1.17409.2.3.4.1.1.7'
             parseoutonu = r'(?P<portonu>\d+)=hex-string:(?P<onu>\S+)'
         elif self.pontype == 'gpon':
             oidonulist = '1.3.6.1.4.1.17409.2.8.4.1.1.3'
-            parseoutonu = '(?P<portonu>\d{8}) = (.+: "|.+: )(?P<onu>(\S+ ){7}\S+|.+(?="))'
-
-        conn = sqlite3.connect(self.pathdb)
-        cursor = conn.cursor()
-
-        query = "INSERT into epon(maconu, portonu, idonu, oltip, oltname) values (?, ?, ?, ?, ?)"
-        querygpon = "INSERT into gpon(snonu, portonu, idonu, oltip, oltname) values (?, ?, ?, ?, ?)"
+            parseoutonu = '(?P<portonu>\d{7}) = (.+: "|.+: )(?P<onu>(\S+ ){7}\S+|.+(?="))'
 
         # --- Команда опроса OLTа
         snmpget = SnmpWalk(self.olt_ip, self.snmp_com, oidonulist)
         onulist = snmpget.snmpget()
-
         # --- Парсинг Мак адресов и добавление в базу
         if self.pontype == "epon":
             for l in onulist:
                 match = re.search(parseoutonu, l.replace(" ", "").lower())
                 if match:
                     listont = match.group('onu'), match.group('portonu'), match.group('portonu'), self.olt_ip, self.olt_name
-                    cursor.execute(query, listont)
-        
+                    onu = {
+                        'onu': match.group('maconu'),
+                        'port_oid': match.group('portonu'),
+                        'onu_oid': match.group('portonu'),
+                    }
+                    onu_list.append(onu)
+                    
+            return onu_list
+
         if self.pontype == "gpon":
             try:
                 for l in onulist:
                     match = re.search(parseoutonu, l.replace('\\"', '"').replace("\\\\", "\\"))
                     if match:
                         if len(match.group('onu')) > 16:
-                            listont = match.group('onu').lower().replace(" ", ""), match.group('portonu'), match.group('portonu'), self.olt_ip, self.olt_name
-                            cursor.execute(querygpon, listont)
+                            listont = match.group('onu').lower().replace(" ", "")
                         elif len(match.group('onu')) < 16:
-                            listont = match.group('onu').encode().hex(), match.group('portonu'), match.group('portonu'), self.olt_ip, self.olt_name
-                            cursor.execute(querygpon, listont)
+                            listont = match.group('onu').encode().hex()
+
+                        onu = {
+                            'onu': listont,
+                            'port_oid': match.group('portonu'),
+                            'onu_oid': match.group('portonu'),
+                        }
+                        onu_list.append(onu)
+
+                return onu_list
+
             except ValueError:
                 print("Кривая ONU")
 
-            conn.commit()
-            conn.close()
 
-
-    def ponstatustree(self, olt_port):
+    def ponstatustree(self, olt_id, port_oid):
         '''
         Статус и уровни с дерева (порта) ОЛТа C-data
         '''
@@ -163,41 +161,39 @@ class CdataGetOltInfo(GetOltInfoBase):
         parse_tree = r'INTEGER: (?P<level>.+)'
 
         # ---- Ищем порт олта
-        conn = sqlite3.connect(self.pathdb)
-        cursor = conn.cursor()
-
-        portonu_out = "Не удалось определить порт"
-
-        sqlgetallonu = f'SELECT * FROM ponports WHERE ip_address="{self.olt_ip}" AND ponport like "{olt_port}:%" AND length(portoid) > 4;'
-        getallonu = cursor.execute(sqlgetallonu)
+        onuonport = PortsServiceDb()
+        getallonu = onuonport.find_port(olt_id, f"{port_oid}:%")
 
         oltportinfo = []
         for onu in getallonu:
+
+        # Делаем список со словарями в которых пон порт с индексом ону, oid порта
             oltportinfo.append(
-                            {
-                            'ponport': onu[3],
-                            'portoid': onu[4],
-                            }
-                        ) 
-        
+                {
+                    'ponport': onu.pon_port,
+                    'portoid': onu.port_oid,
+                }
+            )
+
         db_onuinfo = []
+
         for o in oltportinfo:
             # Создаём список со словарями, в которых информация об ОНУ из БД
             onuid = o['ponport'].split(':')[1]
             ponport = o['ponport'].split(':')[0]
-            sqlgetonu = f'''SELECT * FROM {self.pontype} WHERE oltip="{self.olt_ip}" AND portonu="{o['portoid']}";'''
-            getonu = cursor.execute(sqlgetonu)
+
+            sqlgetonu = OnuServiceDb()
+            getonu = sqlgetonu.find_onu_on_port(olt_id, o['portoid'])
 
             for ol in getonu:
                 db_onuinfo.append(
                             {
                             'id' :     onuid,
-                            'onu':     ol[1],
+                            'onu':     ol['onu'],
                             'ponport': ponport,
                             "portoid": o['portoid'],
                             }
                         )
-        conn.close()
 
         # ---- Получение статуса с дерева
         out_tree = []
@@ -245,15 +241,6 @@ class CdataGetOltInfo(GetOltInfoBase):
                             else:
                                 rx_onu = 0.00
 
-#                        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, rxoltoid)
-#                        rxolt = snmpget.snmpget()
-#                        for l in rxolt:
-#                            match = re.search(parse_tree, l)
-#                            if match:
-#                                level_olt = match.group('level')
-#                                rx_olt = int(level_olt)/100
-#                            else:
-#                               rx_olt = 0.00
                         rx_olt = 0.00
 
                 else:
@@ -272,4 +259,3 @@ class CdataGetOltInfo(GetOltInfoBase):
                         )
 
         return out_tree
-

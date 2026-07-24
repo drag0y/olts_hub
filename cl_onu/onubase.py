@@ -127,3 +127,10 @@ class GetOnuInfoBase:
         '''
         fdb_list = ['Не поддерживается']
         return fdb_list
+
+
+    def getonudescription(self):
+        '''
+        Метод получения дескрипшена ОНУ (с ОЛТа)
+        '''
+        return ''

@@ -1,4 +1,3 @@
-import sqlite3
 from sqlalchemy import select, or_, func
 from models.base import db
 from models.models import Cfg
