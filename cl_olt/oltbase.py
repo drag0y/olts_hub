@@ -2,13 +2,14 @@ class GetOltInfoBase:
     '''
     Класс шаблон для работы с OLT
     '''
-    def __init__(self, dboltinfo, pathdb, snmp_com):
+    def __init__(self, dboltinfo, pathdb, snmp_com, snmp_wr = ''):
         self.dboltinfo = isinstance(dboltinfo, dict)
         self.olt_name = dboltinfo['hostname']
         self.olt_ip = dboltinfo['ip_address']
         self.pontype = dboltinfo['pontype']
         self.pathdb = pathdb
         self.snmp_com = snmp_com
+        self.snmp_wr = snmp_wr
 
     def getoltports(self):
         '''
@@ -44,3 +45,10 @@ class GetOltInfoBase:
         '''
         uptime = ''
         return uptime
+
+
+    def saveconfig(self):
+        '''
+        Метод сохранения конфигурации на ОЛТе
+        '''
+        return {'result': 'error', 'message': 'Не поддерживается'}

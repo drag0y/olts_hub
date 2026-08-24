@@ -189,5 +189,5 @@ class FindOnu:
             out_onuinfo.append(onuinformation)
 
             HistoryServiceDb().add_history(o.onu, o.olt.id, onustate, reason_down, level_onu, level_olt)
-            
+
         return out_onuinfo

@@ -84,8 +84,11 @@ class Onu(Base):
 class ApiTokens(Base):
     __tablename__ = 'api_tokens'
     id:           Mapped[int] = mapped_column(primary_key=True)
+    token:        Mapped[str]
     user_id:      Mapped[int] = mapped_column(ForeignKey('users.id'))
     created_date: Mapped[str]
+
+    user:         Mapped["Users"] = relationship()
 
 
 class Groups(Base):

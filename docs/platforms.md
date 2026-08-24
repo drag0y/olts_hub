@@ -23,6 +23,7 @@
 - P3310D Software, Version 10.1.0F Build 81296
 - P3600-08 Software, Version 10.1.0G Build 92865
 - P3600-08E Software, Version 10.1.0G Build 104155
+- P3600-08E Software, Version 10.1.0G Build 152865
 - P3600-08E Software, Version 10.1.0G Build 92596
 - P3600-16E Software, Version 10.1.0G Build 104155
 - P3608 Software, Version 10.1.0E Build 60793
@@ -36,6 +37,7 @@
 - P3608B Software, Version 10.1.0F Build 129386
 - P3616-2TE Software, Version 10.1.0E Build 37276
 - P3616-2TE Software, Version 10.1.0E Build 60793
+- P3616-2TE Software, Version 10.1.0F Build 151610
 - P3616-2TE Software, Version 10.1.0F Build 71203
 - P3616-2TE Software, Version 10.1.0F Build 74816
 - P3616-2TE Software, Version 10.1.0F Build 81296

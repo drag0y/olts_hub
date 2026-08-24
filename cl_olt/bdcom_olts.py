@@ -1,6 +1,6 @@
 import re
 
-from cl_other.snmpwalk import SnmpWalk
+from services.snmpwalk import SnmpWalk
 from services.hextodec import convert
 from db_services.db_ports import PortsServiceDb
 from db_services.db_onu import OnuServiceDb
@@ -11,11 +11,12 @@ class BdcomGetOltInfo(GetOltInfoBase):
     '''
     Класс для работы с ОЛТами BDCOM
     '''
-    def __init__(self, olt_name, olt_ip, snmp_com, pontype):
+    def __init__(self, olt_name, olt_ip, snmp_com, pontype, snmp_wr = ''):
         self.olt_name = olt_name
         self.olt_ip = olt_ip
         self.snmp_com = snmp_com
         self.pontype = pontype
+        self.snmp_wr = snmp_wr
 
 
     def getoltports(self):
@@ -110,18 +111,21 @@ class BdcomGetOltInfo(GetOltInfoBase):
             oid_rx_onu = "1.3.6.1.4.1.3320.101.10.5.1.5"
             oid_rx_olt = "1.3.6.1.4.1.3320.101.108.1.3"
             oid_onu_descr = "1.3.6.1.2.1.31.1.1.1.18"
+            datatimeoid = "1.3.6.1.4.1.3320.101.11.1.1.10"
             
-        if "gpon" in self.pontype:
+        elif "gpon" in self.pontype:
             oid_state = "1.3.6.1.2.1.2.2.1.8"
             oid_down_reason = "1.3.6.1.4.1.3320.10.3.1.1.35"
             oid_rx_onu = "1.3.6.1.4.1.3320.10.3.4.1.2"
             oid_rx_olt = "1.3.6.1.4.1.3320.10.2.3.1.3"
             oid_onu_descr = "1.3.6.1.2.1.31.1.1.1.18"
+            datatimeoid = "1.3.6.1.4.1.3320.22.2.1.1.2.1.21"
 
         parse_state = r'INTEGER: (?P<onustate>\d+|-\d+)'
         parse_down_reason = r'(?P<onudec>\d+.\d+.\d+.\d+.\d+.\d+) = INTEGER: (?P<downreason>\d+)'
         parse_tree = r'INTEGER: (?P<level>.+)'
         parse_descr = r'STRING: "(?P<onudescr>\S+)"'
+        parse_downtime = r'STRING: (?P<downtime>.+)'
 
         # ---- Ищем порт олта
         onuonport = PortsServiceDb()
@@ -165,6 +169,7 @@ class BdcomGetOltInfo(GetOltInfoBase):
         # Получаем статус с дерева
         out_tree = []
         for oi in db_onuinfo:
+            out_downtime = ''
             # Перебираем список и по очереди опрашиваем ОНУ
             onustateoid = f'''{oid_state}.{oi['portoid']}'''
             snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onustateoid)
@@ -193,6 +198,25 @@ class BdcomGetOltInfo(GetOltInfoBase):
                                 onustatus = 'Неизвестно'
                         rx_onu = 0.00
                         rx_olt = 0.00
+
+                        # Смотрим время отключения ОНУ
+                        onumacdec = convert(oi['onu'])
+                            
+                        onudowntimeoid = f'{datatimeoid}.{port_oid}{onumacdec}'
+                        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, onudowntimeoid)
+                        downtimeonu = snmpget.snmpget()
+
+                        for d in downtimeonu:
+                            match = re.search(parse_downtime, d)
+                            if match:
+                                downtime = match.group('downtime')
+                                b = [int(x, 16) for x in downtime.split()]
+                                year = (b[0] << 8) | b[1]
+
+                                out_downtime = (
+                                    f"{year:04d}-{b[2]:02d}-{b[3]:02d} "
+                                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d} "
+                                )
                                 
                     elif onustatus == 'ONLINE':
                         # Если ОНУ в сети, смотрим уровни сигналов
@@ -240,6 +264,7 @@ class BdcomGetOltInfo(GetOltInfoBase):
                             'onu':        oi['onu'],
                             'descr':      onu_descr_out,
                             'onu_status': onustatus,
+                            'down_time':  out_downtime,
                             'rx_onu':     rx_onu,
                             'rx_olt':     rx_olt,
                             }
@@ -265,3 +290,29 @@ class BdcomGetOltInfo(GetOltInfoBase):
                 uptime = match.group('uptime')
 
         return uptime
+
+
+    def saveconfig(self):
+        '''
+        Метод сохранения конфигурации на ОЛТе
+        '''
+        if "epon" in self.pontype:
+            saveconfig_oid = '1.3.6.1.4.1.3320.20.15.1.1.0'
+        elif "gpon" in self.pontype:
+            saveconfig_oid = ''
+        parse_save = "INTEGER: (?P<setwriteall>.+)"
+        snmpset = SnmpWalk(self.olt_ip, self.snmp_wr, f'{saveconfig_oid} i 1')
+        set_save = snmpset.snmpset()
+                    
+        write_all = {'result': 'error', 'message': f'Ошибка. OLT {self.olt_ip} не отвечает или не включен SNMP Write'}
+
+        for ss in set_save:
+            match = re.search(parse_save, ss)            
+            if match:
+                setsave = match.group('setwriteall')
+                if setsave == '1':
+                    write_all = {'result': 'success', 'message': f'Конфигурация ОЛТа {self.olt_ip} сохранена.'}
+                else:
+                    write_all = {'result': 'error', 'message': 'Ошибка'}
+
+        return write_all

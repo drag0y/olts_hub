@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, redirect, flash, g
-from flask_restful import Api, Resource
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 import os
 from dotenv import load_dotenv
@@ -10,8 +9,8 @@ from services.get_olts import get_netbox_olt_list
 from models.base import db
 from cl_int.findolt import FindOlt
 from db_services.userlogin import UserLogin
-from cl_other.conn_olt import ConnOLT
-from cl_other.show_logs import ShowLogs
+from cl_olt.conn_olt import ConnOLT
+from services.show_logs import ShowLogs
 from services.showlogs import showlogs
 from db_services.db_olt import OltServiceDb
 from db_services.db_users import UsersServiceDb
@@ -19,6 +18,7 @@ from db_services.db_menucfg import MenuServiceDb
 from routes.settings_routes import settings_bp
 from routes.oltinfo_routes import oltinfo_bp
 from routes.onuinfo_routes import onuinfo_bp
+from api.api_onuinfo import api_onuinfo_bp
 from services.logger import log_write
 
 
@@ -31,32 +31,24 @@ DEBUG = os.getenv('DEBUG', "False").lower() in ("true", "1", "t")
 DATABASE = os.getenv('DATABASE')
 
 app = Flask(__name__)
-api = Api()
+
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['APP_VERSION'] = 'v3.3'
+app.config['APP_VERSION'] = 'v3.4'
+
+app.json.ensure_ascii = False
+app.config.update({
+    'RESTFUL_JSON': {
+        'ensure_ascii': False
+    }
+})
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = {'result': 'error', 'message': 'Авторизуйтесь для доступа к сайту'}
 
-
 db.init_app(app)
-
-
-class Main_Api(Resource):
-    def get(self, onu):
-        if current_user.is_authenticated:
-            onurequest = FindOnu(onu)
-            onu_info = onurequest.onuinfo()
-
-            return onu_info
-
-
-api.add_resource(Main_Api, "/api/onuinfo/<string:onu>")
-api.init_app(app)
-
 
 @app.before_request
 def before_request():
@@ -76,6 +68,7 @@ def before_request():
 app.register_blueprint(settings_bp)
 app.register_blueprint(oltinfo_bp)
 app.register_blueprint(onuinfo_bp)
+app.register_blueprint(api_onuinfo_bp)
 
 
 @app.context_processor
@@ -279,6 +272,7 @@ def onuconfinfo(oltid, onu):
     try:
         onurequest = ConnOLT(olt_information, onu, g.CONN)
         conf_onu_info = onurequest.confonuinfo()
+
     except:
         log_write(f"User: {userinfo['username']}; Action: SHOW_ONU_CONF; Message: Не получилось посмотреть конфигурацию ОНУ {onu}")
         flash({'result': 'error', 'message': 'Ошибка. Не получилось подключиться к ОЛТу по Telnet/SSH'})
@@ -318,6 +312,27 @@ def oltlogs(id):
     log_write(f"User: {userinfo['username']}; Action: SHOWLOGS; Message: Просмотр логов ОЛТа {olt_information['ip_address']}")
 
     return render_template('/oltshowlogs.html', logs_info=logs_info)
+
+
+@app.route('/saveconfig/<int:oltid>')
+@login_required
+def save_config(oltid):
+    '''
+    Сохранить конфигурацию ОЛТа
+    '''
+    userid = current_user.get_id()
+    userinfo = g.userbase.get_user(userid)
+    try:
+        olt_find = FindOlt(userinfo, oltid)
+    except ValueError:
+        return redirect('/forbidden')
+
+    result = olt_find.save_config()
+    
+    log_write(f"User: {userinfo['username']}; Action: SAVE_CONFIG; Message: {result['message']}")
+    flash(result)
+    
+    return redirect(f'/oltinfo/{oltid}')
     
 
 if __name__ == "__main__":

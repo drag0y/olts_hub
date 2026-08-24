@@ -58,7 +58,8 @@ class ShowLogs:
                 logs_olt = ssh.send_command_timing('display logbuffer level notification size 50 | exclude cmd')
                 
                 out_logs = {
-                    'oltip': self.oltinfo['ip_address'],
+                    'oltid':   self.oltinfo['oltid'],
+                    'oltip':   self.oltinfo['ip_address'],
                     'oltname': self.oltinfo['oltname'],
                     'outlogs': logs_olt,
                 }

@@ -5,7 +5,7 @@ from flask import Blueprint
 from cl_int.findolt import FindOlt
 from cl_int.findonu import FindOnu
 from cl_int.actonu import ActionOnu
-from cl_other.conn_olt import ConnOLT
+from cl_olt.conn_olt import ConnOLT
 from db_services.db_users import UsersServiceDb
 from db_services.db_cfg import CfgServiceDb
 from db_services.db_olt import OltServiceDb

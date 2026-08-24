@@ -1,6 +1,6 @@
 import re
 
-from cl_other.snmpwalk import SnmpWalk
+from services.snmpwalk import SnmpWalk
 from db_services.db_onu import OnuServiceDb
 from db_services.db_ports import PortsServiceDb
 from cl_olt.oltbase import GetOltInfoBase
@@ -10,11 +10,12 @@ class HuaweiGetOltInfo(GetOltInfoBase):
     '''
     Класс для работы с ОЛТами Huawei
     '''
-    def __init__(self, olt_name, olt_ip, snmp_com, pontype):
+    def __init__(self, olt_name, olt_ip, snmp_com, pontype, snmp_wr = ''):
         self.olt_name = olt_name
         self.olt_ip = olt_ip
         self.snmp_com = snmp_com
         self.pontype = pontype
+        self.snmp_wr = snmp_wr
 
 
     def getoltports(self):
@@ -109,6 +110,7 @@ class HuaweiGetOltInfo(GetOltInfoBase):
         parse_tree =  r'(\d+){10}.(?P<onuid>\S+) = INTEGER: (?P<treelevel>\S+)' # r'(\d+){10}.(?P<onuid>\S+) .+(?P<treelevel>-\S+)'
         parse_tree_rx_olt = r'(\d+){10}.(?P<onuid>\S+) .+INTEGER: (?P<treelevel>\d+)'
         parse_descr = r'(\d+){10}.(?P<onuid>\S+) = STRING: "(?P<onudescr>\S+)"'
+        parse_downtime = r'(\d+){10}.(?P<onuid>\S+) = Hex-STRING: (?P<downtime>.+)'
 
         if "epon" in self.pontype:
             oid_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.5"
@@ -116,6 +118,7 @@ class HuaweiGetOltInfo(GetOltInfoBase):
             oid_state = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.15"
             oid_cose = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.25"
             oid_onu_descr = "1.3.6.1.4.1.2011.6.128.1.1.2.53.1.9"
+            downtimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.24"
 
         if "gpon" in self.pontype:
             oid_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.4"
@@ -123,6 +126,7 @@ class HuaweiGetOltInfo(GetOltInfoBase):
             oid_state = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.15"
             oid_cose = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.24"
             oid_onu_descr = "1.3.6.1.4.1.2011.6.128.1.1.2.43.1.9"
+            downtimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.23"
 
         # Собираем список со всеми ОНУ находящимися на порту ОЛТа
         onuonport = OnuServiceDb()
@@ -221,9 +225,32 @@ class HuaweiGetOltInfo(GetOltInfoBase):
 
                 descr_onu.setdefault(onuid)
                 descr_onu.update({onuid: {'descr': onudescr}})
-        
+
+        # Смотрим время отключения ОНУ
+        timedown_onu = {}
+        timedownonuoid = f'{downtimeoid}.{port_oid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, timedownonuoid)
+        downtime = snmpget.snmpget()
+
+        for d in downtime:
+            match = re.search(parse_downtime, d)
+            if match:
+                onuid = match.group('onuid')
+                downtime = match.group('downtime')
+                
+                b = [int(x, 16) for x in downtime.split()]
+                year = (b[0] << 8) | b[1]
+
+                out_downtime = (
+                    f"{year:04d}-{b[2]:02d}-{b[3]:02d} "
+                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d} "
+                )
+                print(out_downtime)
+                timedown_onu.setdefault(onuid)
+                timedown_onu.update({onuid: {'down_time': out_downtime}})        
+
         # Перебираем список ОНУ из БД, и создаем список со словарями с метриками
-        out_tree=[]        
+        out_tree=[]    
         for onu in db_onuinfo:
             if status_onu[onu['id']]['status'] == 'ONLINE':
                 out_tree.append(
@@ -232,6 +259,7 @@ class HuaweiGetOltInfo(GetOltInfoBase):
                     'onu':        onu['onu'],
                     'descr':      descr_onu[onu['id']]['descr'],
                     'onu_status': status_onu[onu['id']]['status'],
+                    'down_time':  '',
                     'rx_onu':     rx_onu[onu['id']]['rxonu'],
                     'rx_olt':     rx_olt[onu['id']]['rxolt'],
                     }
@@ -243,11 +271,12 @@ class HuaweiGetOltInfo(GetOltInfoBase):
                     'onu':        onu['onu'],
                     'descr':      descr_onu[onu['id']]['descr'],
                     'onu_status': status_onu[onu['id']]['status'],
+                    'down_time':  timedown_onu[onu['id']]['down_time'],
                     'rx_onu':     0.00,
                     'rx_olt':     0.00,
                     }
                 )
-        print('OUT TREE', out_tree)
+
         return out_tree
 
 

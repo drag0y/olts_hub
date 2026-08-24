@@ -68,3 +68,14 @@ python3 app.py
 python3 migrate_users_olts.py
 ```
 Скрипт переносит только пользователей и список ОЛТов, все остальные данные, типа SNMP community и NetBox, нужно будет прописать завново.
+
+## Обновление с v3.3 на v3.4
+В версии 3.4 добавились API ключи, для работы с ними нужно провести миграцию БД.\
+Для этого необходимо установить alembic
+```commandline
+pip install alembic
+```
+И провести миграцию
+```commandline
+alembic upgrade head
+```

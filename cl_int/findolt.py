@@ -1,4 +1,5 @@
 from ping3 import ping
+import time
 
 from db_services.db_cfg import CfgServiceDb
 from cl_olt.huawei_olts import HuaweiGetOltInfo
@@ -50,20 +51,34 @@ class FindOlt:
         if self.PF_HUAWEI in self.olt_info.platform:
             if self.olt_info.snmp_read:
                 self.SNMP_READ = self.olt_info.snmp_read
+                self.SNMP_WRITE = self.olt_info.snmp_write
             else:
                 self.SNMP_READ = cfg['SNMP_READ_H']
+                self.SNMP_WRITE = cfg['SNMP_WRITE_H']
         
         elif self.PF_BDCOM in self.olt_info.platform:
             if self.olt_info.snmp_read:
                 self.SNMP_READ = self.olt_info.snmp_read
+                self.SNMP_WRITE = self.olt_info.snmp_write
             else:
                 self.SNMP_READ = cfg['SNMP_READ_B']
+                self.SNMP_WRITE = cfg['SNMP_WRITE_B']
         
         elif self.PF_CDATA in self.olt_info.platform:
             if self.olt_info.snmp_read:
                 self.SNMP_READ = self.olt_info.snmp_read
+                self.SNMP_WRITE = self.olt_info.snmp_write
             else:
                 self.SNMP_READ = cfg['SNMP_READ_C']
+                self.SNMP_WRITE = cfg['SNMP_WRITE_C']
+
+        self.olt_params = {
+                'olt_name': self.olt_info.hostname,
+                'olt_ip':   self.olt_info.ip_address,
+                'snmp_com': self.SNMP_READ,
+                'pontype':  self.olt_info.pon_type,
+                'snmp_wr':  self.SNMP_WRITE,
+            }
 
 
     def oltinfo(self):     
@@ -96,20 +111,14 @@ class FindOlt:
         if p == None or p == False:
             olt_state = 'Не в сети'
         else:
-            olt_params = {
-                'olt_name': self.olt_info.hostname, 
-                'olt_ip':   self.olt_info.ip_address, 
-                'snmp_com': self.SNMP_READ,
-                'pontype' : self.olt_info.pon_type,
-            }
             olt_state = 'В сети'
             # Ищем незарегистрированные ОНУ (только Huawei)
             if self.PF_HUAWEI in self.olt_info.platform:
-                oltinfo = HuaweiGetOltInfo(**olt_params)
+                oltinfo = HuaweiGetOltInfo(**self.olt_params)
             elif self.PF_BDCOM in self.olt_info.platform:
-                oltinfo = BdcomGetOltInfo(**olt_params)
+                oltinfo = BdcomGetOltInfo(**self.olt_params)
             elif self.PF_CDATA in self.olt_info.platform:
-                oltinfo = CdataGetOltInfo(**olt_params)
+                oltinfo = CdataGetOltInfo(**self.olt_params)
             
             unregonu = oltinfo.unregonu(self.olt_info.id)
             oltuptime = oltinfo.oltuptime()
@@ -142,26 +151,26 @@ class FindOlt:
         Уровни и статус пон дерева
         '''
         if self.PF_HUAWEI in self.olt_info.platform:
-            olt_info = HuaweiGetOltInfo(self.olt_info.hostname, self.olt_info.ip_address, self.SNMP_READ, self.olt_info.pon_type) 
+            olt_info = HuaweiGetOltInfo(**self.olt_params) 
 
         elif self.PF_BDCOM in self.olt_info.platform:
-            olt_info = BdcomGetOltInfo(self.olt_info.hostname, self.olt_info.ip_address, self.SNMP_READ, self.olt_info.pon_type)
+            olt_info = BdcomGetOltInfo(**self.olt_params)
 
         elif self.PF_CDATA in self.olt_info.platform:
-            olt_info = CdataGetOltInfo(self.olt_info.hostname, self.olt_info.ip_address, self.SNMP_READ, self.olt_info.pon_type)
+            olt_info = CdataGetOltInfo(**self.olt_params)
             self.port_oid = self.olt_port
             
         out_tree = olt_info.ponstatustree(self.olt_id, self.port_oid)
 
         for h in out_tree:
             HistoryServiceDb().add_history(
-                h['onu'], 
-                self.olt_info.id, 
-                h['onu_status'].replace('ONLINE', 'В сети'), 
-                '', 
-                h['rx_onu'], 
-                h['rx_olt']
-                )
+                                    h['onu'], 
+                                    self.olt_info.id, 
+                                    h['onu_status'].replace('ONLINE', 'В сети'), 
+                                    '', 
+                                    h['rx_onu'], 
+                                    h['rx_olt']
+                                )
 
         return out_tree  
 
@@ -172,28 +181,13 @@ class FindOlt:
         '''
         if self.olt_info:
             if self.PF_HUAWEI in self.olt_info.platform:
-                olt = HuaweiGetOltInfo(
-                    self.olt_info.hostname, 
-                    self.olt_info.ip_address, 
-                    self.SNMP_READ,
-                    self.olt_info.pon_type,
-                    )
+                olt = HuaweiGetOltInfo(**self.olt_params)
 
             elif self.PF_BDCOM in self.olt_info.platform:
-                olt = BdcomGetOltInfo(
-                    self.olt_info.hostname,
-                    self.olt_info.ip_address,
-                    self.SNMP_READ,
-                    self.olt_info.pon_type,
-                    )
+                olt = BdcomGetOltInfo(**self.olt_params)
             
             elif self.PF_CDATA in self.olt_info.platform:
-                olt = CdataGetOltInfo(
-                    self.olt_info.hostname, 
-                    self.olt_info.ip_address, 
-                    self.SNMP_READ, 
-                    self.olt_info.pon_type,
-                    )
+                olt = CdataGetOltInfo(**self.olt_params)
                 
             ports_list = olt.getoltports()
             if len(ports_list) > 0:
@@ -212,3 +206,23 @@ class FindOlt:
                 return {'result': 'error', 'message': 'ОЛТ не в сети или не отвечает',}
             
             return {'result': 'success', 'message': 'ОЛТ опрошен',}
+        
+
+    def save_config(self):
+        '''
+        Метод сохранения конфигурации ОЛТа
+        '''
+        if self.olt_info:            
+            if self.PF_HUAWEI in self.olt_info.platform:
+                return {'result': 'error', 'message': 'Не поддерживается'}
+
+            elif self.PF_BDCOM in self.olt_info.platform:
+                saveolt = BdcomGetOltInfo(**self.olt_params)
+            
+            elif self.PF_CDATA in self.olt_info.platform:
+                return {'result': 'error', 'message': 'Не поддерживается'}
+                
+            result = saveolt.saveconfig()
+            time.sleep(30)               
+            
+        return result

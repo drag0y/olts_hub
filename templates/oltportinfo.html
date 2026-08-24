@@ -41,7 +41,7 @@ ONU info
 
     <tbody class="table-group-divider">
       <tr>
-        <td>
+        <td rowspan="2">
           {{ item['id'] }}
         </td>
         <td>
@@ -60,7 +60,7 @@ ONU info
                <td>
                  <span class="badge text-bg-success rounded-pill fw-bold">{{ item['onu_status'] }}</span></td>
              {% else %}
-               <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ item['onu_status'] }}</span></td>
+               <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ item['onu_status'] }}</span><br><small style="color: gray;">{{ item['down_time'] }}</small></td>
              {% endif %}
            </td>             
            <td>

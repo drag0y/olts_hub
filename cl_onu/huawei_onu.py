@@ -1,7 +1,7 @@
 import re
 
 from cl_onu.onubase import GetOnuInfoBase
-from cl_other.snmpwalk import SnmpWalk
+from services.snmpwalk import SnmpWalk
 
 
 class HuaweiGetOnuInfo(GetOnuInfoBase):
@@ -201,88 +201,66 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
         ''' 
         Метод определяет время включения ОНУ
         '''
-        timelist = "Нет времени включения"
-        parse_uptime = r'STRING: "(?P<regtime>\S+ \S+)"'
+        out_uptime = "Нет времени включения"
+        parse_uptime = r'(\d+){10}.(?P<onuid>\S+) = Hex-STRING: (?P<uptime>.+)'
 
         if "epon" in self.pon_type:
-            datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.103.1.6"
-
-            i = 9
-            while i > 0:
-                uptimeoid = f'{datatimeoid}.{self.portoid}.{self.onuid}.{i}'
-                snmpget = SnmpWalk(self.olt_ip, self.snmp_com, uptimeoid)
-                onuuptime = snmpget.snmpget()
-
-                for l in onuuptime:
-                    match = re.search(parse_uptime, l)
-                    if match:
-                        timelist = match.group('regtime')
-
-                i = i - 1
-                if timelist != "Нет времени отключения":
-                    break
-
-            datatime = timelist.replace("Z", "+03:00")
+            datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.23"
 
         elif "gpon" in self.pon_type:
-            datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.101.1.6"
+            datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.22"
             
-            uptimeoid = f'{datatimeoid}.{self.portoid}.{self.onuid}'
-            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, uptimeoid)
-            onuuptime = snmpget.snmpget()
+        uptimeoid = f'{datatimeoid}.{self.portoid}.{self.onuid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, uptimeoid)
+        onuuptime = snmpget.snmpget()
 
-            for l in onuuptime:
-                match = re.search(parse_uptime, l)
-                if match:
-                    timelist = match.group('regtime')
+        for u in onuuptime:
+            match = re.search(parse_uptime, u)
+            if match:
+                downtime = match.group('uptime')
+                
+                b = [int(x, 16) for x in downtime.split()]
+                year = (b[0] << 8) | b[1]
 
-            datatime = timelist.replace("Z", "+03:00")
-
-        return datatime
+                out_uptime = (
+                    f"{year:04d}-{b[2]:02d}-{b[3]:02d} "
+                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d}"
+                )
+        
+        return out_uptime
 
 
     def gettimedown(self):
         '''
         Метод определяет время последнего отключения
         '''
-        timelist = "Нет времени отключения"
-        parse_downtime = r'STRING: "(?P<downtime>\S+ \S+)"'
+        out_downtime = "Нет времени отключения"
+        parse_downtime = r'(\d+){10}.(?P<onuid>\S+) = Hex-STRING: (?P<downtime>.+)'
 
         if "epon" in self.pon_type:
-            datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.103.1.7"
-
-            i = 9
-            while i > 0:
-                timedownoid = f'{datatimeoid}.{self.portoid}.{self.onuid}.{i}'
-                snmpget = SnmpWalk(self.olt_ip, self.snmp_com, timedownoid)
-                onudowntime = snmpget.snmpget()
-
-                for l in onudowntime:
-                    match = re.search(parse_downtime, l)
-                    if match:
-                        timelist = match.group('downtime')
-
-                i = i - 1
-                if timelist != "Не удалось получить время отключения":
-                    break
-
-            datatime = timelist.replace("Z", "+03:00")
+            downtimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.24"
 
         elif "gpon" in self.pon_type:
-            datatimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.101.1.7"
+            downtimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.23"
 
-            timedownoid = f'{datatimeoid}.{self.portoid}.{self.onuid}'
-            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, timedownoid)
-            onudowntime = snmpget.snmpget()
+        timedownonuoid = f'{downtimeoid}.{self.portoid}.{self.onuid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, timedownonuoid)
+        downtime = snmpget.snmpget()
 
-            for l in onudowntime:
-                match = re.search(parse_downtime, l)
-                if match:
-                    timelist = match.group('downtime')
+        for d in downtime:
+            match = re.search(parse_downtime, d)
+            if match:
+                downtime = match.group('downtime')
+                
+                b = [int(x, 16) for x in downtime.split()]
+                year = (b[0] << 8) | b[1]
 
-            datatime = timelist.replace("Z", "+03:00")
+                out_downtime = (
+                    f"{year:04d}-{b[2]:02d}-{b[3]:02d} "
+                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d}"
+                )
 
-        return datatime
+        return out_downtime
 
 
     def getonulevel(self):

@@ -15,7 +15,8 @@
                             
                     <tbody class="table-group-divider">
                     <tbody class="table-group-divider">
-                    <td>OLT:</td><td>{{ logs_info.oltname }}<br>{{ logs_info.oltip }}</td>
+                    <td>OLT:</td>
+                    <td><a href="/oltinfo/{{ logs_info.oltid }}" class="link-primary">{{ logs_info.oltname }}</a><br>{{ logs_info.oltip }}</td>
                     </tbody>
                     <tr><td>Логи ОЛТа: </td><td>{{ logs_info.outlogs }}</td></tr>
                     </tbody>

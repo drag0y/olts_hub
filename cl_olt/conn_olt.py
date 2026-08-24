@@ -13,17 +13,17 @@ class ConnOLT:
                                       .replace('.', '') \
                                       .replace('hwtc', '48575443') \
                                       .replace('-', '')
-        
+
         self.olt_information = olt_information
         self.conninfo = conninfo
-        
+
         if len(self.useronu) == 12:
             pon_type = 'epon'
         elif len(self.useronu) == 16:
             pon_type = 'gpon'
 #        else:
 #            raise TypeError('Wrong MAC or SN')
-               
+
         self.onulist = OnuServiceDb().get_onu(useronu)
 
         for o in self.onulist:
@@ -38,12 +38,14 @@ class ConnOLT:
                     'connlogin': olt_information['connlogin'],
                     'connpsw': olt_information['connpsw'],
                 }
-        
+
 
     def confonuinfo(self):
         '''
         Метод подключения к ОЛТу и сбор конфигурации и FDB с ОНУ
         '''
+        outconf = ''
+        outfdb = ''
         if 'BDCOM' in self.olt['platform']:
             dev_type = 'cisco_ios_telnet'
             if self.olt['connlogin'] and self.olt['connpsw']:
@@ -55,6 +57,7 @@ class ConnOLT:
 
             if self.olt['conntype'] == 'SSH':
                 dev_type = 'cisco_ios'
+
             with netmiko.ConnectHandler(
                         device_type=dev_type,
                         host=self.olt['oltip'],
@@ -62,16 +65,17 @@ class ConnOLT:
                         password=BDCOM_PSW,
                         ) as conn:
                 conn.enable()
+                conn.send_command('terminal length 0')
                 outconf = conn.send_command(f'show run interface {self.olt["portonu"]}')
                 outfdb = conn.send_command(f'show mac address-table interface {self.olt["portonu"]}')
-                
                 conf_onu = {
+                    
                     'oltip': self.olt['oltip'],
                     'oltname': self.olt['oltname'],
                     'outconf': outconf,
                     'outfdb': outfdb,
                 }
-                
+
         elif 'Huawei_OLT' in self.olt['platform']:
             if self.olt['connlogin'] and self.olt['connpsw']:
                 HUAWEI_LOGIN = self.olt['connlogin']
@@ -89,16 +93,17 @@ class ConnOLT:
                 ssh.enable()
                 outconf = ssh.send_command_timing(f'display current-configuration ont {self.olt["portonu"]} {self.olt["onuid"]}')
                 outfdb = ssh.send_command_timing(f'display mac-address port {self.olt["portonu"]} ont {self.olt["onuid"]}')
-                
+
                 conf_onu = {
-                    'oltip': self.olt['oltip'],
+                    'oltid':   self.olt_information['oltid'],
+                    'oltip':   self.olt['oltip'],
                     'oltname': self.olt['oltname'],
                     'outconf': outconf,
-                    'outfdb': outfdb,
+                    'outfdb':  outfdb,
                 }
-                
+
         return conf_onu
-    
+
 
     def confonuhuawei(self):
         '''
@@ -111,7 +116,7 @@ class ConnOLT:
         else:
             HUAWEI_LOGIN = self.conninfo['HUAWEI_LOGIN']
             HUAWEI_PSW = self.conninfo['HUAWEI_PSW']
-            
+
         with netmiko.ConnectHandler(
                     device_type='huawei_olt',
                     host=self.olt['oltip'],
@@ -121,12 +126,11 @@ class ConnOLT:
                     ) as ssh:
             ssh.enable()
             outconf = ssh.send_command_timing(f'display current-configuration ont {self.olt["portonu"]} {self.olt["onuid"]}')
-                        
+
             conf_onu = {
                 'oltip': self.olt['oltip'],
                 'oltname': self.olt['oltname'],
                 'outconf': outconf,
             }
-                
+
         return conf_onu
-                    

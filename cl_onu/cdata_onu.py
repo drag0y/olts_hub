@@ -1,7 +1,7 @@
 import re
 
 from cl_onu.onubase import GetOnuInfoBase
-from cl_other.snmpwalk import SnmpWalk
+from services.snmpwalk import SnmpWalk
 from collections import OrderedDict
 
 

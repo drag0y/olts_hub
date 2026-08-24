@@ -1,6 +1,8 @@
 from flask import render_template, request, redirect, flash, g
 from flask_login import login_required, current_user
 from flask import Blueprint
+from datetime import datetime
+import secrets
 
 from cl_int.findolt import FindOlt
 from db_services.db_users import UsersServiceDb
@@ -9,6 +11,7 @@ from db_services.db_olt import OltServiceDb
 from db_services.db_groups import GroupsServiceDb
 from db_services.db_cfg import CfgServiceDb
 from db_services.db_history import HistoryServiceDb
+from db_services.db_tokens import ApiTokensServiceDb
 from services.showlogs import showlogs
 from services.logger import log_write
 
@@ -78,17 +81,17 @@ def olt_add():
         menu = g.menucfg.getmenucfg(userinfo['privilage'])
         if request.method == "POST":
             olt = {
-                'hostname': request.form['hostname'],
-                'descr': request.form['descr'],
-                'group_id': request.form['group'],
+                'hostname':   request.form['hostname'],
+                'descr':      request.form['descr'],
+                'group_id':   request.form['group'],
                 'ip_address': request.form['ip_address'],
-                'platform': request.form['platform'],
-                'pon_type': request.form['pontype'],
-                'snmp_read': request.form['snmpread'],
+                'platform':   request.form['platform'],
+                'pon_type':   request.form['pontype'],
+                'snmp_read':  request.form['snmpread'],
                 'snmp_write': request.form['snmpwrite'],
-                'conn_type': request.form['conntype'],
+                'conn_type':  request.form['conntype'],
                 'conn_login': request.form['connlogin'],
-                'conn_psw': request.form['connpsw'],
+                'conn_psw':   request.form['connpsw'],
             }
 
             olt_add = OltServiceDb()
@@ -145,12 +148,51 @@ def settingsapi():
     userinfo = UsersServiceDb().get_user(userid)
     if userinfo['privilage'] == 'Administrator':
         menu = g.menucfg.getmenucfg(userinfo['privilage'])
+        tokens = ApiTokensServiceDb.get_tokens()
 
-        return render_template("settings/settings_tokens.html", menu=menu)
+        return render_template("settings/settings_tokens.html", menu=menu, tokens=tokens)
     
     else:   
         return redirect('/forbidden')
     
+
+@settings_bp.route('/tokens/create')
+def createtoken():
+    '''
+    Создание токена
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        token = secrets.token_hex(16)
+        created_date = datetime.now().replace(microsecond=0)
+        result = ApiTokensServiceDb.create_token(userinfo['id'], token, created_date)
+        flash(result)
+        log_write(f"User: {userinfo['username']}; Action: CREATE_TOKEN; Message: Создан токен.")
+        
+        return redirect('/settings/tokens')
+    
+    else:   
+        return redirect('/forbidden')
+
+
+@settings_bp.route('/tokens/<int:token_id>/delete')
+def delettoken(token_id):
+    '''
+    Удаление токена
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        result = ApiTokensServiceDb.del_token(token_id)
+        flash(result)
+        log_write(f"User: {userinfo['username']}; Action: DEL_TOKEN; Message: Токен удалён.")
+        
+        return redirect('/settings/tokens')
+    
+    else:   
+        return redirect('/forbidden')
+
 
 @settings_bp.route('/showlogs')
 def show_logs():
@@ -452,3 +494,4 @@ def olt_delete(id):
         log_write(f"User: {userinfo['username']}; Action: OLT_DELETE; Message: Недостаточно прав для удаления ОЛТа.")
         return redirect(f'/oltinfo/{id}')
     
+

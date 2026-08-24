@@ -9,7 +9,7 @@
 <div id="spinner-overlay">
     <div class="spinner-wrapper">
         <div class="spinner"></div>
-        <p>Опрос ОЛТа...</p>
+        <p>...</p>
     </div>
 </div>
 
@@ -51,8 +51,6 @@
         </td>  
       </tr>
 
-
-    
       <tr>
         <td rowspan = "5">
     	    {% if 'В сети' in olt_information.olt_state %}
@@ -91,30 +89,25 @@
             </td>
           </tr>
       </tr>
-       <tr>
-            <td>
-              <small style="color: gray;">Описание ОЛТа:</small><br>
+        <tr>
+          <td>
+            <small style="color: gray;">Описание ОЛТа:</small><br>
               <b><small>
                 {{ olt_information.descr }}
-              </small></b>
-            </td>
-         
-            <td>
-              <small style="color: gray;">Платформа:</small><br>
+            </small></b>
+          </td>
+          <td>
+            <small style="color: gray;">Платформа:</small><br>
               <b><small>
                 {{ olt_information.platform }}
-              </small></b>
-            </td>
-          </tr>
-
-
-
-
-          <tr>
-            <td colspan = "2">
-              <small style="color: gray;">Порты:</small><br>
-              <b><small>
-              <hr>
+            </small></b>
+          </td>
+        </tr>
+        <tr>
+          <td colspan = "2">
+            <small style="color: gray;">Порты:</small><br>
+            <b><small>
+            <hr>
                 
 
 {% set ns = namespace(counter=false) %}
@@ -238,7 +231,7 @@
  
 
   <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
-    <div class="btn-group me-2" role="group" aria-label="First group">
+    <div class="btn-group me-3" role="group" aria-label="First group">
     </div>
 
 	<div class="input-group">
@@ -248,7 +241,7 @@
   <div class="row">
     
       {% if 'В сети' in olt_information.olt_state %}
-      <div class="col-md-6" style="text-align: center;">
+      <div class="col-md-4" style="text-align: center;">
         <a 
           href="/oltinfo/{{ olt_information.oltid }}/update" 
           class="btn btn-warning"
@@ -258,7 +251,7 @@
             Опросить ОЛТ
         </a>
         </div>
-        <div class="col-md-6" style="text-align: center;">
+        <div class="col-md-4" style="text-align: center;">
         <a 
           href="/oltshowlogs/{{ olt_information.oltid }}" 
           class="btn btn-info"
@@ -267,13 +260,26 @@
           >
             Посмотреть логи ОЛТа
         </a>
+        </div>
+        <div class="col-md-4" style="text-align: center;">
+        <a 
+          href="/saveconfig/{{ olt_information.oltid }}" 
+          class="btn btn-success"
+          id="saveconfig-button"
+          onclick="showSpinner()"
+          >
+             Сохранить конфиг
+        </a>
         
       {% else %}
-      <div class="col-md-6" style="text-align: center;">
+      <div class="col-md-4" style="text-align: center;">
         <a href="/oltinfo/{{ olt_information.oltid }}/update" class="btn btn-warning disabled">Опросить ОЛТ</a>
         </div>
-        <div class="col-md-6" style="text-align: center;">
+        <div class="col-md-4" style="text-align: center;">
         <a href="/oltshowlogs/{{ olt_information.oltid }}" class="btn btn-info disabled">Посмотреть логи ОЛТа</a>
+        </div>
+        <div class="col-md-4" style="text-align: center;">
+        <a href="/saveconfig/{{ olt_information.oltid }}" class="btn btn-success disabled">Сохранить конфиг</a>
         
       {% endif %}
     </div>

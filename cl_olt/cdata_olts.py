@@ -1,6 +1,6 @@
 import re
 
-from cl_other.snmpwalk import SnmpWalk
+from services.snmpwalk import SnmpWalk
 from db_services.db_ports import PortsServiceDb
 from db_services.db_onu import OnuServiceDb
 from cl_olt.oltbase import GetOltInfoBase
@@ -94,7 +94,7 @@ class CdataGetOltInfo(GetOltInfoBase):
         onu_list = []
 
         if self.pontype == 'epon':
-            oidonuist = '1.3.6.1.4.1.17409.2.3.4.1.1.7'
+            oidonulist = '1.3.6.1.4.1.17409.2.3.4.1.1.7'
             parseoutonu = r'(?P<portonu>\d+)=hex-string:(?P<onu>\S+)'
         elif self.pontype == 'gpon':
             oidonulist = '1.3.6.1.4.1.17409.2.8.4.1.1.3'

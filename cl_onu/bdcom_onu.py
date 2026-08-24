@@ -1,7 +1,7 @@
 import re
 
 from cl_onu.onubase import GetOnuInfoBase
-from cl_other.snmpwalk import SnmpWalk
+from services.snmpwalk import SnmpWalk
 from services.hextodec import convert
 
 
@@ -134,7 +134,7 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
 
                 result = (
                     f"{year:04d}-{b[2]:02d}-{b[3]:02d} "
-                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d} "
+                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d}"
                 )
             else:
                 uptimeoid = f'{datatimeoid}.{self.portoid}'
@@ -190,7 +190,7 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
 
                 out_downtime = (
                     f"{year:04d}-{b[2]:02d}-{b[3]:02d} "
-                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d} "
+                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d}"
                 )
 
         return out_downtime

@@ -26,7 +26,43 @@
     <h1 class="text-center fw-bold">Настройки API</h1>
   </header>
   <header>
-    <h3 class="text-center fw-bold">Функция в разработке</h1>
+    <h3 class="text-center fw-bold">Токены</h1>
   </header>
-  
+
+  <table class="table">
+  <thead class="table-dark">
+    <tr>
+      <th scope="row">Токен</th>
+      <th scope="col">Пользователь</th>
+      <th scope="col">Дата создания</th>
+      <th scope="col">Действие</th>
+    </tr>
+  </thead>
+  {% for t in tokens %}
+    <tbody class="table-group-divider">
+      <tr>
+        <td>{{ t.token }}</td>
+        <td>{{ t.user }}</td>
+        <td>{{ t.date }}</td>
+        <td>
+          <a 
+            href="/settings/tokens/{{ t.id }}/delete" 
+            class="btn btn-dark text-danger btn-sm" 
+            type="submit"
+          >
+            Удалить
+          </a>
+        </td>
+      </tr>
+    </tbody>
+  {% endfor %}
+</table>
+<br>
+<a 
+  href="/settings/tokens/create" 
+  class="btn btn-success" 
+  type="submit"
+>
+  Создать токен
+</a>
 {% endblock %}

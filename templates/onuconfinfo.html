@@ -16,7 +16,8 @@
                             
                     <tbody class="table-group-divider">
                     <tbody class="table-group-divider">
-                    <td>ONU найдена на OLTе:</td><td>{{ conf_onu_info.oltname }}<br>{{ conf_onu_info.oltip }}</td>
+                    <td>ONU найдена на OLTе:</td>
+                    <td><a href="/oltinfo/{{ conf_onu_info.oltid }}" class="link-primary">{{ conf_onu_info.oltname }}</a><br>{{ conf_onu_info.oltip }}</td>
                     </tbody>
                     <tr><td>Конфигурация ОНУ: </td><td>{{ conf_onu_info.outconf }}</td></tr>
                     <tr><td>FDB : </td><td>{{ conf_onu_info.outfdb }}</td></tr>
