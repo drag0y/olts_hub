@@ -47,6 +47,12 @@ class CfgServiceDb:
             for r in result:
                 r.value = nb_conf['gpon_tag']
 
+        if nb_conf['xpon_tag']:
+            stmt = select(Cfg).where(Cfg.key == 'XPON_TAG')
+            result = db.session.execute(stmt).scalars().all()
+            for r in result:
+                r.value = nb_conf['xpon_tag']
+
         if nb_conf['urlnb']:
             stmt = select(Cfg).where(Cfg.key == 'URLNB')
             result = db.session.execute(stmt).scalars().all()

@@ -17,7 +17,7 @@ def login_required_for_all_routes():
 
 @oltinfo_bp.route("/<int:id>")
 def olt_info(id):
-    ''' 
+    '''
     Страница просмотра информации об ОЛТе
     '''
     try:

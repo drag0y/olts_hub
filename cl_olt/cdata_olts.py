@@ -39,7 +39,7 @@ def decode_index(dec_index: int, model: str):
 
 class CdataGetOltInfo(GetOltInfoBase):
     ''' Класс для работы с ОЛТами C-Data '''
-    def __init__(self, olt_name, olt_ip, snmp_com, pontype):
+    def __init__(self, olt_name, olt_ip, snmp_com, pontype, snmp_wr=''):
         self.olt_name = olt_name
         self.olt_ip = olt_ip
         self.snmp_com = snmp_com
@@ -80,6 +80,7 @@ class CdataGetOltInfo(GetOltInfoBase):
                 listont = self.olt_name, self.olt_ip, ponport, match.group('portonu')
                 port = {
                     'pon_port': ponport,
+                    'pon_type': '',
                     'port_oid': match.group('portonu'),
                 }
                 ports.append(port)

@@ -79,3 +79,9 @@ pip install alembic
 ```commandline
 alembic upgrade head
 ```
+
+## Обновление с v3.4 на v3.5
+В версии 3.5 добавился тип ОЛТа - Xpon, для работы с ними нужно провести миграцию БД.\
+```commandline
+alembic upgrade head
+```

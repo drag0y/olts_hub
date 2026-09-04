@@ -17,23 +17,22 @@ def get_netbox_olt_list():
     URLNB = cfg['URLNB']
     EPON_TAG = cfg['EPON_TAG']
     GPON_TAG = cfg['GPON_TAG']
+    XPON_TAG = cfg['XPON_TAG']
 
     HEADERS = {"Authorization": TOKEN_API}
     #
     URLGETEPON = f"{URLNB}/api/dcim/devices/?q=&tag={EPON_TAG}"
     URLGETGPON = f"{URLNB}/api/dcim/devices/?q=&tag={GPON_TAG}"
+    URLGETXPON = f"{URLNB}/api/dcim/devices/?q=&tag={XPON_TAG}"
   
     # --- Получениие списка Epon ОЛТов, если такие есть, то передаём их в функцию snmpgetonu 
     if EPON_TAG:
         response = requests.get(URLGETEPON, headers=HEADERS, verify=False)
         olts_list = json.loads(json.dumps(response.json(), indent=4))
         if 'results' in olts_list:
-            added_olt = []
             for o in olts_list["results"]:
                 olt_addr = ipaddress.ip_interface(o["primary_ip4"]["address"])
                 olt_ip = str(olt_addr.ip)
-                
-                oltadd = OltServiceDb()
 
                 olt = {
                 'hostname': o["name"],
@@ -49,10 +48,7 @@ def get_netbox_olt_list():
                 'conn_psw': '',
                 }
 
-                addolt = oltadd.create_olt_nb(olt)
-
-                added_olt.append(addolt)
-
+                OltServiceDb().create_olt_nb(olt)
 
     # --- Получение списка Gpon ОЛТов, если такие есть, то передаём их в функцию snmpgetonu 
     if GPON_TAG:
@@ -60,12 +56,9 @@ def get_netbox_olt_list():
         olts_list = json.loads(json.dumps(response.json(), indent=4))
 
         if 'results' in olts_list:
-            added_olt = []
             for o in olts_list["results"]:
                 olt_addr = ipaddress.ip_interface(o["primary_ip4"]["address"])
                 olt_ip = str(olt_addr.ip)
-                
-                oltadd = OltServiceDb()
 
                 olt = {
                 'hostname': o["name"],
@@ -81,6 +74,30 @@ def get_netbox_olt_list():
                 'conn_psw': '',
                 }
 
-                addolt = oltadd.create_olt_nb(olt)
+                OltServiceDb().create_olt_nb(olt)
 
-                added_olt.append(addolt)
+    # --- Получение списка Xpon ОЛТов, если такие есть, то передаём их в функцию snmpgetonu 
+    if XPON_TAG:
+        response = requests.get(URLGETXPON, headers=HEADERS, verify=False)
+        olts_list = json.loads(json.dumps(response.json(), indent=4))
+
+        if 'results' in olts_list:
+            for o in olts_list["results"]:
+                olt_addr = ipaddress.ip_interface(o["primary_ip4"]["address"])
+                olt_ip = str(olt_addr.ip)
+
+                olt = {
+                'hostname': o["name"],
+                'descr': o["description"],
+                'group_id': 1,
+                'ip_address': olt_ip,
+                'platform': o["platform"]["name"],
+                'pon_type': 'xpon',
+                'snmp_read': '',
+                'snmp_write': '',
+                'conn_type': '',
+                'conn_login': '',
+                'conn_psw': '',
+                }
+
+                OltServiceDb().create_olt_nb(olt)

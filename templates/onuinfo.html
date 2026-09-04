@@ -53,18 +53,22 @@
       </tr>
       <tr>
         <td rowspan = "2">
-    	    {% if 'UP' in item.lanstate %}
-            <img src="{{ url_for('static', filename='images/onu_on.png') }}" width="250">
-          {% elif 'DOWN' in item.lanstate %}
-            <img src="{{ url_for('static', filename='images/onu_lan_off.png') }}" width="250">
-          {% elif 'Не удалось определить' in item.lanstate %}
-            <img src="{{ url_for('static', filename='images/onu_lan_unknown.png') }}" width="250">
-          {% elif 'Power-Off' in item.reason_offline %}
-            <img src="{{ url_for('static', filename='images/onu_power_off.png') }}" width="250">
-          {% elif 'LOS' in item.reason_offline %}
-            <img src="{{ url_for('static', filename='images/onu_los.png') }}" width="250">
+    	    {% if 'В сети' in item.iface_state %}
+            {% if 'UP' in item.lanstate %}
+              <img src="{{ url_for('static', filename='images/onu_on.png') }}" width="250">
+            {% elif 'DOWN' in item.lanstate %}
+              <img src="{{ url_for('static', filename='images/onu_lan_off.png') }}" width="250">
+            {% else %}
+              <img src="{{ url_for('static', filename='images/onu_lan_unknown.png') }}" width="250">
+            {% endif %}
           {% else %}
-            <img src="{{ url_for('static', filename='images/onu_unknown.png') }}" width="250">
+            {% if 'Power-Off' in item.reason_offline %}
+              <img src="{{ url_for('static', filename='images/onu_power_off.png') }}" width="250">
+            {% elif 'LOS' in item.reason_offline %}
+              <img src="{{ url_for('static', filename='images/onu_los.png') }}" width="250">
+            {% else %}
+              <img src="{{ url_for('static', filename='images/onu_unknown.png') }}" width="250">
+            {% endif %}
           {% endif %}
         </td>
           <tr>
@@ -195,7 +199,10 @@
           <small style="color: gray;">
             Статус LAN порта:
           </small><br>
-          <b>{{ item.lanstate }} {{ item.lanspeed }}</b>
+          <b>
+            {% for p in item.lanstate %}
+	            <b>{{ p.port }}. {{ p.status }} {{ p.speed }}</b><br>
+	          {% endfor %}
         </td>
         <td>
           <small style="color: gray;">

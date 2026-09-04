@@ -58,6 +58,7 @@ class PortsServiceDb:
         for p in ports:
             port = PonPorts(
                 pon_port=p['pon_port'],
+                pon_type=p['pon_type'],
                 port_oid=p['port_oid'],
                 olt_id=olt_id,
                 )

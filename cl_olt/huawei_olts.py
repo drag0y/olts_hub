@@ -24,7 +24,7 @@ class HuaweiGetOltInfo(GetOltInfoBase):
         '''
         ports = []
         snmp_oid = "1.3.6.1.2.1.31.1.1.1.1"
-        parseout = r'(?P<portoid>\d{10}).+ (?P<ponport>\d+\/\d+\/\d+)'
+        parseout = r'(?P<portoid>\d{10}).+ (?P<pontype>.+) (?P<ponport>\d+\/\d+\/\d+)'
 
         snmpget = SnmpWalk(self.olt_ip, self.snmp_com, snmp_oid)
         oltportslist = snmpget.snmpget()
@@ -32,11 +32,11 @@ class HuaweiGetOltInfo(GetOltInfoBase):
         # Парсинг Мак адресов и добавление в базу
         for p in oltportslist:
             match = re.search(parseout, p)
-
             if match:
                 port = {
                     'pon_port': match.group('ponport'),
-                    'port_oid': match.group('portoid')
+                    'pon_type': match.group('pontype').replace(' ', '').replace('"', '').lower(),
+                    'port_oid': match.group('portoid'),
                 }
                 ports.append(port)
 
@@ -45,60 +45,65 @@ class HuaweiGetOltInfo(GetOltInfoBase):
     
     def getonulist(self):
         # --- Функция для запроса списка зареганых ONU и парсинг
-        onu_list = []
-        snmp_epon = "1.3.6.1.4.1.2011.6.128.1.1.2.53.1.3"
-        snmp_gpon = "1.3.6.1.4.1.2011.6.128.1.1.2.43.1.3"
+        onulist = []
+        result = []
+        onulistoid = {
+            'epon': '1.3.6.1.4.1.2011.6.128.1.1.2.53.1.3',
+            'gpon': '1.3.6.1.4.1.2011.6.128.1.1.2.43.1.3',
+        }
 
-        parseout = r'(?P<portonu>\d{10}).(?P<onuid>\d+)=\S+:(?P<maconu>\S+)'
-        parseoutsn = r'(?P<portonu>\d{10}).(?P<onuid>\d+) = (.+: "|.+: )(?P<snonu>(\S+ ){7}\S+|.+(?="))'
+        parsemac = r'(?P<portonu>\d{10}).(?P<onuid>\d+)=\S+:(?P<maconu>\S+)'
+        parsesn = r'(?P<portonu>\d{10}).(?P<onuid>\d+) = (.+: "|.+: )(?P<snonu>(\S+ ){7}\S+|.+(?="))'
 
         # --- Команда опроса OLTа
-        if self.pontype == "epon":
-            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, snmp_epon)
-            onulist = snmpget.snmpget()
-           
-        elif self.pontype == "gpon":
-            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, snmp_gpon)
-            onulist = snmpget.snmpget()
+        if 'epon' in self.pontype:
+            onulistoid = [onulistoid['epon']]
+        elif 'gpon' in self.pontype:
+            onulistoid = [onulistoid['gpon']]
+        elif 'xpon' in self.pontype:
+            onulistoid = [onulistoid['epon'], onulistoid['gpon']]
+        
+        for oid in onulistoid:
+            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, oid).snmpget()
+            onulist.extend(snmpget)
 
-        # --- Парсинг Мак адресов и добавление в базу
-        if self.pontype == "epon":
+        try:
             for l in onulist:
-                match = re.search(parseout, l.replace(" ", "").lower())
+                # --- Парсинг серийников и добавление в базу
+                match = re.search(parsesn, l.replace('\\"', '"').replace("\\\\", "\\"))
                 if match:
-                    onu = {
-                        'onu': match.group('maconu'),
-                        'port_oid': match.group('portonu'),
-                        'onu_oid': match.group('onuid'),
-                    }
-                    onu_list.append(onu)
-            
-        # --- Парсинг серийников и добавление в базу
-        if self.pontype == "gpon":
-            try:
-                for l in onulist:
-                    match = re.search(parseoutsn, l.replace('\\"', '"').replace("\\\\", "\\"))
-                    if match:
-                        if len(match.group('snonu')) > 16:
-                            onu = {
-                                'onu': match.group('snonu').lower().replace(" ", ""),
-                                'port_oid': match.group('portonu'),
-                                'onu_oid': match.group('onuid'),
-                            }
-                            onu_list.append(onu)
-                        # Если серийник кривой, то из строки его надо распарсить в hex формат
-                        elif len(match.group('snonu')) < 16:
-                            onu = {
-                                'onu': match.group('snonu').encode().hex(),
-                                'port_oid': match.group('portonu'),
-                                'onu_oid': match.group('onuid'),
-                            }
-                            onu_list.append(onu)
-                            
-            except ValueError:
-                print("Кривая ONU")
+                    if len(match.group('snonu')) > 16:
+                        onu = {
+                            'onu': match.group('snonu').lower().replace(" ", ""),
+                            'port_oid': match.group('portonu'),
+                            'onu_oid': match.group('onuid'),
+                        }
+                        result.append(onu)
+                        
+                    # Если серийник кривой, то из строки его надо распарсить в hex формат
+                    elif len(match.group('snonu')) < 16:
+                        onu = {
+                            'onu': match.group('snonu').encode().hex(),
+                            'port_oid': match.group('portonu'),
+                            'onu_oid': match.group('onuid'),
+                        }
+                        result.append(onu)
 
-        return onu_list
+                # --- Парсинг Мак адресов и добавление в базу
+                match2 = re.search(parsemac, l.replace(" ", "").lower())
+                if match2:
+                    if len(match2.group('maconu')) == 12:
+                        onu = {
+                            'onu': match2.group('maconu'),
+                            'port_oid': match2.group('portonu'),
+                            'onu_oid': match2.group('onuid'),
+                        }
+                        result.append(onu)
+                        
+        except ValueError:
+            print("Кривая ONU")
+
+        return result
 
 
     def ponstatustree(self, olt_id, port_oid):
@@ -112,6 +117,11 @@ class HuaweiGetOltInfo(GetOltInfoBase):
         parse_descr = r'(\d+){10}.(?P<onuid>\S+) = STRING: "(?P<onudescr>\S+)"'
         parse_downtime = r'(\d+){10}.(?P<onuid>\S+) = Hex-STRING: (?P<downtime>.+)'
 
+        if "xpon" in self.pontype:
+            ponport = PortsServiceDb().find_port_by_oid(olt_id, port_oid)
+            for p in ponport:
+                self.pontype = p.pon_type
+
         if "epon" in self.pontype:
             oid_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.5"
             oid_rx_olt = "1.3.6.1.4.1.2011.6.128.1.1.2.104.1.1"
@@ -120,7 +130,7 @@ class HuaweiGetOltInfo(GetOltInfoBase):
             oid_onu_descr = "1.3.6.1.4.1.2011.6.128.1.1.2.53.1.9"
             downtimeoid = "1.3.6.1.4.1.2011.6.128.1.1.2.57.1.24"
 
-        if "gpon" in self.pontype:
+        elif "gpon" in self.pontype:
             oid_rx_onu = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.4"
             oid_rx_olt = "1.3.6.1.4.1.2011.6.128.1.1.2.51.1.6"
             oid_state = "1.3.6.1.4.1.2011.6.128.1.1.2.46.1.15"
@@ -243,9 +253,9 @@ class HuaweiGetOltInfo(GetOltInfoBase):
 
                 out_downtime = (
                     f"{year:04d}-{b[2]:02d}-{b[3]:02d} "
-                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d} "
+                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d}"
                 )
-                print(out_downtime)
+
                 timedown_onu.setdefault(onuid)
                 timedown_onu.update({onuid: {'down_time': out_downtime}})        
 
@@ -284,19 +294,26 @@ class HuaweiGetOltInfo(GetOltInfoBase):
         '''
         Метод проверяет есть ли на ОЛТе не зарегистрированные ОНУ
         '''
-        unregonu_out = []
+        result = []
+        onulist = []
+        unregoid = {
+            'epon': '1.3.6.1.4.1.2011.6.128.1.1.2.58.1.2',
+            'gpon': '1.3.6.1.4.1.2011.6.128.1.1.2.48.1.2',
+        }
 
         if 'epon' in self.pontype:
-            unregoid = '1.3.6.1.4.1.2011.6.128.1.1.2.58.1.2'
-
+            unregoid = [unregoid['epon']]
         elif 'gpon' in self.pontype:
-            unregoid = '1.3.6.1.4.1.2011.6.128.1.1.2.48.1.2'
-
+            unregoid = [unregoid['gpon']]
+        elif 'xpon' in self.pontype:
+            unregoid = [unregoid['epon'], unregoid['gpon']]
+            
         parse_onu = "(?P<portoid>\d{10}).+ Hex-STRING: (?P<onu>.+)"
 
-        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, unregoid)
-        onulist = snmpget.snmpget()
-
+        for oid in unregoid:
+            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, oid).snmpget()
+            onulist.extend(snmpget)
+            
         for l in onulist:
             match = re.search(parse_onu, l)
             if match:
@@ -308,12 +325,12 @@ class HuaweiGetOltInfo(GetOltInfoBase):
                     oltport = p.pon_port
 
                 onudict = {
-                'mac': unreg_onu,
-                'oltport': oltport,
+                    'mac': unreg_onu,
+                    'oltport': oltport,
                 }
-                unregonu_out.append(onudict)
+                result.append(onudict)
 
-        return unregonu_out
+        return result
     
 
     def oltuptime(self):

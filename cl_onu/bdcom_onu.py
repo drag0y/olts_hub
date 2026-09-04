@@ -1,8 +1,10 @@
 import re
+from mac_vendor_lookup import MacLookup
 
 from cl_onu.onubase import GetOnuInfoBase
 from services.snmpwalk import SnmpWalk
 from services.hextodec import convert
+from variables.vendor_short import VENDOR_SHORTENER
 
 
 class BdcomGetOnuInfo(GetOnuInfoBase):
@@ -38,33 +40,29 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
         '''
         Метод определяет статус LAN порта
         '''
-        parse_lan_state = "INTEGER: (?P<lanstate>.+)"
-        lan_out = "Не удалось определить"
-        try:
-            if "epon" in self.pon_type:
-                ethstatusoid = "1.3.6.1.4.1.3320.101.12.1.1.8"
+        result = []
+        parse_lan_state = '.(?P<lanport>\d+) = INTEGER: (?P<lanstate>.+)'
 
-            if "gpon" in self.pon_type:
-                ethstatusoid = "1.3.6.1.4.1.3320.10.4.1.1.4"
+        if "epon" in self.pon_type:
+            ethstatusoid = "1.3.6.1.4.1.3320.101.12.1.1.8"
+        elif "gpon" in self.pon_type:
+            ethstatusoid = "1.3.6.1.4.1.3320.10.4.1.1.4"
 
-            lanstateoid = f'{ethstatusoid}.{self.portoid}'
-            snmpget = SnmpWalk(self.olt_ip, self.snmp_com, lanstateoid)
-            lanstatuslist = snmpget.snmpget()
+        lanstateoid = f'{ethstatusoid}.{self.portoid}'
+        snmpget = SnmpWalk(self.olt_ip, self.snmp_com, lanstateoid)
+        lanstatuslist = snmpget.snmpget()
 
-            for l in lanstatuslist:
-                match = re.search(parse_lan_state, l)
+        for l in lanstatuslist:
+            match = re.search(parse_lan_state, l)
+            if match:
+                lanstatus = match.group('lanstate')
+                lan_out = lanstatus.replace('1', 'UP').replace('2','DOWN')
+            else:
+                lan_out = "Не удалось определить"
+            port = {'port': match.group('lanport'), 'status': lan_out}
+            result.append(port)
 
-                if match:
-                    lanstatus = match.group('lanstate')
-                    lan_out = lanstatus.replace('1', 'UP').replace('2','DOWN')
-
-                else:
-                    lan_out = "Не удалось определить"
-
-        except subprocess.TimeoutExpired:
-            lan_out = "Не удалось определить"
-        
-        return lan_out
+        return result
 
 
     def getlastdown(self):
@@ -297,7 +295,9 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
     def getllidmacsearch(self):
         '''
         Получение абонентских маков с LAN порта ОНУ
-        '''
+        '''       
+        macsearch = MacLookup()
+        macsearch.load_vendors()
         searchmac_out = []
         parse_mac = 'Hex-STRING: (?P<getmac>\S+ \S+ \S+ \S+ \S+ \S+)'
         parse_set = 'INTEGER: (?P<setllidmac>.+)'
@@ -319,8 +319,12 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
         for l in searchmac:
             match = re.search(parse_mac, l)
             if match:
-                mac = match.group('getmac')
-                searchmac_out.append(mac.replace(' ', ':'))
+                getmac = match.group('getmac').replace(' ', ':')
+                vendor = macsearch.lookup(getmac)
+                if vendor in VENDOR_SHORTENER:
+                    vendor = VENDOR_SHORTENER[vendor]
+                mac = f'{getmac}' + '\n' + f'[{vendor}]'
+                searchmac_out.append(mac)
             else:
                 if 'epon' in self.pon_type:
                     setllidmac_oid = f'{setllidmacoid} i {self.onuid}'
@@ -347,8 +351,15 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
                             for l in searchmac:
                                 match = re.search(parse_mac, l)
                                 if match:
-                                    mac = match.group('getmac')
-                                    searchmac_out.append(mac.replace(' ', ':'))
+                                    try:
+                                        getmac = match.group('getmac').replace(' ', ':')
+                                        vendor = macsearch.lookup(getmac)
+                                        if vendor in VENDOR_SHORTENER:
+                                            vendor = VENDOR_SHORTENER[vendor]
+                                        mac = f'{getmac}' + '\n' + f'[{vendor}]'
+                                        searchmac_out.append(mac)
+                                    except:
+                                        searchmac_out.append(getmac)
 
         return searchmac_out
 

@@ -12,12 +12,12 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
         self.dbonuinfo = isinstance(dbonuinfo, dict)
         self.onu = dbonuinfo['onu']
         self.hostname = dbonuinfo['hostname']
-        self.pon_type = dbonuinfo['pon_type']
         self.olt_ip = dbonuinfo['olt_ip']
         self.portoid = dbonuinfo['portoid']
         self.onuid = dbonuinfo['onuid']
         self.snmp_com = dbonuinfo['snmp_com']
         self.snmp_wr = dbonuinfo['snmp_wr']
+        self.pon_type = 'epon' if len(dbonuinfo['onu']) == 12 else 'gpon'
 
 
     def getonustatus(self):
@@ -48,15 +48,25 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
         ''' 
         Метод определяет статус LAN порта
         '''
-        lan_out = "Не удалось определить"
+        result = []
+        lan_status = []
+        lan_speed = []
+        lan_speed_out = ''
+        lan_out = ''
+        ports = {}
+
         if "epon" in self.pon_type:
             ethstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.81.1.31"
+            ethspeedoid = "1.3.6.1.4.1.2011.6.128.1.1.2.81.1.4"
         elif "gpon" in self.pon_type:
             ethstatusoid = "1.3.6.1.4.1.2011.6.128.1.1.2.62.1.22"
+            ethspeedoid = "1.3.6.1.4.1.2011.6.128.1.1.2.62.1.4"
 
-        parse_lanstate = r'INTEGER: (?P<lanstate>\d)'
+        parse_lanstate = r'.(?P<lanport>\d+) = INTEGER: (?P<lanstate>\d)'
+        parse_lanspeed = r'.(?P<lanport>\d+) = INTEGER: (?P<lanspeed>\d)'
 
-        lanstateoid = f'{ethstatusoid}.{self.portoid}.{self.onuid}.1'
+        # Смотрим статус LAN портов и добавляем словарь в список
+        lanstateoid = f'{ethstatusoid}.{self.portoid}.{self.onuid}'
         snmpget = SnmpWalk(self.olt_ip, self.snmp_com, lanstateoid)
         lanstate = snmpget.snmpget()
 
@@ -69,24 +79,13 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
                 elif lanstatus == '2':
                     lan_out = "DOWN"
                 else:
-                    lan_out = "Не удалось определить"
+                    continue
 
-        return lan_out
+                port = {'port': match.group('lanport'), 'status': lan_out}
+                lan_status.append(port)
 
-
-    def getlanspeed(self):
-        ''' 
-        Метод определяет скорость LAN порта
-        '''
-        lan_speed_out = ""
-        if "epon" in self.pon_type:
-            ethspeedoid = "1.3.6.1.4.1.2011.6.128.1.1.2.81.1.4"
-        elif "gpon" in self.pon_type:
-            ethspeedoid = "1.3.6.1.4.1.2011.6.128.1.1.2.62.1.4"
-
-        parse_lanspeed = r'INTEGER: (?P<lanspeed>\d)'
-
-        lanspeedoid = f'{ethspeedoid}.{self.portoid}.{self.onuid}.1'
+        # Смотрим скорость портов и добавляем словарь в список
+        lanspeedoid = f'{ethspeedoid}.{self.portoid}.{self.onuid}'
         snmpget = SnmpWalk(self.olt_ip, self.snmp_com, lanspeedoid)
         lanspeed = snmpget.snmpget()
 
@@ -101,9 +100,21 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
                 elif speed == '7':
                     lan_speed_out = " - 1000M"
                 else:
-                    lan_speed_out = ""
+                    continue
+                
+                port_speed = {'port': match.group('lanport'), 'speed': lan_speed_out}
+                lan_speed.append(port_speed)
 
-        return lan_speed_out
+        # Объединяем оба списка, объединяем словари по номеру порта, и делаем финальный список
+        for i in lan_status + lan_speed:
+            port_id = i['port']
+            if port_id not in ports:
+                ports[port_id] = {}
+            ports[port_id].update(i)
+        
+        result = list(ports.values())
+
+        return result
 
 
     def getcatvstate(self):
@@ -390,7 +401,7 @@ class HuaweiGetOnuInfo(GetOnuInfoBase):
 
     def getethvlandefault(self):
         '''
-        Получить мак адреса с LAN порта
+        Получить native vlan с LAN порта
         '''
         if "epon" in self.pon_type:
             vlan_onu_oid = "1.3.6.1.4.1.2011.6.128.1.1.2.81.1.5"

@@ -166,7 +166,7 @@ class ActionOnu:
         elif self.PF_CDATA in self.platform:
             onu_reboot = CdataGetOnuInfo(self.onu_params)
             rebootonu_out = onu_reboot.setonureboot()
-        time.sleep(7)
+        time.sleep(10)
         return rebootonu_out
 
 

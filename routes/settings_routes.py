@@ -358,6 +358,7 @@ def olthub_settings_nb():
                 'api_key': request.form['api_key'],
                 'epon_tag': request.form['tag_epon'],
                 'gpon_tag': request.form['tag_gpon'],
+                'xpon_tag': request.form['tag_xpon'],
                 'urlnb': request.form['urlnb'],
                 'pl_h': request.form['pl_h'],
                 'pl_b': request.form['pl_b'],
@@ -412,7 +413,7 @@ def olthub_settings_snmp():
         return redirect('/forbidden')
     
 
-@settings_bp.route("/settings/allhistory/delete")
+@settings_bp.route("/allhistory/delete")
 def delete_all_history():
     '''
     Очистить всю таблицу с иторией сигналов

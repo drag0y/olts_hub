@@ -38,6 +38,7 @@ class BdcomGetOltInfo(GetOltInfoBase):
             if match:
                 port = {
                     'pon_port': match.group('ponport'),
+                    'pon_type': '',
                     'port_oid': match.group('portoid'),
                 }
                 ports.append(port)
@@ -45,6 +46,7 @@ class BdcomGetOltInfo(GetOltInfoBase):
             elif match2:
                 port = {
                     'pon_port': match2.group('ponport'),
+                    'pon_type': '',
                     'port_oid': match2.group('portoid'),
                 }
                 ports.append(port)
@@ -215,7 +217,7 @@ class BdcomGetOltInfo(GetOltInfoBase):
 
                                 out_downtime = (
                                     f"{year:04d}-{b[2]:02d}-{b[3]:02d} "
-                                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d} "
+                                    f"{b[4]:02d}:{b[5]:02d}:{b[6]:02d}"
                                 )
                                 
                     elif onustatus == 'ONLINE':

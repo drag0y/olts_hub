@@ -32,14 +32,6 @@ class GetOnuInfoBase:
         return lan_out
 
 
-    def getlanspeed(self):
-        ''' 
-        Метод определяет скорость подключения LAN порта
-        '''
-        lan_speed_out = ''
-        return lan_speed_out
-
-
     def getcatvstate(self):
         ''' 
         Метод определяет статус CATV порта

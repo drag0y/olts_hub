@@ -53,6 +53,7 @@ if __name__ == "__main__":
             ['API_KEY', 'Token'],
             ['EPON_TAG', 'epon'],
             ['GPON_TAG', 'gpon'],
+            ['XPON_TAG', 'xpon'],
             ['URLNB', 'https://'],
             ['PL_H', 'Huawei_OLT'],
             ['PL_B', 'BDCOM'],

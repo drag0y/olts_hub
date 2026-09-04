@@ -11,7 +11,6 @@ from cl_int.findolt import FindOlt
 from db_services.userlogin import UserLogin
 from cl_olt.conn_olt import ConnOLT
 from services.show_logs import ShowLogs
-from services.showlogs import showlogs
 from db_services.db_olt import OltServiceDb
 from db_services.db_users import UsersServiceDb
 from db_services.db_menucfg import MenuServiceDb
@@ -35,7 +34,7 @@ app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['APP_VERSION'] = 'v3.4'
+app.config['APP_VERSION'] = 'v3.5'
 
 app.json.ensure_ascii = False
 app.config.update({
