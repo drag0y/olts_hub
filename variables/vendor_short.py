@@ -32,4 +32,5 @@ VENDOR_SHORTENER = {
             "IRZ AUTOMATION TECHNOLOGIES LTD": "IRZ",
             "Netis Technology Co., Ltd.": "Netis",
             "Routerboard.com": "Mikrotik",
+            "Zyxel Communications Corporation": "Zyxel",
             }

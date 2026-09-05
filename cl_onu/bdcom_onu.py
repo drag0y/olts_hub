@@ -319,12 +319,15 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
         for l in searchmac:
             match = re.search(parse_mac, l)
             if match:
-                getmac = match.group('getmac').replace(' ', ':')
-                vendor = macsearch.lookup(getmac)
-                if vendor in VENDOR_SHORTENER:
-                    vendor = VENDOR_SHORTENER[vendor]
-                mac = f'{getmac}' + '\n' + f'[{vendor}]'
-                searchmac_out.append(mac)
+                try:
+                    getmac = match.group('getmac').replace(' ', ':')
+                    vendor = macsearch.lookup(getmac)
+                    if vendor in VENDOR_SHORTENER:
+                        vendor = VENDOR_SHORTENER[vendor]
+                    mac = f'{getmac}' + '\n' + f'[{vendor}]'
+                    searchmac_out.append(mac)
+                except:
+                    searchmac_out.append(getmac)
             else:
                 if 'epon' in self.pon_type:
                     setllidmac_oid = f'{setllidmacoid} i {self.onuid}'
