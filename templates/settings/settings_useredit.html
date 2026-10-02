@@ -31,17 +31,18 @@
     <table class="table">
       
             <tr>
-                <td><b>Имя пользователя</b></td>
-                <td>
-                  <input 
-                    type="text" 
-                    name="username" 
-                    id="username" 
-                    class="form-control" 
-                    value="{{ user.username }}" 
-                    placeholder="Введите имя пользователя"
-                  >
-                </td>
+              <td><b>Имя пользователя</b></td>
+              <td>
+                <input 
+                  type="text"
+                  oninput="this.value = this.value.replace(/[а-яёА-ЯЁ]/g, '')"
+                  name="username" 
+                  id="username" 
+                  class="form-control" 
+                  value="{{ user.username }}" 
+                  placeholder="Введите имя пользователя"
+                >
+              </td>
             </tr>
             <tr>
               <td>
@@ -90,6 +91,20 @@
                     <option value="Administrator">Administrator</option>
                     <option value="Operator">Operator</option>
                 </select>
+              </td>
+            </tr>
+            <tr>
+              <td><b>Телеграм ID</b></td>
+              <td>
+                <input 
+                  type="text"
+                  oninput="this.value = this.value.replace(/[а-яёА-ЯЁ]/g, '')"
+                  name="telegram_id" 
+                  id="telegram_id" 
+                  class="form-control" 
+                  value="{{ user.telegram_id }}" 
+                  placeholder="Введите телеграм ID пользователя"
+                >
               </td>
             </tr>
     </table>

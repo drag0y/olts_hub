@@ -1,6 +1,7 @@
-from sqlalchemy import select, or_, func
+from sqlalchemy import select, or_, and_
 from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash
+import secrets
 
 from models.base import db
 from models.models import Users
@@ -25,10 +26,11 @@ class UsersServiceDb:
         for r in result:
             userslist.append(
                 {
-                    'id': r.id,
-                    'username': r.username,
-                    'groupname': r.group.group_name,
-                    'privilage': r.privilage,
+                    'id':          r.id,
+                    'username':    r.username,
+                    'telegram_id': r.telegram_id,
+                    'groupname':   r.group.group_name,
+                    'privilage':   r.privilage,
                 }
             )
         
@@ -61,11 +63,18 @@ class UsersServiceDb:
             return {'result': 'error', 'message': 'Ошибка. Не выбраны права пользователя!',}
         
         psw_hash = generate_password_hash(userinfo['psw'])
+
+        token = ''
+        if userinfo['telegram_id']:
+            token = secrets.token_hex(16)
+
         user = Users(
                 username=userinfo['username'],
                 password=psw_hash,
                 privilage=userinfo['privilage'],
                 group_id=userinfo['group_id'],
+                telegram_id=userinfo['telegram_id'],
+                token=token,
                 )
 
         db.session.add(user)
@@ -107,6 +116,11 @@ class UsersServiceDb:
             user.privilage = userinfo['privilage']
 
         user.username = userinfo['username']
+        user.telegram_id = userinfo['telegram_id']
+
+        user.token = ''
+        if userinfo['telegram_id']:
+            user.token = secrets.token_hex(16)
 
         db.session.commit()
             
@@ -136,17 +150,18 @@ class UsersServiceDb:
 
         db.session.commit()
 
-        return {'result': 'success', 'message': f'Пользователь {user.username} удалён!',}
+        return {
+            'result': 'success', 
+            'message': f'Пользователь {user.username} удалён!',
+        }
 
 
     def changepsw(self, user_id, psw):
         '''
         Метод для смены пароля пользователя
         '''
-        print('START PSW IN')
-        print(user_id, psw)
         if len(psw) < 8:
-            print('START PSW NO CORRECT')
+
             return {
                 'result': 'error',
                 'message': 'Ошибка. Короткий пароль!',
@@ -157,7 +172,7 @@ class UsersServiceDb:
         user_psw = db.session.get(Users, user_id)
         user_psw.password = psw_hash
         db.session.commit()
-        print('START PSW CHANGED')
+
         return {
                 'result': 'success',
                 'message': 'Пароль успешно изменён!',
@@ -176,10 +191,11 @@ class UsersServiceDb:
         
         user_info = db.session.scalar(stmt)
         result = {
-            'id':        int(user_info.id),
-            'username':  user_info.username,
-            'groupname': user_info.group.group_name,
-            'privilage': user_info.privilage,
+            'id':          int(user_info.id),
+            'username':    user_info.username,
+            'telegram_id': user_info.telegram_id,
+            'groupname':   user_info.group.group_name,
+            'privilage':   user_info.privilage,
         }
 
         return result
@@ -187,7 +203,7 @@ class UsersServiceDb:
 
     def get_user_by_name(self, username):
         '''
-        Метод для получения данных о пользователе по user_id
+        Метод для получения данных о пользователе по username
         '''
         stmt = (
             select(Users)
@@ -198,13 +214,67 @@ class UsersServiceDb:
         user_info = db.session.scalar(stmt)
         if user_info:
             result = {
-                'id':        user_info.id,
-                'username':  user_info.username,
-                'psw':       user_info.password,
-                'groupname': user_info.group.group_name,
-                'privilage': user_info.privilage,
+                'id':          user_info.id,
+                'username':    user_info.username,
+                'telegram_id': user_info.telegram_id,
+                'psw':         user_info.password,
+                'groupname':   user_info.group.group_name,
+                'privilage':   user_info.privilage,
             }
 
             return result
+        else:
+            False
+
+
+    def get_user_by_name_tgid(self, username, telegram_id):
+        '''
+        Метод для получения данных о пользователе по username и telegram_id
+        '''
+        stmt = select(Users).where(
+            and_(
+                Users.username == username,
+                Users.telegram_id == telegram_id,
+            )
+        )
+        user_info = db.session.scalar(stmt)
+        if user_info:
+            result = {
+                'id':          user_info.id,
+                'username':    user_info.username,
+                'telegram_id': user_info.telegram_id,
+                'token':       user_info.token,
+                'groupname':   user_info.group.group_name,
+                'privilage':   user_info.privilage,
+            }
+
+            return result
+
+        else:
+            False
+
+
+    def get_user_by_token(self, token):
+        '''
+        Метод для получения данных о пользователе по токену
+        '''
+        stmt = (
+            select(Users)
+            .options(joinedload(Users.group))
+            .where(Users.token == token)
+        )
+        
+        user_info = db.session.scalar(stmt)
+        if user_info:
+            result = {
+                'id':          int(user_info.id),
+                'username':    user_info.username,
+                'telegram_id': user_info.telegram_id,
+                'groupname':   user_info.group.group_name,
+                'privilage':   user_info.privilage,
+            }
+
+            return result
+
         else:
             False

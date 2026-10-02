@@ -1,5 +1,6 @@
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String
 from typing import List
 
 from .base import Base
@@ -37,13 +38,15 @@ class PonPorts(Base):
 
 class Users(Base):
     __tablename__ = 'users'
-    id:        Mapped[int] = mapped_column(primary_key=True)
-    username:  Mapped[str] = mapped_column(unique=True)
-    password:  Mapped[str] 
-    privilage: Mapped[str]
-    group_id:  Mapped[int] = mapped_column(ForeignKey('groups.id'))
-
-    group:     Mapped["Groups"] = relationship()
+    id:          Mapped[int] = mapped_column(primary_key=True)
+    username:    Mapped[str] = mapped_column(unique=True)
+    password:    Mapped[str] 
+    privilage:   Mapped[str]
+    group_id:    Mapped[int] = mapped_column(ForeignKey('groups.id'))
+    telegram_id: Mapped[str] = mapped_column(String(30), nullable=True)
+    token:       Mapped[str] = mapped_column(nullable=True)
+    
+    group:       Mapped["Groups"] = relationship()
 
 
 class Cfg(Base):

@@ -3,6 +3,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 import os
 from dotenv import load_dotenv
 from werkzeug.security import check_password_hash
+import markdown
 
 from cl_int.findonu import FindOnu
 from services.get_olts import get_netbox_olt_list
@@ -18,6 +19,8 @@ from routes.settings_routes import settings_bp
 from routes.oltinfo_routes import oltinfo_bp
 from routes.onuinfo_routes import onuinfo_bp
 from api.api_onuinfo import api_onuinfo_bp
+from api.api_olts import api_oltsupdate_bp
+from api.api_tg_auth import api_tg_auth_bp
 from services.logger import log_write
 
 
@@ -34,7 +37,7 @@ app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['APP_VERSION'] = 'v3.5'
+app.config['APP_VERSION'] = 'v3.6'
 
 app.json.ensure_ascii = False
 app.config.update({
@@ -68,6 +71,8 @@ app.register_blueprint(settings_bp)
 app.register_blueprint(oltinfo_bp)
 app.register_blueprint(onuinfo_bp)
 app.register_blueprint(api_onuinfo_bp)
+app.register_blueprint(api_oltsupdate_bp)
+app.register_blueprint(api_tg_auth_bp)
 
 
 @app.context_processor
@@ -166,7 +171,12 @@ def help_page():
     '''
     Страница справки
     '''
-    return render_template("help.html")
+    with open('./docs/user_guide.md', 'r', encoding='utf-8') as f:
+        md_text = f.read()
+
+    html_help = markdown.markdown(md_text, extensions=['fenced_code', 'tables', "md_in_html"])
+
+    return render_template("help.html", html_help=html_help)
 
 
 @app.route("/oltupdate/<int:id>")

@@ -3,13 +3,15 @@
   <p><strong>OLTs HUB</strong></p>
 </div>
 
-##  v3.5
+##  v3.6
 WEB приложение для просмотра состояния абонентских оптических терминалов, фирмы Huawei и BDCOM\
 Приложение работает с ОЛТами:\
 Huawei MA5600, MA5800 (EPON, GPON).\
 BDCOM 33xx, 36xx (EPON, GPON).\
 ~~C-DATA (EPON, GPON)~~.
 С версии 3.0 ОЛТы C-DATA не поддерживаются, т.к. у меня нет на сети ОЛТов этой фирмы, и нет возможности для тестов. 
+
+С версии 3.6 появилась возможность подключить [телеграм бота](https://github.com/drag0y/olts_hub_tg_bot)
 
 Полный список моделей и версий можно посмотреть в [файле](docs/platforms.md).
 
@@ -18,9 +20,9 @@ BDCOM 33xx, 36xx (EPON, GPON).\
 Весь остальной функционал будет работать как надо.
 
 <div align="center">
-<img src="static/images/onu-info.png" width="400">
+<img src="./static/images/onu-info.png" width="400">
 <br>
-<img src="static/images/tree.png" width="400">
+<img src="./static/images/tree.png" width="400">
 </div>
 
 #### [Инструкция по установке](docs/install.md)

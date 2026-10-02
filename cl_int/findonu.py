@@ -46,7 +46,7 @@ class FindOnu:
                     self.onulist.append(o)
         
         if not self.onulist:
-            raise ValueError('ONU not found')
+            raise ValueError('ОНУ не найдена')
         
         
     def onuinfo(self):

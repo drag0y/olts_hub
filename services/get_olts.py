@@ -21,9 +21,9 @@ def get_netbox_olt_list():
 
     HEADERS = {"Authorization": TOKEN_API}
     #
-    URLGETEPON = f"{URLNB}/api/dcim/devices/?q=&tag={EPON_TAG}"
-    URLGETGPON = f"{URLNB}/api/dcim/devices/?q=&tag={GPON_TAG}"
-    URLGETXPON = f"{URLNB}/api/dcim/devices/?q=&tag={XPON_TAG}"
+    URLGETEPON = f"{URLNB}/api/dcim/devices/?q=&tag={EPON_TAG}&limit=0"
+    URLGETGPON = f"{URLNB}/api/dcim/devices/?q=&tag={GPON_TAG}&limit=0"
+    URLGETXPON = f"{URLNB}/api/dcim/devices/?q=&tag={XPON_TAG}&limit=0"
   
     # --- Получениие списка Epon ОЛТов, если такие есть, то передаём их в функцию snmpgetonu 
     if EPON_TAG:

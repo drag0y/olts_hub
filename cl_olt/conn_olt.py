@@ -64,6 +64,7 @@ class ConnOLT:
                         username=BDCOM_LOGIN,
                         password=BDCOM_PSW,
                         ) as conn:
+                
                 conn.enable()
                 conn.send_command('terminal length 0')
                 outconf = conn.send_command(f'show run interface {self.olt["portonu"]}')
@@ -83,6 +84,7 @@ class ConnOLT:
             else:
                 HUAWEI_LOGIN = self.conninfo['HUAWEI_LOGIN']
                 HUAWEI_PSW = self.conninfo['HUAWEI_PSW']
+
             with netmiko.ConnectHandler(
                         device_type='huawei_olt',
                         host=self.olt['oltip'],

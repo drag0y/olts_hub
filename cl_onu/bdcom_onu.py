@@ -84,6 +84,7 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
         downreason = snmpget.snmpget()
 
         for l in downreason:
+            print(l)
             match = re.search(parse_reason, l)
             if match:
                 reason = match.group('downreason')
@@ -94,6 +95,8 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
                     lastdownonu = "LOS"
                 elif reason == '11':
                     lastdownonu = "REBOOT"
+                elif reason == '7':
+                    lastdownonu = "ADMIN-DOWN"
                 else:
                     lastdownonu = "Неизвестно"
 

@@ -51,5 +51,13 @@ PF_BDCOM = "BDCOM"
 
 Сделать запрос из консоли можно так:\
 ```commandline
-curl -H "Authorization: Bearer ваш_токен" http://ваш_ip/api/onuinfo/aabbccddeeff
+curl -H "Authorization: ваш_токен" http://ваш_ip/api/onuinfo/aabbccddeeff
+```
+
+С версии 3.6 добавлены ручки:
+```commandline
+Обновить все ОЛТы:
+curl -H "Authorization: ваш_токен" http://ваш_ip/api/olts/oltsupdate
+Обновить конкретный ОЛТ
+curl -H "Authorization: ваш_токен" http://ваш_ip/api/olts/oltupdate/<olt_id>
 ```

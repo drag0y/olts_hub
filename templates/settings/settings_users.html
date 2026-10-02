@@ -31,6 +31,7 @@
   <thead class="table-dark">
     <tr>
       <th scope="row">Пользователь</th>
+      <th scope="row">Telegram id</th>
       <th scope="col">Группа</th>
       <th scope="col">Привилегии</th>
       <th scope="col">Действие</th>
@@ -40,6 +41,7 @@
     <tbody class="table-group-divider">
       <tr>
         <td>{{ u.username }}</td>
+        <td>{{ u.telegram_id }}</td>
         <td>{{ u.groupname }}</td>
         <td>{{ u.privilage }}</td>
         <td>
@@ -107,10 +109,19 @@
     <option value="Operator">Operator</option>
   </select>
   <input 
+    type="text"
+    oninput="this.value = this.value.replace(/[а-яёА-ЯЁ]/g, '')"
+    name="telegram_id" 
+    id="telegram_id" 
+    class="form-control" 
+    placeholder="Введите телеграм ID пользователя"
+  >
+  <br>
+  <input 
     type="submit" 
     class="btn btn-success" 
     value="Добавить"
-  >
+  >  
   <p></p>
 </form>
 </div>

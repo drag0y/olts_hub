@@ -57,7 +57,7 @@ class ApiTokensServiceDb():
             }
         else:
             result = {
-                'result':  'error', 
+                'result':  'error',
                 'message': 'Неавторизованный доступ: неверный токен'
                 }
 

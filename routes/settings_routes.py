@@ -216,12 +216,15 @@ def olthub_deluser(user_id):
     '''
     userid = current_user.get_id()
     userinfo = UsersServiceDb().get_user(userid)
+
     if userinfo['privilage'] == 'Administrator':
         deluser = UsersServiceDb()
         result = deluser.del_user(user_id)
         flash(result)
         log_write(f"User: {userinfo['username']}; Action: DEL_USER; Message: {result['message']} ")
+
         return redirect('/settings/adduser')
+
     else:
         return redirect('/forbidden')
     
@@ -247,17 +250,20 @@ def olthub_edituser(user_id):
                     return redirect(f'/settings/user/{user_id}/edit')
 
             edituser = {
-                'id':        user_id,
-                'username':  request.form['username'],
-                'group_id':  request.form['group_id'],
-                'privilage': request.form['privilage'],
+                'id':          user_id,
+                'username':    request.form['username'],
+                'telegram_id': request.form['telegram_id'],
+                'group_id':    request.form['group_id'],
+                'privilage':   request.form['privilage'],
             }
             
             edit_user = UsersServiceDb()
             result = edit_user.edit_user(edituser)
             flash(result)
             log_write(f"User: {userinfo['username']}; Action: EDIT_USER; Message: {result['message']}")
+
             return redirect('/settings/adduser')
+        
         else:
             menu = g.menucfg.getmenucfg(userinfo['privilage'])
             getuser = UsersServiceDb()
@@ -280,10 +286,11 @@ def olthub_adduser():
     if userinfo['privilage'] == 'Administrator':
         if request.method == "POST":
             useradd = {
-                'username':  request.form['username'],
-                'psw':       request.form['psw'],
-                'group_id':  request.form['group_id'],
-                'privilage': request.form['privilage'],
+                'username':    request.form['username'],
+                'telegram_id': request.form['telegram_id'],
+                'psw':         request.form['psw'],
+                'group_id':    request.form['group_id'],
+                'privilage':   request.form['privilage'],
             }
             
             add_user = UsersServiceDb()
@@ -332,7 +339,7 @@ def olthub_addgroup():
             add_group = GroupsServiceDb()
             result = add_group.add_group(groupname)
             flash(result)
-            log_write(f"User: {userinfo['username']}; Action: ADD_GROUP; Message: {result}")
+            log_write(f"User: {userinfo['username']}; Action: ADD_GROUP; Message: {result['message']}")
             
             return redirect('/settings/groups')
         else:
@@ -429,7 +436,7 @@ def delete_all_history():
         return redirect('/forbidden')
 
 
-@settings_bp.route("/<int:id>/edit", methods=['POST', 'GET'])
+@settings_bp.route("/oltslist/<int:id>/edit", methods=['POST', 'GET'])
 def olt_edit(id):
     '''
     Редактирование ОЛТа
@@ -467,7 +474,7 @@ def olt_edit(id):
             result = olt_add.edit_olt(olt)
             flash(result)
             log_write(f"User: {userinfo['username']}; Action: OLT_EDITED; Message: {result['message']}")
-            return redirect(f"/settings/{id}/edit")
+            return redirect(f"/settings/oltslist")
 
         else:
             return render_template("/settings/settings_oltedit.html", pf_list=PF_LIST, groups=groups, menu=menu, olt_information=olt_information)
@@ -476,7 +483,7 @@ def olt_edit(id):
         return redirect('/forbidden')
     
 
-@settings_bp.route("/<int:id>/delete")
+@settings_bp.route("/oltslist/<int:id>/delete")
 @login_required
 def olt_delete(id):
     '''

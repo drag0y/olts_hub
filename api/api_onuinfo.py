@@ -6,7 +6,7 @@ from cl_int.findonu import FindOnu
 from decorators.token_auth import token_required
 
 
-api_onuinfo_bp = Blueprint('api', __name__, url_prefix='/api')
+api_onuinfo_bp = Blueprint('api/onuinfo', __name__, url_prefix='/api/onuinfo')
 
 api = Api(api_onuinfo_bp)
 
@@ -42,4 +42,4 @@ class ApiOnuinfo(Resource):
             return result
 
 
-api.add_resource(ApiOnuinfo, "/onuinfo/<string:onu>")
+api.add_resource(ApiOnuinfo, "/<string:onu>")
