@@ -10,12 +10,8 @@ api_onuinfo_bp = Blueprint('api/onuinfo', __name__, url_prefix='/api/onuinfo')
 
 api = Api(api_onuinfo_bp)
 
-@api_onuinfo_bp.before_request
-def login_required_for_all_routes():
-    pass
 
-
-class ApiOnuinfo(Resource):
+class ApiOnuInfo(Resource):
     @token_required
     def get(self, onu):
         try:
@@ -42,4 +38,4 @@ class ApiOnuinfo(Resource):
             return result
 
 
-api.add_resource(ApiOnuinfo, "/<string:onu>")
+api.add_resource(ApiOnuInfo, "/<string:onu>")

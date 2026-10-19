@@ -307,28 +307,31 @@ class HuaweiGetOltInfo(GetOltInfoBase):
             unregoid = [unregoid['gpon']]
         elif 'xpon' in self.pontype:
             unregoid = [unregoid['epon'], unregoid['gpon']]
-            
+
         parse_onu = "(?P<portoid>\d{10}).+ Hex-STRING: (?P<onu>.+)"
 
         for oid in unregoid:
             snmpget = SnmpWalk(self.olt_ip, self.snmp_com, oid).snmpget()
             onulist.extend(snmpget)
-            
-        for l in onulist:
-            match = re.search(parse_onu, l)
-            if match:
-                unreg_onu = match.group('onu').replace(' ', '')
-                oltport_oid = match.group('portoid')
+        
+        try:
+            for l in onulist:
+                match = re.search(parse_onu, l)
+                if match:
+                    unreg_onu = match.group('onu').replace(' ', '')
+                    oltport_oid = match.group('portoid')
 
-                ponport = PortsServiceDb().find_port_by_oid(oltid, oltport_oid)
-                for p in ponport:
-                    oltport = p.pon_port
+                    ponport = PortsServiceDb().find_port_by_oid(oltid, oltport_oid)
+                    for p in ponport:
+                        oltport = p.pon_port
 
-                onudict = {
-                    'mac': unreg_onu,
-                    'oltport': oltport,
-                }
-                result.append(onudict)
+                    onudict = {
+                        'mac': unreg_onu,
+                        'oltport': oltport,
+                    }
+                    result.append(onudict)
+        except:
+            result = []
 
         return result
     

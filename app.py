@@ -15,12 +15,17 @@ from services.show_logs import ShowLogs
 from db_services.db_olt import OltServiceDb
 from db_services.db_users import UsersServiceDb
 from db_services.db_menucfg import MenuServiceDb
+
 from routes.settings_routes import settings_bp
 from routes.oltinfo_routes import oltinfo_bp
 from routes.onuinfo_routes import onuinfo_bp
+
 from api.api_onuinfo import api_onuinfo_bp
 from api.api_olts import api_oltsupdate_bp
 from api.api_tg_auth import api_tg_auth_bp
+from api.api_oltinfo import api_oltinfo_bp
+from api.api_portinfo import api_portinfo_bp
+
 from services.logger import log_write
 
 
@@ -37,7 +42,7 @@ app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['APP_VERSION'] = 'v3.6'
+app.config['APP_VERSION'] = 'v3.7'
 
 app.json.ensure_ascii = False
 app.config.update({
@@ -73,6 +78,8 @@ app.register_blueprint(onuinfo_bp)
 app.register_blueprint(api_onuinfo_bp)
 app.register_blueprint(api_oltsupdate_bp)
 app.register_blueprint(api_tg_auth_bp)
+app.register_blueprint(api_oltinfo_bp)
+app.register_blueprint(api_portinfo_bp)
 
 
 @app.context_processor

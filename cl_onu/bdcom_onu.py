@@ -84,7 +84,6 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
         downreason = snmpget.snmpget()
 
         for l in downreason:
-            print(l)
             match = re.search(parse_reason, l)
             if match:
                 reason = match.group('downreason')
@@ -327,7 +326,7 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
                     vendor = macsearch.lookup(getmac)
                     if vendor in VENDOR_SHORTENER:
                         vendor = VENDOR_SHORTENER[vendor]
-                    mac = f'{getmac}' + '\n' + f'[{vendor}]'
+                    mac = f'{getmac}' + ' ' + f'[{vendor}]'
                     searchmac_out.append(mac)
                 except:
                     searchmac_out.append(getmac)
@@ -362,7 +361,7 @@ class BdcomGetOnuInfo(GetOnuInfoBase):
                                         vendor = macsearch.lookup(getmac)
                                         if vendor in VENDOR_SHORTENER:
                                             vendor = VENDOR_SHORTENER[vendor]
-                                        mac = f'{getmac}' + '\n' + f'[{vendor}]'
+                                        mac = f'{getmac}' + ' ' + f'[{vendor}]'
                                         searchmac_out.append(mac)
                                     except:
                                         searchmac_out.append(getmac)

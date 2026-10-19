@@ -49,7 +49,7 @@ PF_BDCOM = "BDCOM"
 В меню __Настройки__ можно создать токен, и обращаться к API с помощью токена через консоль или скрипт.\
 В данный момент реализована только одна "ручка" - http://ваш_ip/api/onuinfo/mac_sn_onu
 
-Сделать запрос из консоли можно так:\
+Сделать запрос из консоли можно так:
 ```commandline
 curl -H "Authorization: ваш_токен" http://ваш_ip/api/onuinfo/aabbccddeeff
 ```
@@ -60,4 +60,14 @@ curl -H "Authorization: ваш_токен" http://ваш_ip/api/onuinfo/aabbccdd
 curl -H "Authorization: ваш_токен" http://ваш_ip/api/olts/oltsupdate
 Обновить конкретный ОЛТ
 curl -H "Authorization: ваш_токен" http://ваш_ip/api/olts/oltupdate/<olt_id>
+```
+
+С версии 3.7 добавлены ручки:
+```commandline
+Список всех ОЛТов:
+/api/oltinfo/oltslist
+Информация об ОЛТе:
+/api/oltinfo/<olt_id>
+Статус PON порта:
+/api/oltinfo/port/<int:olt_id>/<string:port>
 ```

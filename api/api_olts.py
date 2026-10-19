@@ -12,10 +12,6 @@ api_oltsupdate_bp = Blueprint('api/olts', __name__, url_prefix='/api/olts')
 
 api = Api(api_oltsupdate_bp)
 
-@api_oltsupdate_bp.before_request
-def login_required_for_all_routes():
-    pass
-
 
 class ApiOltsUpdate(Resource):
     @token_required
@@ -47,17 +43,13 @@ class ApiOltUpdate(Resource):
         Опросить ОЛТ
         '''
         userinfo = g.userinfo
-        if userinfo['privilage'] == 'Administrator':
-            olt_find = FindOlt(userinfo, olt_id)
-            olt_find.update_olt()
 
-            result = {'result': 'success', 'message': 'Опрос ОЛТа завершён'}
+        olt_find = FindOlt(userinfo, olt_id)
+        olt_find.update_olt()
 
-            return result
-        else:
-            return {
-                'result': 'error',
-            }
+        result = {'result': 'success', 'message': 'Опрос ОЛТа завершён'}
+
+        return result
 
 
 api.add_resource(ApiOltsUpdate, "/oltsupdate")
