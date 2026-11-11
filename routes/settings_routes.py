@@ -253,6 +253,7 @@ def olthub_edituser(user_id):
                 'id':          user_id,
                 'username':    request.form['username'],
                 'telegram_id': request.form['telegram_id'],
+                'max_id':      request.form['max_id'],
                 'group_id':    request.form['group_id'],
                 'privilage':   request.form['privilage'],
             }
@@ -288,6 +289,7 @@ def olthub_adduser():
             useradd = {
                 'username':    request.form['username'],
                 'telegram_id': request.form['telegram_id'],
+                'max_id':      request.form['max_id'],
                 'psw':         request.form['psw'],
                 'group_id':    request.form['group_id'],
                 'privilage':   request.form['privilage'],

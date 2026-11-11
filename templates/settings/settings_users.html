@@ -32,6 +32,7 @@
     <tr>
       <th scope="row">Пользователь</th>
       <th scope="row">Telegram id</th>
+      <th scope="row">Max id</th>
       <th scope="col">Группа</th>
       <th scope="col">Привилегии</th>
       <th scope="col">Действие</th>
@@ -42,6 +43,7 @@
       <tr>
         <td>{{ u.username }}</td>
         <td>{{ u.telegram_id }}</td>
+        <td>{{ u.max_id }}</td>
         <td>{{ u.groupname }}</td>
         <td>{{ u.privilage }}</td>
         <td>
@@ -115,6 +117,15 @@
     id="telegram_id" 
     class="form-control" 
     placeholder="Введите телеграм ID пользователя"
+  >
+  <br>
+  <input 
+    type="text"
+    oninput="this.value = this.value.replace(/[а-яёА-ЯЁ]/g, '')"
+    name="max_id" 
+    id="max_id" 
+    class="form-control" 
+    placeholder="Введите MAX ID пользователя"
   >
   <br>
   <input 

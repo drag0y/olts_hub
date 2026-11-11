@@ -107,6 +107,20 @@
                 >
               </td>
             </tr>
+            <tr>
+              <td><b>MAX ID</b></td>
+              <td>
+                <input 
+                  type="text"
+                  oninput="this.value = this.value.replace(/[а-яёА-ЯЁ]/g, '')"
+                  name="max_id" 
+                  id="max_id" 
+                  class="form-control" 
+                  value="{{ user.max_id }}" 
+                  placeholder="Введите MAX ID пользователя"
+                >
+              </td>
+            </tr>
     </table>
     <header>
     <h5 class="text-left fw-bold">Смена пароля</h5>

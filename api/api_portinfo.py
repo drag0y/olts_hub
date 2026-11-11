@@ -33,7 +33,7 @@ class ApiPortInfo(Resource):
             return result
     
         except KeyError:
-            return {'resulr': 'error', 'message': 'База устарела, опросите ОЛТ'}
+            return {'result': 'error', 'message': 'База устарела, опросите ОЛТ'}
         except ValueError:
             return {'result': 'error', 'message': 'Forbidden'}
 

@@ -44,6 +44,7 @@ class Users(Base):
     privilage:   Mapped[str]
     group_id:    Mapped[int] = mapped_column(ForeignKey('groups.id'))
     telegram_id: Mapped[str] = mapped_column(String(30), nullable=True)
+    max_id:      Mapped[str] = mapped_column(String(30), nullable=True)
     token:       Mapped[str] = mapped_column(nullable=True)
     
     group:       Mapped["Groups"] = relationship()

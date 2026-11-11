@@ -29,6 +29,7 @@ class UsersServiceDb:
                     'id':          r.id,
                     'username':    r.username,
                     'telegram_id': r.telegram_id,
+                    'max_id':      r.max_id,
                     'groupname':   r.group.group_name,
                     'privilage':   r.privilage,
                 }
@@ -65,7 +66,7 @@ class UsersServiceDb:
         psw_hash = generate_password_hash(userinfo['psw'])
 
         token = ''
-        if userinfo['telegram_id']:
+        if userinfo['telegram_id'] or userinfo['max_id']:
             token = secrets.token_hex(16)
 
         user = Users(
@@ -74,6 +75,7 @@ class UsersServiceDb:
                 privilage=userinfo['privilage'],
                 group_id=userinfo['group_id'],
                 telegram_id=userinfo['telegram_id'],
+                max_id=userinfo['max_id'],
                 token=token,
                 )
 
@@ -117,6 +119,7 @@ class UsersServiceDb:
 
         user.username = userinfo['username']
         user.telegram_id = userinfo['telegram_id']
+        user.max_id = userinfo['max_id']
 
         user.token = ''
         if userinfo['telegram_id']:
@@ -194,6 +197,7 @@ class UsersServiceDb:
             'id':          int(user_info.id),
             'username':    user_info.username,
             'telegram_id': user_info.telegram_id,
+            'max_id':      user_info.max_id,
             'groupname':   user_info.group.group_name,
             'privilage':   user_info.privilage,
         }
@@ -252,6 +256,33 @@ class UsersServiceDb:
 
         else:
             False
+
+
+    def get_user_by_name_maxid(self, username, max_id):
+            '''
+            Метод для получения данных о пользователе по username и max_id
+            '''
+            stmt = select(Users).where(
+                and_(
+                    Users.username == username,
+                    Users.max_id == max_id,
+                )
+            )
+            user_info = db.session.scalar(stmt)
+            if user_info:
+                result = {
+                    'id':          user_info.id,
+                    'username':    user_info.username,
+                    'max_id':      user_info.max_id,
+                    'token':       user_info.token,
+                    'groupname':   user_info.group.group_name,
+                    'privilage':   user_info.privilage,
+                }
+    
+                return result
+    
+            else:
+                False
 
 
     def get_user_by_token(self, token):
