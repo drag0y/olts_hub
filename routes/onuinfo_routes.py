@@ -6,6 +6,7 @@ from cl_int.findolt import FindOlt
 from cl_int.findonu import FindOnu
 from cl_int.actonu import ActionOnu
 from cl_olt.conn_olt import ConnOLT
+from services.get_subs import get_subscriber
 from db_services.db_users import UsersServiceDb
 from db_services.db_cfg import CfgServiceDb
 from db_services.db_olt import OltServiceDb
@@ -51,8 +52,9 @@ def onuinfo(onu):
         userid = current_user.get_id()
         userinfo = UsersServiceDb().get_user(userid)
         onurequest = FindOnu(onu, userinfo)
+        sub_info = get_subscriber(onu)
         onu_info = onurequest.onuinfo()
-        return render_template('/onuinfo.html', onu_info=onu_info)
+        return render_template('/onuinfo.html', onu_info=onu_info, sub_info=sub_info)
     
     except TypeError:
         onu = f"Неправильный мак или серийный номер: {onu}"

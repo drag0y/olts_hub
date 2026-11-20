@@ -7,6 +7,7 @@ import markdown
 
 from cl_int.findonu import FindOnu
 from services.get_olts import get_netbox_olt_list
+from services.get_subs import get_subscriber
 from models.base import db
 from cl_int.findolt import FindOlt
 from db_services.userlogin import UserLogin
@@ -43,7 +44,7 @@ app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['APP_VERSION'] = 'v3.8'
+app.config['APP_VERSION'] = 'v3.9'
 
 app.json.ensure_ascii = False
 app.config.update({
@@ -144,9 +145,10 @@ def index():
         try:
             onu = request.form['searchonu']
             onurequest = FindOnu(onu, userinfo)
+            sub_info = get_subscriber(onu)
             onu_info = onurequest.onuinfo()
 
-            return render_template("/onuinfo.html", onu_info=onu_info)
+            return render_template("/onuinfo.html", onu_info=onu_info, sub_info=sub_info)
            
         except TypeError:
             onu = f"Неправильный мак или серийный номер: {onu}"

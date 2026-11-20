@@ -79,7 +79,7 @@ class CfgServiceDb:
 
         db.session.commit()
 
-        return {'result': 'success', 'message': 'Настройки отредактированы!'}
+        return {'result': 'success', 'message': 'Настройки NetBox отредактированы!'}
 
 
     def insert_cfg_snmp(self, snmp_cfg):
@@ -124,5 +124,27 @@ class CfgServiceDb:
 
         db.session.commit()
 
-        return {'result': 'success', 'message': 'Настройки отредактированы!'}
+        return {'result': 'success', 'message': 'Настройки SNMP отредактированы!'}
 
+
+    def insertcfgmikbill(self, mb_conf):
+        '''
+        Редактирование конфигурации MikBill
+        '''
+        #api_key, urlmb
+        
+        if mb_conf['mikbill_key']:
+            stmt = select(Cfg).where(Cfg.key == 'MIKBILL_KEY')
+            result = db.session.execute(stmt).scalars().all()
+            for r in result:
+                r.value = mb_conf['mikbill_key']
+
+        if mb_conf['mikbill_url']:
+            stmt = select(Cfg).where(Cfg.key == 'MIKBILL_URL')
+            result = db.session.execute(stmt).scalars().all()
+            for r in result:
+                r.value = mb_conf['mikbill_url']
+
+        db.session.commit()
+
+        return {'result': 'success', 'message': 'Настройки MikBill отредактированы!'}

@@ -1,147 +1,284 @@
+
 {% extends 'base.html' %}
-
-{% block title %}
-ONU info
-{% endblock %}
-
+{% block title %}ONU info{% endblock %}
 {% block body %}
 
-<style>
-  /* Класс для скрытия столбца */
-  .col-hidden { display: none; }
-</style>
+<div class="pon-dashboard">
+<div class="pon-shell">
 
-    <div class="container col-md-6 col-lg-6 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
-        
- 	    <h4 class="fw-bold text-center">Уровень сигнала с дерева</h4>
-        
+    <header class="pon-header">
+        <h1 class="pon-title">Уровень сигнала с дерева</h1>
+    </header>
 
-        <ul class="list-group mb-3">
-            <table id="table-container" class="table">
-                <thead class="table-dark">
+    {% set ns = pon_status|length %}
+    {% set ln = namespace(counter=false) %}
+
+    {% for item in pon_status %}
+        {% if item['onu']|length == 12 %}
+            {% set ln.totalonu = 64 %}
+        {% elif item['onu']|length == 16 %}
+            {% set ln.totalonu = 128 %}
+        {% endif %}
+    {% endfor %}
+
+    <section class="pon-card">
+
+        <div class="pon-olt-line">
+            <span>
+                <strong>ОЛТ</strong>
+                <a href="/oltinfo/{{ olt_info.oltid }}">
+                    {{ olt_info.oltname }}
+                </a>
+            </span>
+
+            <span>
+                <strong>IP</strong>
+                {{ olt_info.ip_address }}
+            </span>
+
+            <span>
+                <strong>Порт</strong>
+                {{ olt_port }}
+            </span>
+        </div>
+
+        <div class="pon-summary">
+
+            <div class="pon-stat">
+                <div class="pon-stat-label">ОНУ на порту</div>
+                <div class="pon-stat-value">
+                    {{ ns }}
+                    <span style="font-size:12px;color:#7b8497;font-weight:600">
+                        / {{ ln.totalonu }} возможных
+                    </span>
+                </div>
+            </div>
+
+            <div class="pon-stat">
+                <div class="pon-stat-label">OLT</div>
+
+                <div class="pon-stat-value">
+                    <a href="/oltinfo/{{ olt_info.oltid }}">
+                        {{ olt_info.oltname }}
+                    </a>
+                </div>
+            </div>
+
+            <div class="pon-stat">
+                <div class="pon-stat-label">Порт PON</div>
+                <div class="pon-stat-value">
+                    {{ olt_port }}
+                </div>
+            </div>
+
+        </div>
+
+        <div class="pon-toolbar">
+            <h2 class="pon-toolbar-title">
+                Список подключённых ОНУ
+            </h2>
+        </div>
+
+        <div class="pon-table-wrap">
+
+            <table id="table-container" class="table pon-table">
+
+                <thead>
                     <tr>
-                    <th scope="row">ID</th>
-                    <th scope="row">ОНУ</th>
-                    <th class="target-col col-hidden">Description</th>
-                    <th scope="col">Статус</th>
-                    <th scope="col">RX ONU</th>
-                    <th scope="col">RX OLT</th>
+                        <th onclick="sortTable(0)">ID</th>
+                        <th onclick="sortTable(1)">ОНУ</th>
+                        <th onclick="sortTable(2)">Description</th>
+                        <th onclick="sortTable(3)">Статус ОНУ</th>
+                        <th onclick="sortTable(4)">RX ONU</th>
+                        <th onclick="sortTable(5)">RX OLT</th>
+                        <th onclick="sortTable(6)">UID</th>
+                        <th onclick="sortTable(7)">Статус</th>
+                        <th onclick="sortTable(8)">Сессия</th>
+                        <th onclick="sortTable(9)">Адрес</th>
                     </tr>
                 </thead>
 
-	{% set ns = pon_status|length %}
-	{% set ln = namespace(counter=false) %}
-	{% for item in pon_status %}
-        
-	{% if item['onu']|length == 12 %} 
-		{% set ln.totalonu = 64 %}
-	{% elif item['onu']|length == 16 %}
-		{% set ln.totalonu = 128 %}
-	{% endif %}
+                <tbody>
 
-    <tbody class="table-group-divider">
-      <tr>
-        <td rowspan="2">
-          {{ item['id'] }}
-        </td>
-        <td>
-          <a 
-          href="/onuinfo/{{ item['onu'] }}" 
-          class="link-dark" 
-          type="submit"
-          >
-            {{ item['onu'] }}
-          </a>
-        <td class="target-col col-hidden">
-            {{ item['descr'] }}
-        </td>
-        </td>
-            {% if 'ONLINE' in item['onu_status'] %}
-               <td>
-                 <span class="badge text-bg-success rounded-pill fw-bold">{{ item['onu_status'] }}</span></td>
-             {% else %}
-               <td><span class="badge text-bg-danger rounded-pill fw-bold">{{ item['onu_status'] }}</span><br><small style="color: gray;">{{ item['down_time'] }}</small></td>
-             {% endif %}
-           </td>             
-           <td>
-            {% if item['rx_onu'] <= -1 and item['rx_onu'] >= -25.00 %}
-                <span class="badge text-bg-success rounded-pill fw-bold">{{ item['rx_onu'] }}</span>
-            {% elif item['rx_onu'] <= -25.01 and item['rx_onu'] >= -30.00 %}
-                <span class="badge text-bg-warning rounded-pill fw-bold">{{ item['rx_onu'] }}</span>
-            {% elif item['rx_onu'] <= -30.01 %}
-                <span class="badge text-bg-danger rounded-pill fw-bold">{{ item['rx_onu'] }}</span>
-            {% elif item['rx_onu'] == 0.00 %}
-                <span class="badge text-bg-secondary rounded-pill fw-bold">{{ item['rx_onu'] }}</span>
-            {% endif %}
-           </td>
-           <td>
-            {% if item['rx_olt'] <= -1 and item['rx_olt'] >= -25.00 %}
-                <span class="badge text-bg-success rounded-pill fw-bold">{{ item['rx_olt'] }}</span>
-            {% elif item['rx_olt'] <= -25.01 and item['rx_olt'] >= -30.00 %}
-                <span class="badge text-bg-warning rounded-pill fw-bold">{{ item['rx_olt'] }}</span>
-            {% elif item['rx_olt'] <= -30.01 %}
-                <span class="badge text-bg-danger rounded-pill fw-bold">{{ item['rx_olt'] }}</span>
-            {% elif item['rx_olt'] == 0.00 %}
-                <span class="badge text-bg-secondary rounded-pill fw-bold">{{ item['rx_olt'] }}</span>
-            {% endif %}
-           </td>
-        </tr>
-      </tbody>
-  {% endfor %}
+                {% for item in pon_status %}
 
+                    <tr>
 
-	<span class="fw-bold">ОЛТ:
-    <a href="/oltinfo/{{ olt_info.oltid }}" class="link-primary">
-       {{ olt_info.oltname }}
-    </a>
-    </span>
-        <span class="fw-bold">ip: {{ olt_info.ip_address }}</span>
-        <span class="fw-bold">порт: {{ olt_port }}</span>
+                        <td>{{ item['id'] }}</td>
 
-<h6 class="d-flex justify-content-between align-items-center mb-3">
-	<p class="fw-bold">Количество ОНУ на порту {{ ns }} из {{ ln.totalonu }} возможных</p>
-        </h6>
+                        <td>
+                            <a href="/onuinfo/{{ item['onu'] }}">
+                                {{ item['onu'] }}
+                            </a>
+                        </td>
 
-        <div class="row">
-    <div class="col-md-1" style="text-align: center;">
-      <button class="btn btn-info" onclick="toggleColumn(2)">Дескрипшены</button>
-    </div>        
-    </div>
-    <p></p>
-  </div>
+                        <td>{{ item['descr'] }}</td>
 
-        </ul>
+                        <td>
+                            {% if 'ONLINE' in item['onu_status'] %}
+                                <span class="pon-badge pon-online">
+                                    {{ item['onu_status'] }}
+                                </span>
+                            {% else %}
+                                <span class="pon-badge pon-offline">
+                                    {{ item['onu_status'] }}
+                                </span>
+                                <div class="pon-muted">
+                                    {{ item['down_time'] }}
+                                </div>
+                            {% endif %}
+                        </td>
 
-</table>
+                        <td>
+                            {% if item['rx_onu'] <= -1 and item['rx_onu'] >= -25.00 %}
+                                <span class="pon-badge pon-good">
+                                    {{ item['rx_onu'] }}
+                                </span>
+                            {% elif item['rx_onu'] <= -25.01 and item['rx_onu'] >= -30.00 %}
+                                <span class="pon-badge pon-warn">
+                                    {{ item['rx_onu'] }}
+                                </span>
+                            {% elif item['rx_onu'] <= -30.01 %}
+                                <span class="pon-badge pon-bad">
+                                    {{ item['rx_onu'] }}
+                                </span>
+                            {% elif item['rx_onu'] == 0.00 %}
+                                <span class="pon-badge pon-na">
+                                    {{ item['rx_onu'] }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if item['rx_olt'] <= -1 and item['rx_olt'] >= -25.00 %}
+                                <span class="pon-badge pon-good">
+                                    {{ item['rx_olt'] }}
+                                </span>
+                            {% elif item['rx_olt'] <= -25.01 and item['rx_olt'] >= -30.00 %}
+                                <span class="pon-badge pon-warn">
+                                    {{ item['rx_olt'] }}
+                                </span>
+                            {% elif item['rx_olt'] <= -30.01 %}
+                                <span class="pon-badge pon-bad">
+                                    {{ item['rx_olt'] }}
+                                </span>
+                            {% elif item['rx_olt'] == 0.00 %}
+                                <span class="pon-badge pon-na">
+                                    {{ item['rx_olt'] }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <a href="{{ item['sub_url'] }}" class="link-primary" target="_blank">
+                                {{ item['uid'] }}
+                            </a>
+                        </td>
+
+                        <td>
+                            {% if 'Активен' in item['state'] %}
+                                <span class="pon-badge pon-online">{{ item['state'] }}</span>
+                            {% else %}
+                                <span class="pon-badge pon-offline">{{ item['state'] }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if 'Online' in item['online'] %}
+                                <span class="pon-badge pon-online">{{ item['online'] }}</span>
+                            {% else %}
+                                <span class="pon-badge pon-offline">{{ item['online'] }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ item['address'] }}</td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+    </section>
 </div>
 </div>
+
 <script>
-  function toggleColumn(index) {
-    // 1. Переключаем видимость ячеек столбца
-    const rows = document.querySelectorAll("tr");
-    rows.forEach(row => {
-      const cell = row.children[index];
-      if (cell) {
-        cell.classList.toggle("col-hidden");
-      }
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const table = document.getElementById("table-container");
+
+    if (!table) return;
+
+    const headers = table.querySelectorAll("thead th");
+    const tbody = table.querySelector("tbody");
+
+    headers.forEach((header, columnIndex) => {
+
+        header.style.cursor = "pointer";
+
+        header.addEventListener("click", function () {
+
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+
+            const currentColumn = table.dataset.sortColumn;
+            const currentDirection = table.dataset.sortDirection;
+
+            const ascending = !(
+                currentColumn == columnIndex &&
+                currentDirection === "asc"
+            );
+
+            rows.sort((rowA, rowB) => {
+
+                let valueA = rowA.cells[columnIndex].innerText.trim();
+                let valueB = rowB.cells[columnIndex].innerText.trim();
+
+                // Убираем лишние пробелы
+                valueA = valueA.replace(/\s+/g, " ");
+                valueB = valueB.replace(/\s+/g, " ");
+
+                // Проверяем, являются ли оба значения числами
+                const numberA = Number(valueA.replace(",", "."));
+                const numberB = Number(valueB.replace(",", "."));
+
+                const isNumber =
+                    valueA !== "" &&
+                    valueB !== "" &&
+                    !isNaN(numberA) &&
+                    !isNaN(numberB);
+
+                if (isNumber) {
+                    return ascending
+                        ? numberA - numberB
+                        : numberB - numberA;
+                }
+
+                return ascending
+                    ? valueA.localeCompare(valueB, "ru", {
+                        numeric: true,
+                        sensitivity: "base"
+                    })
+                    : valueB.localeCompare(valueA, "ru", {
+                        numeric: true,
+                        sensitivity: "base"
+                    });
+
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+
+            table.dataset.sortColumn = columnIndex;
+            table.dataset.sortDirection = ascending ? "asc" : "desc";
+
+        });
+
     });
 
-    // 2. Меняем ширину контейнера таблицы
-    const container = document.getElementById("table-container");
-    
-    // Проверяем текущее состояние по первому попавшемуся скрытому элементу
-    const isHidden = document.querySelector("th.col-hidden") !== null;
+});
 
-    if (isHidden) {
-      // Столбец скрылся: возвращаем узкую сетку
-      container.classList.replace("col-md-7", "col-md-6");
-      container.classList.replace("col-lg-7", "col-lg-6");
-    } else {
-      // Столбец раскрылся: делаем сетку шире
-      container.classList.replace("col-md-6", "col-md-7");
-      container.classList.replace("col-lg-6", "col-lg-7");
-    }
-  }
 </script>
+
 {% endblock %}
-                    

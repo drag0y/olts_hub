@@ -55,6 +55,8 @@ if __name__ == "__main__":
             ['GPON_TAG', 'gpon'],
             ['XPON_TAG', 'xpon'],
             ['URLNB', 'https://'],
+            ['MIKBILL_KEY', 'None'],
+            ['MIKBILL_URL', 'None'],
             ['PL_H', 'Huawei_OLT'],
             ['PL_B', 'BDCOM'],
             ['PL_C', 'C-Data']
@@ -89,6 +91,7 @@ if __name__ == "__main__":
             ['Группы', '/settings/groups', 'Administrator'],
             ['OLTы', '/settings/oltslist', 'Administrator'],
             ['Настройка NetBox', '/settings/cfgnb', 'Administrator'],
+            ['Настройка MikBill', '/settings/cfgmb', 'Administrator'],
             ['Настройка SNMP', '/settings/cfgsnmp', 'Administrator'],
             ['Токены API', '/settings/tokens', 'Administrator'],
             ['Просмотр логов', '/settings/showlogs', 'Administrator'],

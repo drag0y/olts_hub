@@ -388,6 +388,36 @@ def olthub_settings_nb():
             return render_template('/settings/settings_nb.html', cfg=cfg, menu=menu)
     else:
         return redirect('/forbidden')
+
+
+@settings_bp.route('/cfgmb', methods=['POST', 'GET'])
+def olthub_settings_mb():
+    '''
+    Конфигурация MikBill
+    '''
+    userid = current_user.get_id()
+    userinfo = UsersServiceDb().get_user(userid)
+    if userinfo['privilage'] == 'Administrator':
+        if request.method == "POST":
+            mb_cfg = {
+                'mikbill_key': request.form['mikbill_key'],
+                'mikbill_url': request.form['mikbill_url'],
+            }
+            setmbcfg = CfgServiceDb()
+            result = setmbcfg.insertcfgmikbill(mb_cfg)
+            flash(result)
+            log_write(f"User: {userinfo['username']}; Action: CHANGE_MIKBILL_CONF; Message: {result['message']}")
+
+            return redirect('/settings/cfgmb')
+        else:
+            menu = g.menucfg.getmenucfg(userinfo['privilage'])
+            nbcfg = CfgServiceDb()
+            cfg = nbcfg.get_cfg()
+            key = cfg['MIKBILL_KEY']
+            cfg['MIKBILL_KEY'] = 15*'*' + key[-5:]
+            return render_template('/settings/settings_mb.html', cfg=cfg, menu=menu)
+    else:
+        return redirect('/forbidden')
     
 
 @settings_bp.route('/cfgsnmp', methods=['POST', 'GET'])

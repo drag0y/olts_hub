@@ -1,0 +1,72 @@
+{% extends 'settings/settings_base.html' %}
+
+{% block title %}
+Настройка NetBox
+{% endblock %}
+
+{% block settings %}
+<div class="container col-md-6 col-lg-6 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
+  {% for msg in get_flashed_messages() %}
+    {% if "error" in msg.result %}
+      <h3 class="text-center">
+        <span class="flash badge text-bg-danger">
+          {{msg.message}}
+        </span>
+      </h3>
+    {% else %}
+	  <h3 class="text-center">
+        <span class="flash badge text-bg-success">
+          {{msg.message}}
+        </span>
+      </h3>
+	{% endif %}
+
+  {% endfor %}
+<header>
+  <h1 class="text-center fw-bold">Настройки MikBill</h1>
+</header>
+<form method="post">
+<table class="table">
+  <thead class="table-dark">
+    <tr>
+      <th scope="row">Параметр</th>
+      <th scope="col">Текущее значение</th>
+      <th scope="col">Новое значение</th>
+      </tr>
+  </thead>
+  <tr>
+    <td>API токен</td>
+    <td>{{ cfg.MIKBILL_KEY }}</td>
+    <td>
+      <input 
+        type="text" 
+        name="mikbill_key" 
+        id="mikbill_key" 
+        class="form-control" 
+        placeholder="Введите API токен для MikBill"
+      >
+    </td>
+  </tr>
+  <tr>
+    <td>URL MikBill</td>
+    <td>{{ cfg.MIKBILL_URL }}</td>
+    <td>
+      <input 
+        type="text" 
+        name="mikbill_url" 
+        id="mikbill_url" 
+        class="form-control" 
+        placeholder="Введите URL MikBill"
+      >
+    </td>
+  </tr>
+</table>
+<br>
+<br>
+<br>
+<br>
+<input type="submit" class="btn btn-success" value="Сохранить изменения">
+<p></p>
+</form>
+</div>
+{% endblock %}

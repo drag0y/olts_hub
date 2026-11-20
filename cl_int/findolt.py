@@ -9,6 +9,7 @@ from db_services.db_olt import OltServiceDb
 from db_services.db_ports import PortsServiceDb
 from db_services.db_onu import OnuServiceDb
 from db_services.db_history import HistoryServiceDb
+from services.get_subs import get_subscriber
 
 
 class FindOlt:
@@ -150,6 +151,8 @@ class FindOlt:
         '''
         Уровни и статус пон дерева
         '''
+        result = []
+
         if self.PF_HUAWEI in self.olt_info.platform:
             olt_info = HuaweiGetOltInfo(**self.olt_params) 
 
@@ -171,8 +174,10 @@ class FindOlt:
                                     h['rx_onu'], 
                                     h['rx_olt']
                                 )
+            sub = get_subscriber(h['onu'])
+            result.append({**h, **sub})
 
-        return out_tree  
+        return result  
 
 
     def update_olt(self):

@@ -6,283 +6,253 @@
 
 {% block body %}
 
+
+
 <div id="spinner-overlay">
-    <div class="spinner-wrapper">
-        <div class="spinner"></div>
-        <p>...</p>
-    </div>
+  <div class="spinner-wrapper">
+    <div class="spinner"></div>
+    <p class="mb-0">Выполняется операция...</p>
+  </div>
 </div>
 
 {% for item in onu_info %}
-
-<div class="container col-md-5 col-lg-5 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">   
-  
-  <h4 class="text-center fw-bold">
-    Информация об ОНУ
-  </h4>
-
-  <ul class="list-group mb-3">
+<div class="onu-dashboard">
+  <div class="onu-shell">
     {% for msg in get_flashed_messages() %}
-      {% if "error" in msg.result %}
-        <h3 class="text-center">
-          <span class="flash badge text-bg-danger">
-            {{msg.message}}
-          </span>
-        </h3>
-      {% else %}
-	      <h3 class="text-center">
-          <span class="flash badge text-bg-success">
-            {{msg.message}}
-          </span>
-        </h3>
-	  {% endif %}
+      <div class="onu-flashes text-center">
+        {% if "error" in msg.result %}
+          <span class="flash badge text-bg-danger">{{msg.message}}</span>
+        {% else %}
+          <span class="flash badge text-bg-success">{{msg.message}}</span>
+        {% endif %}
+      </div>
     {% endfor %}
-                    
-    <table class="table table-borderless" style="line-height: 1.25;">
-      <tr>
-        <td>
-          <b>Состояние ONU {{ item['mac/sn'] }}:</b><br>
-        </td>
-        <td>
-          {% if 'В сети' in item.iface_state %}
-            <span class="badge text-bg-success rounded-pill fw-bold">{{ item.iface_state }}</span>
+
+    <header class="onu-header">
+      <div>
+        <h1 class="onu-title">Информация об ОНУ</h1>
+        <div class="onu-subtitle">{{ item['mac/sn'] }} · {{ item.onudescr }}</div>
+      </div>
+      {% if 'В сети' in item.iface_state %}
+        <span class="main-status main-status-online"><span class="main-status-dot"></span>{{ item.iface_state }}</span>
+      {% else %}
+        <span class="main-status main-status-offline"><span class="main-status-dot"></span>{{ item.iface_state }}</span>
+      {% endif %}
+    </header>
+
+    <div class="onu-grid">
+      <section class="onu-card onu-device-card">
+        <div class="onu-eyebrow">Состояние устройства</div>
+        {% if 'В сети' in item.iface_state %}
+          {% if 'UP' in item.lanstate %}
+            <img src="{{ url_for('static', filename='images/onu_on.png') }}" alt="ОНУ в сети">
+          {% elif 'DOWN' in item.lanstate %}
+            <img src="{{ url_for('static', filename='images/onu_lan_off.png') }}" alt="LAN отключён">
           {% else %}
-            <span class="badge text-bg-danger rounded-pill fw-bold">{{ item.iface_state }}</span>
+            <img src="{{ url_for('static', filename='images/onu_lan_unknown.png') }}" alt="Неизвестное состояние LAN">
           {% endif %}
-        </td>  
-      </tr>
-      <tr>
-        <td rowspan = "2">
-    	    {% if 'В сети' in item.iface_state %}
-            {% if 'UP' in item.lanstate %}
-              <img src="{{ url_for('static', filename='images/onu_on.png') }}" width="250">
-            {% elif 'DOWN' in item.lanstate %}
-              <img src="{{ url_for('static', filename='images/onu_lan_off.png') }}" width="250">
-            {% else %}
-              <img src="{{ url_for('static', filename='images/onu_lan_unknown.png') }}" width="250">
-            {% endif %}
+        {% else %}
+          {% if 'Power-Off' in item.reason_offline %}
+            <img src="{{ url_for('static', filename='images/onu_power_off.png') }}" alt="Питание отключено">
+          {% elif 'LOS' in item.reason_offline %}
+            <img src="{{ url_for('static', filename='images/onu_los.png') }}" alt="Потеря оптического сигнала">
           {% else %}
-            {% if 'Power-Off' in item.reason_offline %}
-              <img src="{{ url_for('static', filename='images/onu_power_off.png') }}" width="250">
-            {% elif 'LOS' in item.reason_offline %}
-              <img src="{{ url_for('static', filename='images/onu_los.png') }}" width="250">
-            {% else %}
-              <img src="{{ url_for('static', filename='images/onu_unknown.png') }}" width="250">
-            {% endif %}
+            <img src="{{ url_for('static', filename='images/onu_unknown.png') }}" alt="Неизвестное состояние">
           {% endif %}
-        </td>
-          <tr>
-            <td>
-              <table border="0" width="100%" cellpadding="5" cellspacing="0">
-                <tr>
-                  <td colspan="2">
-                    <small style="color: gray;">Description</small><br>
-                    <b><small>
-                      {{ item.onudescr }}
-                    </small></b>
-                  </td>
-                </tr>
-                <tr>
-                  <td colspan="2">
-                    <small style="color: gray;">OLT</small><br><b><small><a href="/oltinfo/{{ item.olt_id }}" class="link-primary">{{ item.oltname }}</a></small></b>
-                  </td>
-                </tr>
-                <tr>
-                  <td colspan="2">
-                    <small style="color: gray;">IP</small><br>
-                      <b><small>
-                        {{ item.oltip }}
-                    </small></b>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <small style="color: gray;">Порт:</small><br><b><small>{{ item.iface_name }}</small></b>
-                  </td>
-                  <td>
-                    <small style="color: gray;">id:</small><br>
-                      <b><small>
-                        {{ item.onuid }}
-                    </small></b>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <small style="color: gray;">
-                      ONU RX:
-                    </small><br>      
-                      {% if item.level_onu_rx <= -1 and item.level_onu_rx >= -25.00 %}
-                        <span class="badge text-bg-success rounded-pill fw-bold">{{ item.level_onu_rx }}</span>
-                      {% elif item.level_onu_rx <= -25.01 and item.level_onu_rx >= -30.00 %}
-                        <span class="badge text-bg-warning rounded-pill fw-bold">{{ item.level_onu_rx }}</span>
-                      {% elif item.level_onu_rx <= -30.01 %}
-                        <span class="badge text-bg-danger rounded-pill fw-bold">{{ item.level_onu_rx }}</span>
-                      {% elif item.level_onu_rx == 0.00 %}
-                        <span class="badge text-bg-secondary rounded-pill fw-bold">{{ item.level_onu_rx }}</span>
-                      {% endif %}
-                  </td>
-                  <td>
-                      <small style="color: gray;">
-                        OLT RX:
-                      </small><br>      
-                      {% if item.level_olt_rx <= -1 and item.level_olt_rx >= -25.00 %}
-                        <span class="badge text-bg-success rounded-pill fw-bold">{{ item.level_olt_rx }}</span>
-                      {% elif item.level_olt_rx <= -25.01 and item.level_olt_rx >= -30.00 %}
-                        <span class="badge text-bg-warning rounded-pill fw-bold">{{ item.level_olt_rx }}</span>
-                      {% elif item.level_olt_rx <= -30.01 %}
-                        <span class="badge text-bg-danger rounded-pill fw-bold">{{ item.level_olt_rx }}</span>
-                      {% elif item.level_olt_rx == 0.00 %}
-                        <span class="badge text-bg-secondary rounded-pill fw-bold">{{ item.level_olt_rx }}</span>
-                      {% endif %}
-                  </td>
-                </tr> 
-              </table>
-            </td>
-          </tr>
-      </tr>
-      <tr>
-        <td>
-          <small style="color: gray;">
-            Uptime / Время включения:
-          </small><br>
-          <b>{{ item.uptime }}</b>
-        </td>
-        <td>
-          <small style="color: gray;">
-            Время последнего отключения:
-          </small><br>
-          <b>{{ item.downtime }}</b>
-        </td>
-      </tr>      
-      <tr>     
-        <td>
-          <a 
-            href="/onuconfinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}" 
-            class="btn btn-info btn-sm me-1" 
-            type="submit" 
-          >
-          <img 
-            src="{{ url_for('static', filename='images/settings_ico.png') }}"
-            title="Посмотреть конфигурацию ОНУ" 
-            width="20"
-          >
+        {% endif %}
+        <div class="onu-device-caption">Серийный номер / MAC</div>
+        <div class="onu-device-value">{{ item['mac/sn'] }}</div>
+        <div class="onu-inline-actions">
+          <a href="/onuconfinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}" class="onu-icon-link" title="Посмотреть конфигурацию ОНУ">
+            <img src="{{ url_for('static', filename='images/settings_ico.png') }}" alt="Конфигурация">
           </a>
-          <a 
-            href="/oltshowlogs/{{ item.olt_id }}" 
-            class="btn btn-info btn-sm" 
-            type="submit"
-            >
-          <img 
-            src="{{ url_for('static', filename='images/show_log.png') }}"
-            title="Посмотреть логи ОЛТа" 
-            width="20"
-          >
+          <a href="/oltshowlogs/{{ item.olt_id }}" class="onu-icon-link" title="Посмотреть логи ОЛТа">
+            <img src="{{ url_for('static', filename='images/show_log.png') }}" alt="Логи OLT">
           </a>
-          <a 
-            href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/history" 
-            class="btn btn-info btn-sm" 
-            type="submit"
-            >
-          <img 
-            src="{{ url_for('static', filename='images/history_ico.png') }}"
-            title="Посмотреть историю сигналов" 
-            width="20"
-          >
+          <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/history" class="onu-icon-link" title="Посмотреть историю сигналов">
+            <img src="{{ url_for('static', filename='images/history_ico.png') }}" alt="История сигналов">
           </a>
-        </td>  
-        <td>
-          <small style="color: gray;">Причина последнего отключения:</small><br><b><small>{{ item.reason_offline }}</small></b>
-        </td> 
-      </tr>    
-      <tr>
-        <td>
-          <small style="color: gray;">
-            Статус LAN порта:
-          </small><br>
-          <b>
-            {% for p in item.lanstate %}
-	            <b>{{ p.port }}. {{ p.status }} {{ p.speed }}</b><br>
-	          {% endfor %}
-        </td>
-        <td>
-          <small style="color: gray;">
-            Статус CATV порта:
-          </small><br>
-          {% if 'OFF' in item.catvstate %}                 
-            <span class="badge text-bg-danger rounded-pill fw-bold">
-              {{ item.catvstate }}
-            </span>
-            <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/catvon" class="btn btn-outline-dark"
-            >
-              Включить
-            </a>
-          {% elif 'ON' in item.catvstate %}                            
-            <span class="badge text-bg-success rounded-pill fw-bold">
-              {{ item.catvstate }}
-            </span>
-            <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/catvoff" class="btn btn-outline-dark"
-            >
-              Выключить
-            </a>                
-          {% else %}
-            <b>{{ item.catvstate }}</b>
-          {% endif %}
-        </td>
-      </tr>
-      <tr>  
-        <td>
-          <small style="color: gray;">
-            Мак адреса с LAN порта:
-          </small><br>
-            <b>{% for i in item.lan_mac %}{{ i }}<br>{% endfor %}</b>
-        </td>
-        <td>
-          <small style="color: gray;">
-            Уровень сигнала CATV:
-          </small><br>
-          <b>{{ item.catvlevel }}</b>
-        </td>                      
-      </tr>            
-  </ul>
-  </table>
-  
-  <div class="row">
-    <div class="col-md-4" style="text-align: center;">
-      <a 
-        href="/oltinfo/{{ item.olt_id }}/{{ item.iface_name|replace('/', '.') }}" 
-        class="btn btn-success ml-auto"
-        onclick="showSpinner()"
-        >
-          Уровень дерева
-      </a>
+        </div>
+      </section>
+
+      <section class="onu-card">
+        <div class="onu-section-title">Ключевые показатели</div>
+        <div class="onu-metrics">
+          <div class="onu-metric">
+            <div class="onu-metric-label">ONU RX</div>
+            <div class="onu-metric-value">
+              {% if item.level_onu_rx <= -1 and item.level_onu_rx >= -25.00 %}
+                <span class="onu-signal good">{{ item.level_onu_rx }}</span>
+              {% elif item.level_onu_rx <= -25.01 and item.level_onu_rx >= -30.00 %}
+                <span class="onu-signal warn">{{ item.level_onu_rx }}</span>
+              {% elif item.level_onu_rx <= -30.01 %}
+                <span class="onu-signal bad">{{ item.level_onu_rx }}</span>
+              {% elif item.level_onu_rx == 0.00 %}
+                <span class="onu-signal na">{{ item.level_onu_rx }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="onu-metric">
+            <div class="onu-metric-label">OLT RX</div>
+            <div class="onu-metric-value">
+              {% if item.level_olt_rx <= -1 and item.level_olt_rx >= -25.00 %}
+                <span class="onu-signal good">{{ item.level_olt_rx }}</span>
+              {% elif item.level_olt_rx <= -25.01 and item.level_olt_rx >= -30.00 %}
+                <span class="onu-signal warn">{{ item.level_olt_rx }}</span>
+              {% elif item.level_olt_rx <= -30.01 %}
+                <span class="onu-signal bad">{{ item.level_olt_rx }}</span>
+              {% elif item.level_olt_rx == 0.00 %}
+                <span class="onu-signal na">{{ item.level_olt_rx }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="onu-metric">
+            <div class="onu-metric-label">Uptime / Время включения</div>
+            <div class="onu-metric-value">{{ item.uptime }}</div>
+          </div>
+          <div class="onu-metric">
+            <div class="onu-metric-label">Последнее отключение</div>
+            <div class="onu-metric-value">{{ item.downtime }}</div>
+          </div>
+        </div>
+
+        <nav class="onu-tabs" aria-label="Разделы информации об ОНУ">
+          <button type="button" class="onu-tab active" data-onu-tab="general">Общее</button>
+          <button type="button" class="onu-tab" data-onu-tab="billing">Биллинг</button>
+          <button type="button" class="onu-tab" data-onu-tab="ports">Порты и MAC</button>
+        </nav>
+
+        <div class="onu-tab-panel active" data-onu-panel="general">
+          <div class="onu-info-grid">
+            <div class="onu-info-item">
+              <span class="onu-info-label">Description</span>
+              <div class="onu-info-value">{{ item.onudescr }}</div>
+            </div>
+            <div class="onu-info-item">
+              <span class="onu-info-label">OLT</span>
+              <div class="onu-info-value"><a href="/oltinfo/{{ item.olt_id }}" class="link-primary">{{ item.oltname }}</a></div>
+            </div>
+            <div class="onu-info-item">
+              <span class="onu-info-label">IP</span>
+              <div class="onu-info-value">{{ item.oltip }}</div>
+            </div>
+            <div class="onu-info-item">
+              <span class="onu-info-label">Порт</span>
+              <div class="onu-info-value">{{ item.iface_name }}</div>
+            </div>
+            <div class="onu-info-item">
+              <span class="onu-info-label">Причина последнего отключения</span>
+              <div class="onu-info-value">{{ item.reason_offline }}</div>
+            </div>
+            <div class="onu-info-item">
+              <span class="onu-info-label">ID</span>
+              <div class="onu-info-value">{{ item.onuid }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="onu-tab-panel" data-onu-panel="billing">
+          <div class="onu-info-grid">
+            <div class="onu-info-item">
+              <span class="onu-info-label">UID</span>
+              <div class="onu-info-value"><a href="{{ sub_info.sub_url }}" class="link-primary" target="_blank">{{ sub_info.uid }}</a></div>
+            </div>
+            <div class="onu-info-item">
+            <span class="onu-info-label">Статус</span>
+            <div class="onu-info-value">
+              {% if 'Активен' in sub_info.state %}
+                <span class="onu-status online"><span class="onu-status-dot"></span>{{ sub_info.state }}</span>
+              {% else %}
+                <span class="onu-status offline"><span class="onu-status-dot"></span>{{ sub_info.state }}</span>
+              {% endif %}
+            </div>
+            </div>
+            <div class="onu-info-item">
+              <span class="onu-info-label">Адрес</span>
+              <div class="onu-info-value">{{ sub_info.address }}</div>
+            </div>
+            <div class="onu-info-item">
+              <span class="onu-info-label">Сессия</span>
+              <div class="onu-info-value">
+                {% if 'Online' in sub_info.online %}
+                  <span class="onu-status online"><span class="onu-status-dot"></span>{{ sub_info.online }}</span>
+                {% else %}
+                  <span class="onu-status offline"><span class="onu-status-dot"></span>{{ sub_info.online }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="onu-tab-panel" data-onu-panel="ports">
+          <div class="onu-info-grid">
+            <div class="onu-info-item">
+              <span class="onu-info-label">Статус LAN порта</span>
+              <ul class="onu-port-list">
+                {% for p in item.lanstate %}
+                  <li><span>{{ p.port }}.</span><span>{{ p.status }} {{ p.speed }}</span></li>
+                {% endfor %}
+              </ul>
+            </div>
+            <div class="onu-info-item">
+              <span class="onu-info-label">Статус CATV порта</span>
+              <div class="onu-info-value">
+                {% if 'OFF' in item.catvstate %}
+                  <span class="onu-signal bad">{{ item.catvstate }}</span>
+                  <div class="mt-2"><a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/catvon" class="btn btn-sm btn-outline-success">Включить</a></div>
+                {% elif 'ON' in item.catvstate %}
+                  <span class="onu-signal good">{{ item.catvstate }}</span>
+                  <div class="mt-2"><a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/catvoff" class="btn btn-sm btn-outline-danger">Выключить</a></div>
+                {% else %}
+                  <b>{{ item.catvstate }}</b>
+                {% endif %}
+              </div>
+            </div>
+            <div class="onu-info-item">
+              <span class="onu-info-label">MAC-адреса с LAN порта</span>
+              <div class="onu-info-value">{% for i in item.lan_mac %}{{ i }}<br>{% endfor %}</div>
+            </div>
+            <div class="onu-info-item">
+              <span class="onu-info-label">Уровень сигнала CATV</span>
+              <div class="onu-info-value">{{ item.catvlevel }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
-    <div class="col-md-4" style="text-align: center;">
-      <a 
-        href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/reboot" 
-        class="btn btn-warning ml-auto"
-        onclick="showSpinner()"
-      >
-        Перезагрузить ОНУ
-      </a>
+
+    <div class="onu-footer-actions">
+      <a href="/oltinfo/{{ item.olt_id }}/{{ item.iface_name|replace('/', '.') }}" class="btn btn-success" onclick="showSpinner()">Уровень дерева</a>
+      <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/reboot" class="btn btn-warning" onclick="showSpinner()">Перезагрузить ОНУ</a>
+      <a href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/deleteonu" class="btn btn-danger" onclick="showSpinner()">Удалить ОНУ</a>
     </div>
-    <div class="col-md-4" style="text-align: center;">
-      <a 
-        href="/onuinfo/{{ item.olt_id }}/{{ item['mac/sn'] }}/deleteonu" 
-        class="btn btn-danger text-right"
-        onclick="showSpinner()"
-      >
-        Удалить ОНУ
-      </a>         
-    </div>
-    <p></p>
   </div>
 </div>
+
 <script>
-function showSpinner() {
+  function showSpinner() {
     const overlay = document.getElementById('spinner-overlay');
     overlay.classList.add('active');
-}
+  }
+
+  document.querySelectorAll('.onu-dashboard').forEach(function (dashboard) {
+    const tabs = dashboard.querySelectorAll('[data-onu-tab]');
+    const panels = dashboard.querySelectorAll('[data-onu-panel]');
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        const target = tab.getAttribute('data-onu-tab');
+
+        tabs.forEach(function (item) {
+          item.classList.toggle('active', item === tab);
+        });
+
+        panels.forEach(function (panel) {
+          panel.classList.toggle('active', panel.getAttribute('data-onu-panel') === target);
+        });
+      });
+    });
+  });
 </script>
-<br>
 {% endfor %}
 {% endblock %}

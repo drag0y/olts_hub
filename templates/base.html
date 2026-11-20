@@ -6,13 +6,59 @@
 	<meta name="viewport"
 	      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link id="mainThemeStylesheet" rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+
+    <script>
+    // Выбираем нужный CSS до отрисовки страницы, чтобы избежать мигания темы.
+    (() => {
+        const savedTheme = localStorage.getItem('olts-hub-theme');
+        const theme = savedTheme === 'dark' ? 'dark' : 'light';
+        document.documentElement.dataset.theme = theme;
+        const stylesheet = document.getElementById('mainThemeStylesheet');
+        if (stylesheet && theme === 'dark') {
+            stylesheet.href = "{{ url_for('static', filename='css/main-dark.css') }}";
+        }
+    })();
+    </script>
+
 	<title>{% block title %}{% endblock %}</title>
     <script src="{{ url_for('static', filename='js/main.js') }}" type="module" defer></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const button = document.getElementById('themeToggle');
+        const icon = document.getElementById('themeToggleIcon');
+        const text = document.getElementById('themeToggleText');
+        if (!button) return;
+
+        const applyTheme = (theme) => {
+            document.documentElement.dataset.theme = theme;
+            localStorage.setItem('olts-hub-theme', theme);
+
+            // Переключаем именно файл основной темы: main.css / main-dark.css.
+            const stylesheet = document.getElementById('mainThemeStylesheet');
+            if (stylesheet) {
+                stylesheet.href = theme === 'dark'
+                    ? "{{ url_for('static', filename='css/main-dark.css') }}"
+                    : "{{ url_for('static', filename='css/main.css') }}";
+            }
+            const isDark = theme === 'dark';
+            button.setAttribute('aria-pressed', String(isDark));
+            button.setAttribute('aria-label', isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему');
+            button.title = isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему';
+            if (icon) icon.textContent = isDark ? '☀️' : '🌙';;
+        };
+
+        applyTheme(document.documentElement.dataset.theme || 'light');
+        button.addEventListener('click', () => {
+            applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+        });
+    });
+    </script>
+
 </head>
 
-<body style="background-color: #FFFFFF;">
+<body>
 	<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" aria-label="Main navigation">
 	    <div class="container-fluid">
         <div class="collapse navbar-collapse ">
@@ -38,7 +84,11 @@
 	        <button href="/onuinfo/" class="btn btn-outline-warning" type="submit">Поиск</button>
 
         </form>
-<div class="navbar-nav mb-2 mb-lg-0">
+<div class="navbar-nav align-items-lg-center gap-2 mb-2 mb-lg-0">
+            <!-- <button class="btn btn-outline-light" type="button" id="themeToggle"
+                    aria-label="Переключить тему" aria-pressed="false" title="Переключить тему">
+                <span id="themeToggleIcon" aria-hidden="true">🌙</span>
+            </button> -->
             <a href="/logout" class="btn btn-secondary" type="submit">Выход</a>
 </div>
 	    </div>
@@ -76,3 +126,4 @@
 </body>
 
 </html>
+

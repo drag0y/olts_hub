@@ -7,183 +7,150 @@
 {% block body %}
 
 <div id="spinner-overlay">
-  <div class="spinner-wrapper">
-    <div class="spinner"></div>
-    <p>Опрос ОЛТа...</p>
-  </div>
+    <div class="spinner-wrapper">
+        <div class="spinner"></div>
+        <p>Опрос ОЛТа...</p>
+    </div>
 </div>
 
+<div class="main-page">
+    <header class="main-header">
+        <h1>Список ОЛТов</h1>
+    </header>
 
-<div class="container col-md-7 col-lg-7 order-md-last" style="background-color: #FFFFFF; border-radius: 21px 21px 21px 21px;">
-  
-  <header>
-    <h4 class="text-center fw-bold">Список ОЛТов</h4>
-  </header>
+    <section class="main-card">
 
-  <ul class="list-group mb-3">
+        {% for msg in get_flashed_messages() %}
+            {% if "error" in msg.result %}
+                <div class="main-message main-message-danger flash">
+                    {{ msg.message }}
+                </div>
+            {% else %}
+                <div class="main-message main-message-success flash">
+                    {{ msg.message }}
+                </div>
+            {% endif %}
+        {% endfor %}
 
-  {% for msg in get_flashed_messages() %}
-    {% if "error" in msg.result %}
-      <h3 class="text-center">
-        <span class="flash badge text-bg-danger">
-          {{msg.message}}
-        </span>
-      </h3>
-    {% else %}
-	  <h3 class="text-center">
-        <span class="flash badge text-bg-success">
-          {{msg.message}}
-        </span>
-      </h3>
-	{% endif %}
+        <div class="main-table-wrapper">
+            <table class="main-table">
+                <thead>
+                    <tr>
+                        <th scope="col">№</th>
+                        <th scope="col">
+                            <input
+                                type="text"
+                                id="filter"
+                                class="main-search"
+                                placeholder="Поиск ОЛТа"
+                                aria-label="Поиск ОЛТа"
+                            >
+                        </th>
+                        <th scope="col">IP адрес</th>
+                        <th scope="col">Действие</th>
+                    </tr>
+                </thead>
 
-  {% endfor %}
+                <tbody id="list"></tbody>
+            </table>
+        </div>
+    </section>
+</div>
 
-    <table class="table">
-      <thead class="table-dark">
-        <tr>
-          <th scope="row">№</th>
-          <th scope="col">
-            <input 
-        type="text"
-        id="filter"
-        class="form-control me-4"
-        style="width: 200px; height: 30px;"
-        placeholder="Поиск ОЛТа"
-        >
-          </th>
-          <th scope="col">IP адрес</th>
-          <th scope="col">Действие</th>
-        </tr>
-      </thead>
+<button id="scrollTopBtn" class="main-scroll-top" type="button" aria-label="Наверх">↑</button>
 
-      <script>
-        let oltupdateButton = []
-        let loadingIndicator = []
-      </script>
+<script>
+    let oltupdateButton = []
+    let loadingIndicator = []
 
+    const list = document.querySelector('#list')
+    const filter = document.querySelector('#filter')
+    let OLTS = []
 
-<tbody class="table-group-divider" id="list">
-     
+    filter.addEventListener('input', (event) => {
+        const value = event.target.value.toLowerCase()
 
-<script>        
-const list = document.querySelector('#list')
-const filter = document.querySelector('#filter')
-let OLTS = []
-
-filter.addEventListener('input', (event) => {
-  const value = event.target.value.toLowerCase()
-  
-  const filteredOlts = OLTS.filter((olt) => 
-      olt.hostname.toLowerCase().includes(value) || olt.descr.toLowerCase().includes(value) || olt.ip_address.toLowerCase().includes(value)
-    )
-  render(filteredOlts)
-})
+        const filteredOlts = OLTS.filter((olt) =>
+            olt.hostname.toLowerCase().includes(value) ||
+            olt.descr.toLowerCase().includes(value) ||
+            olt.ip_address.toLowerCase().includes(value)
+        )
+        render(filteredOlts)
+    })
 
     function start() {
-      
-      const oltsList = {{ oltslist | tojson }};
-      OLTS = oltsList
-      render(oltsList)
-    }
-    
-    function render(olts = []) {
-      const html = olts.map(toHTML).join('')
-      list.innerHTML = html
+        const oltsList = {{ oltslist | tojson }};
+        OLTS = oltsList
+        render(oltsList)
     }
 
-    function toHTML(olt){
-      return `
-      <table class="table">
-      <tr>
-          <th scope="row">
-            <h6 class="badge bg-dark text-warning rounded-pill my-0">
-              ${olt.id}
-            </h6>
-          </th>
-          <td>
-            ${olt.hostname}<br>
-            <small style="color: gray;">${olt.descr}</small> 
-          </td>
-          <td>${olt.ip_address}</td>
-          <td>
-            <a 
-              href="/oltupdate/${olt.id}" 
-              class="btn btn-dark text-warning btn-sm" 
-              type="click" 
-              id="oltupdate-button${olt.id}"
-              onclick="showSpinner()"
-              >
-              <img 
-                src="static/images/update_olt.png" 
-                title="Опросить ОЛТ" width="20"
-                >
-                <div 
-                  id="loading-indicator${olt.id}"
-                  class="spinner-border spinner-border-sm d-none" 
-                  role="status"
-                  >
-                </div>
-            </a>
-            <a 
-              href="/oltinfo/${olt.id}" 
-              class="btn btn-dark text-warning btn-sm" 
-              type="submit"
-              >
-              <img 
-                src="static/images/detail_olt.png" 
-                title="Подробнее об ОЛТе" 
-                width="20"
-                >
-            </a>
-          </td></a>
-          </tr>
-          </table>
-      `
+    function render(olts = []) {
+        const html = olts.map(toHTML).join('')
+        list.innerHTML = html
+    }
+
+    function toHTML(olt) {
+        return `
+            <tr
+                role="link"
+                tabindex="0"
+                onclick="window.location.href='/oltinfo/${olt.id}'"
+                onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); window.location.href='/oltinfo/${olt.id}'; }"
+                title="Открыть ОЛТ ${olt.hostname}"
+                style="cursor: pointer;"
+            >
+                <td>
+                    <span class="main-number">${olt.id}</span>
+                </td>
+                <td>
+                    <strong>${olt.hostname}</strong><br>
+                    <small class="main-muted">${olt.descr}</small>
+                </td>
+                <td>${olt.ip_address}</td>
+                <td>
+                    <a
+                        href="/oltupdate/${olt.id}"
+                        class="main-btn main-btn-dark"
+                        id="oltupdate-button${olt.id}"
+                        onclick="event.stopPropagation(); showSpinner()"
+                        title="Опросить ОЛТ"
+                        aria-label="Опросить ОЛТ ${olt.hostname}"
+                    >
+                        <img src="static/images/update_olt.png" title="Опросить ОЛТ" width="20" alt="">
+                        <span
+                            id="loading-indicator${olt.id}"
+                            class="spinner-border spinner-border-sm d-none"
+                            role="status"
+                        ></span>
+                    </a>
+                </td>
+            </tr>
+        `
     }
 
     start()
 
-    </script>
+    function showSpinner() {
+        const overlay = document.getElementById('spinner-overlay')
+        overlay.classList.add('active')
+    }
 
-</tbody>
+    const scrollBtn = document.getElementById("scrollTopBtn")
 
-    </table>
+    window.addEventListener("scroll", () => {
+        if (document.documentElement.scrollTop > 200) {
+            scrollBtn.style.display = "block"
+        } else {
+            scrollBtn.style.display = "none"
+        }
+    })
 
-  </ul>
-
-</div>
-<button id="scrollTopBtn">↑</button>
-<script>
-function showSpinner() {
-    const overlay = document.getElementById('spinner-overlay');
-    overlay.classList.add('active');
-}
+    scrollBtn.addEventListener("click", () => {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        })
+    })
 </script>
-<script>
-const scrollBtn = document.getElementById("scrollTopBtn")
-
-window.addEventListener("scroll", () => {
-
-  if (document.documentElement.scrollTop > 200) {
-    scrollBtn.style.display = "block"
-  } else {
-    scrollBtn.style.display = "none"
-  }
-
-})
-
-scrollBtn.addEventListener("click", () => {
-
-  window.scrollTo({
-    top:0,
-    behavior:"smooth"
-  })
-
-})
-
-</script>
-
-
 
 {% endblock %}

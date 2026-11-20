@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 
 {% block title %}
@@ -7,293 +8,330 @@
 {% block body %}
 
 <div id="spinner-overlay">
-    <div class="spinner-wrapper">
-        <div class="spinner"></div>
-        <p>...</p>
-    </div>
+  <div class="spinner-wrapper">
+    <div class="spinner"></div>
+    <p>Загрузка...</p>
+  </div>
 </div>
 
-<div class="container container col-md-5 col-lg-6 order-md-last">
-  <header>
-    <h1 class="text-center fw-bold">
-      Информация об ОЛТе
-    </h1>
+<div class="olt-dashboard">
 
-  {% for msg in get_flashed_messages() %}
-    {% if "error" in msg.result %}
-      <h3 class="text-center">
-        <span class="flash badge text-bg-danger">
-          {{msg.message}}
-        </span>
-      </h3>
-    {% else %}
-	  <h3 class="text-center">
-        <span class="flash badge text-bg-success">
-          {{msg.message}}
-        </span>
-      </h3>
-	{% endif %}
+  <header class="olt-header">
+    <h1>Информация об ОЛТе</h1>
 
-  {% endfor %}
-
-</header>
-<table class="table table-borderless" style="line-height: 1.25;">
-  <tr>
-        <td>
-          <b>Состояние ОЛТа {{ olt_information.oltname }}:</b><br>
-        </td>
-        <td>
-          {% if 'В сети' in olt_information.olt_state %}
-            <span class="badge text-bg-success rounded-pill fw-bold">{{ olt_information.olt_state }}</span>
-          {% else %}
-            <span class="badge text-bg-danger rounded-pill fw-bold">{{ olt_information.olt_state }}</span>
-          {% endif %}
-        </td>  
-      </tr>
-
-      <tr>
-        <td rowspan = "5">
-    	    {% if 'В сети' in olt_information.olt_state %}
-      <img src="{{ url_for('static', filename='images/olt_online.png') }}" width="250">
-    {% else %}
-      <img src="{{ url_for('static', filename='images/olt_offline.png') }}" width="250">
-    {% endif %}
-        </td>    
-          <tr>
-            <td>
-              <small style="color: gray;">Uptime</small><br><b><small>{{ olt_information.olt_uptime }}</small></b>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <small style="color: gray;">IP</small><br>
-              <b><small>
-                {{ olt_information.ip_address }}
-              </small></b>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <small style="color: gray;">Группа:</small><br>
-              <b><small>
-                {{ olt_information.group }}
-              </small></b>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <small style="color: gray;">Зарегистрированные ОНУ:</small><br>
-              <b><small>
-                {{ olt_information.countonu }}
-              </small></b>
-            </td>
-          </tr>
-      </tr>
-        <tr>
-          <td>
-            <small style="color: gray;">Описание ОЛТа:</small><br>
-              <b><small>
-                {{ olt_information.descr }}
-            </small></b>
-          </td>
-          <td>
-            <small style="color: gray;">Платформа:</small><br>
-              <b><small>
-                {{ olt_information.platform }}
-            </small></b>
-          </td>
-        </tr>
-        <tr>
-          <td colspan = "2">
-            <small style="color: gray;">Порты:</small><br>
-            <b><small>
-            <hr>
-                
-
-{% set ns = namespace(counter=false) %}
-		{% set ns.counter = 1 %}
-        {% set ns2 = namespace(counter=false) %}
-        {% set ns2.counter = 0 %}
-
-      <script>
-        let portButton = []
-        let loadingIndicator = []
-      </script>
-  
-      {% for port in olt_information.ports %}
-        {% set ns2.counter = ns2.counter + 1 %}
-        {% if 'В сети' in olt_information.olt_state %}
-          {% if ns.counter <= 16 %}
-            <a 
-              href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace('/', '.') }}" 
-              class="p-1 mb-1 btn btn-outline-dark btn-sm" 
-              type="click"
-              id="port-button{{ ns2.counter }}"
-              >
-              {{ port }}
-              <div 
-                id="loading-indicator{{ ns2.counter }}"
-                class="spinner-border spinner-border-sm d-none" 
-                role="status"
-                >
-              </div>
-            </a>
-		    
-			{% set ns.counter = ns.counter+1 %}
-          {% else %}
-            {% set ns.counter = 1 %}
-            <br>
-		    <hr>                            
-            <a 
-              href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace('/', '.') }}" 
-              class="btn btn-outline-dark btn-sm" 
-              type="click"
-              id="port-button{{ ns2.counter }}"
-              >
-                {{ port }}
-              <div 
-                id="loading-indicator{{ ns2.counter }}"
-                class="spinner-border spinner-border-sm d-none" 
-                role="status"
-                >
-              </div>
-            </a>
-              {% set ns.counter = ns.counter+1 %}
-              {% endif %}
-              {% else %}
-                {% if ns.counter <= 16 %}
-                  <a 
-                    href="/" 
-                    class="p-1 btn btn-outline-dark btn-sm disabled" 
-                    type="submit"
-                    >
-                      {{ port }}
-                  </a>
-
-                  {% set ns.counter = ns.counter+1 %}
-                {% else %}
-                  {% set ns.counter = 1 %}
-                    <br>
-                    
-                    <a 
-                      href="/" 
-                      class="btn btn-outline-dark btn-sm disabled" 
-                      type="submit"
-                      >
-                        {{ port }}
-                    </a>
-
-                    {% set ns.counter = ns.counter+1 %}
-                {% endif %}
-              {% endif %}
-
-            <script>
-              loadingIndicator[{{ ns2.counter }}] = document.getElementById("loading-indicator{{ ns2.counter }}");
-              portButton[{{ ns2.counter }}] = document.getElementById("port-button{{ ns2.counter }}")
-
-              portButton[{{ ns2.counter }}].addEventListener("click", () => {
-                loadingIndicator[{{ ns2.counter }}].classList.remove("d-none")
-              })
-            </script>
-
-      {% endfor %}
-<hr>   
-              </small></b>
-            </td>
-         
-          </tr>
-          <tr>
-            <td>
-              <small style="color: gray;">Незарегистрированные ОНУ:</small><br>
-              {% for u in olt_information.unregonu %}
-
-          <span>MAC/SN: 
-            <b class="text-danger">
-              {{ u.mac }}
-            </b>
-              ; Порт ОЛТа: 
-            <b class="text-danger">
-              {{ u.oltport }}
-            </b>
-          </span><br>
-
-        {% endfor %}
-            </td>
-          </tr>
-
-    </table>
-
- 
-
-
-<div class="">
- 
- 
-
-  <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
-    <div class="btn-group me-3" role="group" aria-label="First group">
-    </div>
-
-	<div class="input-group">
-    </div>
-  </div>
-
-  <div class="row">
-    
-      {% if 'В сети' in olt_information.olt_state %}
-      <div class="col-md-4" style="text-align: center;">
-        <a 
-          href="/oltinfo/{{ olt_information.oltid }}/update" 
-          class="btn btn-warning"
-          id="update-button"
-          onclick="showSpinner()"
-          >
-            Опросить ОЛТ
-        </a>
-        </div>
-        <div class="col-md-4" style="text-align: center;">
-        <a 
-          href="/oltshowlogs/{{ olt_information.oltid }}" 
-          class="btn btn-info"
-          id="update-button"
-          onclick="showSpinner()"
-          >
-            Посмотреть логи ОЛТа
-        </a>
-        </div>
-        <div class="col-md-4" style="text-align: center;">
-        <a 
-          href="/saveconfig/{{ olt_information.oltid }}" 
-          class="btn btn-success"
-          id="saveconfig-button"
-          onclick="showSpinner()"
-          >
-             Сохранить конфиг
-        </a>
-        
+    {% for msg in get_flashed_messages() %}
+      {% if "error" in msg.result %}
+        <h3 class="text-center mt-3">
+          <span class="flash badge text-bg-danger">
+            {{ msg.message }}
+          </span>
+        </h3>
       {% else %}
-      <div class="col-md-4" style="text-align: center;">
-        <a href="/oltinfo/{{ olt_information.oltid }}/update" class="btn btn-warning disabled">Опросить ОЛТ</a>
-        </div>
-        <div class="col-md-4" style="text-align: center;">
-        <a href="/oltshowlogs/{{ olt_information.oltid }}" class="btn btn-info disabled">Посмотреть логи ОЛТа</a>
-        </div>
-        <div class="col-md-4" style="text-align: center;">
-        <a href="/saveconfig/{{ olt_information.oltid }}" class="btn btn-success disabled">Сохранить конфиг</a>
-        
+        <h3 class="text-center mt-3">
+          <span class="flash badge text-bg-success">
+            {{ msg.message }}
+          </span>
+        </h3>
+      {% endif %}
+    {% endfor %}
+  </header>
+
+  <!-- Основная информация об ОЛТе -->
+  <div class="olt-card">
+
+    <div class="olt-status-row">
+      <div class="olt-status-label">
+        Состояние ОЛТа {{ olt_information.oltname }}
+      </div>
+
+      {% if 'В сети' in olt_information.olt_state %}
+        <span class="olt-status online">
+          <span class="olt-status-dot"></span>
+          {{ olt_information.olt_state }}
+        </span>
+      {% else %}
+        <span class="olt-status offline">
+          <span class="olt-status-dot"></span>
+          {{ olt_information.olt_state }}
+        </span>
       {% endif %}
     </div>
-    
+
+    <div class="olt-main-info">
+
+      <div class="olt-image">
+        {% if 'В сети' in olt_information.olt_state %}
+          <img src="{{ url_for('static', filename='images/olt_online.png') }}" alt="ОЛТ в сети">
+        {% else %}
+          <img src="{{ url_for('static', filename='images/olt_offline.png') }}" alt="ОЛТ не в сети">
+        {% endif %}
+      </div>
+
+      <div class="olt-info-grid">
+
+        <div class="olt-info-item">
+          <div class="olt-info-label">Uptime</div>
+          <div class="olt-info-value">
+            {{ olt_information.olt_uptime }}
+          </div>
+        </div>
+
+        <div class="olt-info-item">
+          <div class="olt-info-label">IP-адрес</div>
+          <div class="olt-info-value">
+            {{ olt_information.ip_address }}
+          </div>
+        </div>
+
+        <div class="olt-info-item">
+          <div class="olt-info-label">Группа</div>
+          <div class="olt-info-value">
+            {{ olt_information.group }}
+          </div>
+        </div>
+
+        <div class="olt-info-item">
+          <div class="olt-info-label">Зарегистрированные ОНУ</div>
+          <div class="olt-info-value">
+            {{ olt_information.countonu }}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="olt-extra-grid">
+
+      <div class="olt-extra-item">
+        <div class="olt-section-label">Описание ОЛТа</div>
+        <div class="olt-section-value">
+          {{ olt_information.descr }}
+        </div>
+      </div>
+
+      <div class="olt-extra-item">
+        <div class="olt-section-label">Платформа</div>
+        <div class="olt-section-value">
+          {{ olt_information.platform }}
+        </div>
+      </div>
+
+    </div>
   </div>
-  
+
+  <!-- Порты ОЛТа -->
+  <div class="olt-card">
+
+    <div class="olt-card-title">
+      Порты ОЛТа
+    </div>
+
+    {% set ns = namespace(counter=false) %}
+    {% set ns.counter = 1 %}
+    {% set ns2 = namespace(counter=false) %}
+    {% set ns2.counter = 0 %}
+
+    <script>
+      let portButton = []
+      let loadingIndicator = []
+    </script>
+
+    <div class="olt-ports">
+
+      {% for port in olt_information.ports %}
+        {% set ns2.counter = ns2.counter + 1 %}
+
+        {% if 'В сети' in olt_information.olt_state %}
+
+          {% if ns.counter <= 16 %}
+
+            <a
+              href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace('/', '.') }}"
+              class="olt-port"
+              type="click"
+              id="port-button{{ ns2.counter }}"
+            >
+              {{ port|replace('EPON', 'E')|replace('GPON', 'G') }}
+
+              <div
+                id="loading-indicator{{ ns2.counter }}"
+                class="spinner-border spinner-border-sm d-none"
+                role="status"
+              ></div>
+            </a>
+
+            {% set ns.counter = ns.counter+1 %}
+
+          {% else %}
+
+            {% set ns.counter = 1 %}
+
+            {% set ns.counter = ns.counter+1 %}
+
+            <a
+              href="/oltinfo/{{ olt_information.oltid }}/{{ port|replace('/', '.') }}"
+              class="olt-port"
+              type="click"
+              id="port-button{{ ns2.counter }}"
+            >
+              {{ port }}
+
+              <div
+                id="loading-indicator{{ ns2.counter }}"
+                class="spinner-border spinner-border-sm d-none"
+                role="status"
+              ></div>
+            </a>
+
+          {% endif %}
+
+        {% else %}
+
+          {% if ns.counter <= 16 %}
+
+            <a
+              href="/"
+              class="olt-port disabled"
+              type="submit"
+            >
+              {{ port }}
+            </a>
+
+            {% set ns.counter = ns.counter+1 %}
+
+          {% else %}
+
+            {% set ns.counter = 1 %}
+
+            <a
+              href="/"
+              class="olt-port disabled"
+              type="submit"
+            >
+              {{ port }}
+            </a>
+
+            {% set ns.counter = ns.counter+1 %}
+
+          {% endif %}
+
+        {% endif %}
+
+        <script>
+          loadingIndicator[{{ ns2.counter }}] =
+            document.getElementById("loading-indicator{{ ns2.counter }}");
+
+          portButton[{{ ns2.counter }}] =
+            document.getElementById("port-button{{ ns2.counter }}");
+
+          if (portButton[{{ ns2.counter }}] && loadingIndicator[{{ ns2.counter }}]) {
+            portButton[{{ ns2.counter }}].addEventListener("click", () => {
+              loadingIndicator[{{ ns2.counter }}].classList.remove("d-none");
+            });
+          }
+        </script>
+
+      {% endfor %}
+
+    </div>
+  </div>
+
+  <!-- Незарегистрированные ОНУ -->
+  <div class="olt-card">
+
+    <div class="olt-card-title">
+      Незарегистрированные ОНУ
+    </div>
+
+    {% for u in olt_information.unregonu %}
+
+      <div class="olt-unregistered">
+        <div class="olt-unregistered-item">
+          MAC/SN:
+          <b>{{ u.mac }}</b>
+          &nbsp; | &nbsp;
+          Порт ОЛТа:
+          <b>{{ u.oltport }}</b>
+        </div>
+      </div>
+
+    {% endfor %}
+
+  </div>
+
+  <!-- Действия с ОЛТом -->
+  <div class="olt-card">
+
+    <div class="olt-card-title">
+      Действия с оборудованием
+    </div>
+
+    <div class="olt-actions">
+
+      {% if 'В сети' in olt_information.olt_state %}
+
+        <a
+          href="/oltinfo/{{ olt_information.oltid }}/update"
+          class="btn btn-warning olt-action-btn"
+          id="update-button"
+          onclick="showSpinner()"
+        >
+          Опросить ОЛТ
+        </a>
+
+        <a
+          href="/oltshowlogs/{{ olt_information.oltid }}"
+          class="btn btn-info olt-action-btn"
+          id="update-button"
+          onclick="showSpinner()"
+        >
+          Посмотреть логи ОЛТа
+        </a>
+
+        <a
+          href="/saveconfig/{{ olt_information.oltid }}"
+          class="btn btn-success olt-action-btn"
+          id="saveconfig-button"
+          onclick="showSpinner()"
+        >
+          Сохранить конфиг
+        </a>
+
+      {% else %}
+
+        <a
+          href="/oltinfo/{{ olt_information.oltid }}/update"
+          class="btn btn-warning olt-action-btn disabled"
+        >
+          Опросить ОЛТ
+        </a>
+
+        <a
+          href="/oltshowlogs/{{ olt_information.oltid }}"
+          class="btn btn-info olt-action-btn disabled"
+        >
+          Посмотреть логи ОЛТа
+        </a>
+
+        <a
+          href="/saveconfig/{{ olt_information.oltid }}"
+          class="btn btn-success olt-action-btn disabled"
+        >
+          Сохранить конфиг
+        </a>
+
+      {% endif %}
+
+    </div>
+  </div>
+
 </div>
-</div>
-</div>
-</div>
+
 <script>
-function showSpinner() {
+  function showSpinner() {
     const overlay = document.getElementById('spinner-overlay');
     overlay.classList.add('active');
-}
+  }
 </script>
+
 {% endblock %}
